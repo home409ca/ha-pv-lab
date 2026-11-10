@@ -1,0 +1,128 @@
+[
+  {
+    "id": "jv2279a19391",
+    "string": "pv1",
+    "panel": "02 (1.1.5)",
+    "power": "sensor.jv2279a19391_output_power",
+    "energy": "sensor.jv2279a19391_accumulated_energy_yield"
+  },
+  {
+    "id": "ns2299002890",
+    "string": "pv1",
+    "panel": "06 (1.1.10)",
+    "power": "sensor.ns2299002890_output_power",
+    "energy": "sensor.ns2299002890_accumulated_energy_yield"
+  },
+  {
+    "id": "ns2299002885",
+    "string": "pv1",
+    "panel": "09 (1.1.8)",
+    "power": "sensor.ns2299002885_output_power",
+    "energy": "sensor.ns2299002885_accumulated_energy_yield"
+  },
+  {
+    "id": "ns2299002880",
+    "string": "pv1",
+    "panel": "08 (1.1.9)",
+    "power": "sensor.ns2299002880_output_power",
+    "energy": "sensor.ns2299002880_accumulated_energy_yield"
+  },
+  {
+    "id": "ns2299002295",
+    "string": "pv1",
+    "panel": "10 (1.1.7)",
+    "power": "sensor.ns2299002295_output_power",
+    "energy": "sensor.ns2299002295_accumulated_energy_yield"
+  },
+  {
+    "id": "jv2279l11649",
+    "string": "pv2",
+    "panel": "02 (1.2.6)",
+    "power": "sensor.jv2279l11649_output_power",
+    "energy": "sensor.jv2279l11649_accumulated_energy_yield"
+  },
+  {
+    "id": "jv2279l11635",
+    "string": "pv1",
+    "panel": "04 (1.1.3)",
+    "power": "sensor.jv2279l11635_output_power",
+    "energy": "sensor.jv2279l11635_accumulated_energy_yield"
+  },
+  {
+    "id": "jv2279l11630",
+    "string": "pv2",
+    "panel": "05 (1.2.2)",
+    "power": "sensor.jv2279l11630_output_power",
+    "energy": "sensor.jv2279l11630_accumulated_energy_yield"
+  },
+  {
+    "id": "jv2279l11629",
+    "string": "pv1",
+    "panel": "07 (1.1.4)",
+    "power": "sensor.jv2279l11629_output_power",
+    "energy": "sensor.jv2279l11629_accumulated_energy_yield"
+  },
+  {
+    "id": "jv2279l11601",
+    "string": "pv1",
+    "panel": "05 (1.1.2)",
+    "power": "sensor.jv2279l11601_output_power",
+    "energy": "sensor.jv2279l11601_accumulated_energy_yield"
+  },
+  {
+    "id": "jv2279l11599",
+    "string": "pv1",
+    "panel": "03 (1.1.1)",
+    "power": "sensor.jv2279l11599_output_power",
+    "energy": "sensor.jv2279l11599_accumulated_energy_yield"
+  },
+  {
+    "id": "jv2279l10963",
+    "string": "pv2",
+    "panel": "03 (1.2.4)",
+    "power": "sensor.jv2279l10963_output_power",
+    "energy": "sensor.jv2279l10963_accumulated_energy_yield"
+  },
+  {
+    "id": "jv2279l10670",
+    "string": "pv2",
+    "panel": "04 (1.2.1)",
+    "power": "sensor.jv2279l10670_output_power",
+    "energy": "sensor.jv2279l10670_accumulated_energy_yield"
+  },
+  {
+    "id": "jv2279l09833",
+    "string": "pv2",
+    "panel": "07 (1.2.5)",
+    "power": "sensor.jv2279l09833_output_power",
+    "energy": "sensor.jv2279l09833_accumulated_energy_yield"
+  },
+  {
+    "id": "jv2279l09151",
+    "string": "pv2",
+    "panel": "06 (1.2.3)",
+    "power": "sensor.jv2279l09151_output_power",
+    "energy": "sensor.jv2279l09151_accumulated_energy_yield"
+  },
+  {
+    "id": "jv2279a19705",
+    "string": "pv1",
+    "panel": "01 (1.1.6)",
+    "power": "sensor.jv2279a19705_output_power",
+    "energy": "sensor.jv2279a19705_accumulated_energy_yield"
+  },
+  {
+    "id": "ns2299003165",
+    "string": "pv1",
+    "panel": "11 (1.1.11)",
+    "power": "sensor.ns2299003165_output_power",
+    "energy": "sensor.ns2299003165_accumulated_energy_yield"
+  },
+  {
+    "id": "ns2329141515",
+    "string": "pv2",
+    "panel": "01 (1.2.7)",
+    "power": "sensor.ns2329141515_output_power",
+    "energy": "sensor.ns2329141515_accumulated_energy_yield"
+  }
+]

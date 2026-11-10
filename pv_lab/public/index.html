@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PV Lab — analiza Twojej instalacji</title>
+  <link rel="stylesheet" href="./style.css"><script type="module" src="./app.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#overview"><span class="brand-icon">☀</span><span>PV <b>Lab</b><small>LOKALNA ANALIZA ENERGII</small></span></a>
+    <p class="nav-label">TWOJA INSTALACJA</p>
+    <nav aria-label="Sekcje aplikacji">
+      <a href="#overview" data-tab="overview"><span>◈</span> Przegląd</a>
+      <a href="#forecast" data-tab="forecast"><span>↗</span> Prognozy</a>
+      <a href="#panels" data-tab="panels"><span>▦</span> Panele i zacienienie</a>
+      <a href="#voltage" data-tab="voltage"><span>ϟ</span> Napięcia i przestoje</a>
+      <a href="#sources" data-tab="sources"><span>⇄</span> Źródła danych</a>
+      <a href="#settings" data-tab="settings"><span>⚙</span> Ustawienia</a>
+    </nav>
+    <div class="sidebar-bottom"><span class="local-dot"></span> Dane pozostają u Ciebie<p>Bez AI · bez bazy danych</p><small>PV Lab 0.1 · wersja eksperymentalna</small></div>
+  </aside>
+  <main>
+    <header><div><span class="eyebrow">ANALIZA FOTOWOLTAIKI</span><h1 id="page-title">Przegląd instalacji</h1><p id="subtitle">Dwie połacie. Jedna prognoza, bliższa rzeczywistości.</p></div><div class="header-actions"><span id="connection" class="badge">Łączenie…</span><button id="refresh" class="button secondary">↻ Odczytaj dane</button></div></header>
+    <div id="demo-banner" class="banner demo" hidden><strong>Tryb demonstracyjny</strong><span>Wykresy i wyniki są symulacją. Nie są zapisywane ani używane do kalibracji Twojej instalacji.</span><button id="leave-demo" class="button secondary">Wróć do danych rzeczywistych</button></div>
+    <div id="notice" class="banner" hidden></div>
+    <section id="content" aria-live="polite"><div class="empty">Odczytywanie stanu aplikacji…</div></section>
+    <footer><span id="updated"></span><span>Przejrzyste obliczenia. Każda korekta ma swoje dane.</span></footer>
+  </main>
+  <div id="toast" role="status" hidden></div>
+</body></html>
