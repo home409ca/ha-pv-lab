@@ -1,0 +1,8 @@
+{
+  "title":"PV Lab",
+  "config": {
+    "step":{"user":{"title":"Connect the PV Lab app","description":"Copy the internal app URL and pairing key from PV Lab → HA integration. This key only allows reading the forecast.","data":{"url":"Internal app URL","token":"Pairing key"}}},
+    "error":{"cannot_connect":"Cannot connect to the PV Lab app.","invalid_auth":"Pairing key was rejected.","invalid_url":"Enter an http/https server URL without a path or credentials."},
+    "abort":{"already_configured":"This PV Lab app is already configured."}
+  }
+}

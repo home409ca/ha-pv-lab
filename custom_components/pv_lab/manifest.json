@@ -1,10 +1,11 @@
 {
   "domain": "pv_lab",
   "name": "PV Lab",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "documentation": "https://github.com/home409ca/ha-pv-lab",
+  "issue_tracker": "https://github.com/home409ca/ha-pv-lab/issues",
   "config_flow": true,
   "iot_class": "local_polling",
   "requirements": [],
-  "codeowners": []
+  "codeowners": ["@home409ca"]
 }

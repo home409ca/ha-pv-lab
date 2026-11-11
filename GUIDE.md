@@ -17,6 +17,8 @@ Instalacja od zera: dodaj adres swojego repozytorium w sklepie aplikacji HA, wyb
 
 ## Instalacja integracji z encjami
 
+Integrację można teraz zainstalować przez HACS, dodając repozytorium jako **Integration** i pobierając aktualną gałąź lub wydanie z `hacs.json`. Patrz [instrukcja HACS](HACS-INSTALL.md). Poniższa metoda ręczna pozostaje alternatywą.
+
 1. Skopiuj **wewnętrzny katalog** `custom_components/pv_lab` z paczki do `/config/custom_components/pv_lab` w Home Assistant. W tym miejscu mają być bezpośrednio `manifest.json`, `__init__.py`, `sensor.py` itd. Nie twórz dodatkowego `pv_lab/pv_lab`.
 2. Uruchom ponownie Home Assistant Core.
 3. W panelu aplikacji otwórz **Integracja HA**. Znajdziesz tam wykryty wewnętrzny adres serwera i klucz parowania. Jeśli wykrycie adresu się nie powiodło, ustal nazwę hosta aplikacji w HA; dla aplikacji lokalnej zwykle będzie to `http://local-pv-lab:8099`. Nie używaj adresu `/api/hassio_ingress/...`.

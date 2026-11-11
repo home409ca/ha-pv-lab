@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.const import UnitOfEnergy
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from .const import DOMAIN
+from .const import DOMAIN, VERSION
 from .contract import sensor_specs, read_sensor
 
 
@@ -21,7 +21,7 @@ class PVLabSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{entry.entry_id}_{spec['key']}"
         self._attr_name = spec["name"]
         self._attr_entity_registry_enabled_default = spec.get("enabled", True)
-        self._attr_device_info = {"identifiers": {(DOMAIN, entry.entry_id)}, "name": "PV Lab", "manufacturer": "PV Lab", "model": "Local PV forecast", "sw_version": "0.2.0"}
+        self._attr_device_info = {"identifiers": {(DOMAIN, entry.entry_id)}, "name": "PV Lab", "manufacturer": "PV Lab", "model": "Local PV forecast", "sw_version": VERSION}
         if spec["kind"] in ("window_start", "revision_time", "calculated_at"):
             self._attr_device_class = SensorDeviceClass.TIMESTAMP
         elif spec["kind"] != "revision_direction":
