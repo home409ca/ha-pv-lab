@@ -38,6 +38,8 @@ export function train(model,samples,snapshots,c,now=Date.now()) {
   for(let t=first;t<=end;t+=SLOT){const actual=actualInterval(samples,t,c);model.watermark=t;
     if(actual.reasons.length){for(const r of actual.reasons)model.excluded[r]=(model.excluded[r]||0)+1;continue;}
     const candidates=byTime.get(t)||new Map();
+    if(!candidates.size)model.excluded['brak prognozy zapisanej przed kwadransem']=(model.excluded['brak prognozy zapisanej przed kwadransem']||0)+1;
+    else if(![...candidates.values()].some(({row})=>row.wh>=20))model.excluded['prognoza poniżej 20 Wh']=(model.excluded['prognoza poniżej 20 Wh']||0)+1;
     const evaluations=[];for(const [scoreKey,{snap,row}] of candidates){const predicted=row.wh;if(predicted<20)continue;
       const k=calibrationKey(snap.provider,t,snap.at,c),corrected=Math.min(predicted*correction(model,snap.provider,t,snap.at,c),c.inverter.limitW/4),baseline=Math.min(predicted,c.inverter.limitW/4);
       evaluations.push({scoreKey,provider:snap.provider,h:horizon((t-snap.at)/3600000),predicted,corrected,baseline});

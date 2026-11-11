@@ -22,12 +22,16 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
   let badCall=false;const mock=http.createServer(async(req,res)=>{if(req.headers.authorization!=='Bearer TEST_PRIVATE_TOKEN'){badCall=true;res.writeHead(401);res.end();return;}
     let payload='';for await(const chunk of req)payload+=chunk;
     res.setHeader('Content-Type','application/json');if(req.url==='/api/states')return res.end(JSON.stringify(states));
+    if(req.url==='/api/config/config_entries/entry?domain=pv_lab')return res.end(JSON.stringify([{domain:'pv_lab',entry_id:'pv-lab-test',title:'PV Lab',state:'loaded'}]));
     if(req.url==='/api/config')return res.end(JSON.stringify({latitude:52,longitude:21}));
     if(req.url==='/api/template')return res.end(JSON.stringify(payload.includes('today_2')?'pv2-entry':'pv1-entry'));
     if(req.url.startsWith('/api/services/forecast_solar/get_forecast')){const p=JSON.parse(payload);return res.end(JSON.stringify({service_response:{wh_period:{[new Date(hour).toISOString()]:p.config_entry==='pv1-entry'?1000:500}}}));}
     if(req.url.startsWith('/api/history/period/'))return res.end('[]');
     badCall=true;res.writeHead(404);res.end('{}');});
   const statsSocket=attachStatisticsSocket(mock,msg=>{
+    if(msg.type==='energy/info')return {solar_forecast_domains:['pv_lab']};
+    if(msg.type==='energy/get_prefs')return {energy_sources:[{type:'solar',config_entry_solar_forecast:['pv-lab-test']}]};
+    if(msg.type==='energy/solar_forecast')return {'pv-lab-test':{wh_hours:{'2026-11-11T10:00:00Z':1000}}};
     if(msg.type==='recorder/list_statistic_ids')return statisticsMetadata;
     if(msg.type==='recorder/get_statistics_metadata')return statisticsMetadata.filter(m=>msg.statistic_ids.includes(m.statistic_id));
     if(msg.type==='recorder/statistics_during_period'){assert.equal(msg.units.energy,'kWh');assert.deepEqual(msg.types,['change']);const at=Date.parse(msg.start_time);return Object.fromEntries(msg.statistic_ids.map(id=>[id,Array.from({length:24},(_,i)=>({start:(at+i*3600000)/1000,end:(at+(i+1)*3600000)/1000,change:1}))]));}
@@ -40,6 +44,10 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
   try{
     const v=await until(async()=>{const x=await get('/api/view');return x.diagnostics?.length===3?x:null;});
     assert.equal(v.latest.power,1000);assert.equal(v.latest.strings.pv1,600);assert.equal(v.config.location.latitude,52);assert.equal(v.diagnostics.filter(d=>d.ok).length,3);assert.equal(v.forecast.details.length,3);
+    assert.equal(typeof v.analysis.status.lastInterval.coverage,'number');
+    assert.equal((await fetch(base+'/presentation.js')).status,200);
+    const today=new Intl.DateTimeFormat('en-CA',{timeZone:v.config.timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(now),voltage=await get('/api/voltage?date='+today);assert.equal(voltage.series.length,3);assert.equal(voltage.day,today);assert.equal((await fetch(base+'/api/voltage?date=invalid')).status,400);assert.equal((await get('/api/view')).storage.samples,v.storage.samples);
+    const energy=await get('/api/energy-status');assert.equal(energy.platformAvailable,true);assert.equal(energy.entries[0].selected,true);assert.equal(energy.entries[0].hours,1);
     const html=await fetch(base+'/');assert.equal(html.status,200);assert.ok((await html.text()).includes('PV Lab'));assert.equal((await fetch(base+'/app.js')).status,200);
     assert.equal((await fetch(base+'/insights.js')).status,200);
     assert.equal((await fetch(base+'/api/integration')).status,401);

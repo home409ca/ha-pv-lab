@@ -1,3 +1,12 @@
+# 0.2.3
+
+- Osobne przełączniki krzywych, widoczne identyczne przebiegi, oś całej doby.
+- Tabela prognozy godzina po godzinie z dostawcami, korektą, pozostałą energią i lukami.
+- Diagnostyka kalibracji, pokrycia pomiarami i wcześniejszych prognoz; edytowalne encje i statusy.
+- Wybrany dzień napięć: odczyt Recorder HA na żądanie, bez zapisu w PV Lab.
+- Instrukcja i diagnostyka podłączenia natywnej prognozy do panelu Energia.
+- Bez zmiany schematu modelu i ustawień; integracja HACS nadal 0.2.1.
+
 # 0.1.0
 
 - Pierwsza aplikacja lokalna z polskim panelem WWW przez Ingress.

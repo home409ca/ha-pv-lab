@@ -1,3 +1,5 @@
+Aktualna aplikacja: **0.2.3**. Zmiany i instrukcja: [UPDATE-0.2.3.md](UPDATE-0.2.3.md). Integracja HA: **0.2.1**.
+
 # PV Lab 0.2 — instalacja i obsługa
 
 Aktualna aplikacja: **0.2.2**, integracja HA: **0.2.1**. Błąd importu „0/365 dni” związany z jednostką w metadanych HA został poprawiony w aplikacji. Patrz [STATISTICS-FIX.md](STATISTICS-FIX.md).

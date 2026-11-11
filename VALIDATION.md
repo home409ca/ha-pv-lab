@@ -1,3 +1,7 @@
+# Weryfikacja aktualizacji 0.2.3
+
+51 testów Node oraz 8 testów Python przeszło. Nowe przypadki i ograniczenia opisano w [UPDATE-0.2.3.md](UPDATE-0.2.3.md). Sprawdzono również demonstracyjny wykres i tabelę w przeglądarce. Testy API używają symulowanego Home Assistant; brak testu na rzeczywistej instalacji użytkownika.
+
 # Weryfikacja 0.2.0
 
 ## Poprawka aplikacji 0.2.2
