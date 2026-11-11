@@ -13,11 +13,21 @@ export class HA {
       const id=c.entities.status;
       if(!/^[a-z_]+\.[a-z0-9_]+$/.test(id))throw new Error('Niepoprawna encja statusu falownika.');
       // Read the live State properties: an unchanged status can have an old serialized timestamp.
-      const template=`{% set s = states.${id} %}{% if s is defined and s is not none %}{{ {'entity_id': '${id}', 'state': s.state, 'reported': as_timestamp(s.last_reported if s.last_reported is defined else s.last_updated, none)} | to_json }}{% else %}{{ {'entity_id': '${id}', 'state': 'unavailable', 'reported': none} | to_json }}{% endif %}`;
+      const template=`{% set s = states['${id}'] %}{% if s is defined and s is not none %}{{ {'entity_id': '${id}', 'state': s.state, 'reported': as_timestamp(s.last_reported if s.last_reported is defined else s.last_updated, none)} | to_json }}{% else %}{{ {'entity_id': '${id}', 'state': 'unavailable', 'reported': none} | to_json }}{% endif %}`;
       let live=await this.request('/template',{template});
       if(typeof live==='string')try{live=JSON.parse(live);}catch{throw new Error('Niepoprawna odpowiedź HA przy odczycie czasu zgłoszenia statusu.');}
       if(!live||live.entity_id!==id||typeof live.state!=='string'||(live.reported!==null&&!Number.isFinite(live.reported)))throw new Error('Niepoprawne dane statusu falownika z HA.');
       states.set(id,{...states.get(id),entity_id:id,state:live.state,last_reported:Number.isFinite(live.reported)?new Date(live.reported*1000).toISOString():null,last_updated:null});
+    }
+    if(c?.grid?.confirmed){
+      await Promise.all([...new Set([c.grid.hourBalance,c.grid.importEnergy,c.grid.exportEnergy].filter(Boolean))].map(async id=>{
+        if(!/^[a-z_]+\.[a-z0-9_]+$/.test(id))return;
+        try{const template=`{% set s = states['${id}'] %}{% if s is defined and s is not none %}{{ {'entity_id': '${id}', 'state': s.state, 'reported': as_timestamp(s.last_reported if s.last_reported is defined else s.last_updated, none)} | to_json }}{% else %}{{ {'entity_id': '${id}', 'state': 'unavailable', 'reported': none} | to_json }}{% endif %}`;
+          let live=await this.request('/template',{template});if(typeof live==='string')live=JSON.parse(live);
+          if(live?.entity_id!==id||typeof live.state!=='string'||live.reported!==null&&!Number.isFinite(live.reported))throw new Error('Niepoprawne dane licznika.');
+          states.set(id,{...states.get(id),entity_id:id,state:live.state,last_reported:Number.isFinite(live.reported)?new Date(live.reported*1000).toISOString():null,last_updated:null});
+        }catch{states.set(id,{entity_id:id,state:'unavailable'});}
+      }));
     }
     return states;
   }

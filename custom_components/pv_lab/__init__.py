@@ -5,7 +5,7 @@ from homeassistant.const import Platform
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from .api import AuthenticationError, fetch_payload
+from .api import AuthenticationError, fetch_payload, update_plan
 from .const import DOMAIN, CONF_URL, CONF_TOKEN
 import logging
 
@@ -16,6 +16,10 @@ class PVLabCoordinator(DataUpdateCoordinator):
     def __init__(self, hass, entry):
         super().__init__(hass, LOGGER, name="PV Lab", config_entry=entry, update_interval=timedelta(seconds=60))
         self.entry = entry
+
+    async def async_set_plan(self, patch):
+        await update_plan(async_get_clientsession(self.hass), self.entry.data[CONF_URL], self.entry.data[CONF_TOKEN], patch)
+        await self.async_request_refresh()
 
     async def _async_update_data(self):
         try:
@@ -30,12 +34,12 @@ async def async_setup_entry(hass, entry):
     coordinator = PVLabCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
-    await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR])
+    await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR, Platform.NUMBER, Platform.SELECT, Platform.DATETIME])
     return True
 
 
 async def async_unload_entry(hass, entry):
-    unloaded = await hass.config_entries.async_unload_platforms(entry, [Platform.SENSOR])
+    unloaded = await hass.config_entries.async_unload_platforms(entry, [Platform.SENSOR, Platform.NUMBER, Platform.SELECT, Platform.DATETIME])
     if unloaded:
         hass.data[DOMAIN].pop(entry.entry_id, None)
     return unloaded

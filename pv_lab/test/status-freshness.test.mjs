@@ -20,3 +20,8 @@ test('brak encji, unavailable i status awarii nie są normalną pracą',async()=
 test('błędna odpowiedź świeżości jest jawnym błędem, a nie fałszywie poprawnym statusem',async()=>{
   for(const live of ['invalid',{entity_id:'sensor.other',state:'On-grid',reported:now/1000},{entity_id:id,state:'On-grid',reported:'wrong'}])await assert.rejects(()=>client(live).states(c));
 });
+test('odczyt liczników użytkownika z identyfikatorami zaczynającymi się od cyfry używa indeksowania szablonu',async()=>{
+  const ha=new HA(),values={[id]:'On-grid',[c.grid.hourBalance]:'2',[c.grid.importEnergy]:'123',[c.grid.exportEnergy]:'234'};
+  ha.request=async(path,body)=>{if(path==='/states')return Object.entries(values).map(([entity_id,state])=>({entity_id,state,last_reported:old,attributes:{unit_of_measurement:'kWh'}}));const requested=body.template.match(/'entity_id': '([^']+)'/)[1];assert.ok(body.template.includes(`states['${requested}']`));return {entity_id:requested,state:values[requested],reported:now/1000-10};};
+  const sample=makeSample(await ha.states(c),c,now);assert.equal(sample.gridBalance,2);assert.equal(sample.gridImport,123);assert.equal(sample.gridExport,234);
+});

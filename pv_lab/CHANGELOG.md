@@ -1,3 +1,11 @@
+# 0.3.0
+
+- Raporty godzinowe/dobowe/miesięczne/roczne, plan na jutro i ocena bieżąca.
+- Ciągłe okna 1/2/3 h oraz stany po zakończeniu produkcji.
+- Planowanie zapotrzebowania, rezerwa domu i trzy tryby bilansowania.
+- Saldo bieżącej godziny z potwierdzonej encji użytkownika.
+- Integracja HA z nowymi sensorami i wejściami number/select/datetime.
+
 # 0.2.5
 
 - Odczyt bieżącego stanu i czasu ostatniego zgłoszenia statusu przez API szablonów HA; usuwa fałszywe odrzucanie niezmiennego On-grid.

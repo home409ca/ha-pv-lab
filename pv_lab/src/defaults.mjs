@@ -1,3 +1,4 @@
+import {defaultPlan,validatePlan} from './planner.mjs';
 import optimizers from './optimizers.json' with {type:'json'};
 export const defaults = {
   version: 1,
@@ -30,6 +31,9 @@ export const defaults = {
   optimizers: optimizers.sort((a,b)=>a.string.localeCompare(b.string)||a.panel.localeCompare(b.panel)),
   replacement: { string: 'pv2', panel: '01 (1.2.7)', previous: 'ns2299002886', current: 'ns2329141515', approximateFrom: '2023-09', approximateTo: '2023-10' },
   retention: { samplesDays: 7, forecastsDays: 14, voltageHours: 0, revisionsDays: 90 },
+  planner: structuredClone(defaultPlan),
+  grid: {hourBalance:'sensor.energia_bilans_netto',importEnergy:'sensor.0_electricity_meter_total_forward_active_energy_balanced',exportEnergy:'sensor.0_electricity_meter_total_reverse_active_energy_balanced',confirmed:true,countersAreHourlyBalanced:true},
+  reports: {freezeTime:'20:00'},
   statistics: { channels: [
     {id:'total', name:'Produkcja AC falownika', statisticId:'sensor.inverter_total_yield', confirmed:true, basis:'AC'},
     {id:'pv1', name:'Energia PV1 — do potwierdzenia', statisticId:'sensor.energia_czynna_pv1', confirmed:false, basis:'unknown'},
@@ -82,7 +86,11 @@ export function validate(c) {
   if(new Set(c.providers.map(p=>p.id)).size!==c.providers.length) throw new Error('Powielony dostawca.');
   if(!Array.isArray(c.optimizers)||c.optimizers.length>500) throw new Error('Nieprawidłowa lista optymalizatorów.');
   for(const o of c.optimizers) if(!id(o.power)||!id(o.energy)||!c.strings.some(s=>s.id===o.string)) throw new Error('Niepoprawny optymalizator.');
+  validatePlan(c.planner);
+  if(!c.grid||typeof c.grid.confirmed!=='boolean'||typeof c.grid.countersAreHourlyBalanced!=='boolean')throw new Error('Niepoprawne ustawienia bilansu.');
+  for(const k of ['hourBalance','importEnergy','exportEnergy'])if(c.grid[k]!==''&&!id(c.grid[k]))throw new Error('Niepoprawna encja bilansu: '+k);
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(c.reports?.freezeTime||''))throw new Error('Godzina zapisania planu: HH:MM.');
   return c;
 }
 
-export function migrateConfig(c){return {...c,retention:{...defaults.retention,...c.retention},statistics:c.statistics||structuredClone(defaults.statistics)};}
+export function migrateConfig(c){return {...c,planner:{...defaultPlan,...c.planner},grid:{...defaults.grid,...c.grid},reports:{...defaults.reports,...c.reports},retention:{...defaults.retention,...c.retention},statistics:c.statistics||structuredClone(defaults.statistics)};}

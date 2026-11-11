@@ -1,22 +1,10 @@
-# Weryfikacja aktualizacji 0.2.3
+# Weryfikacja PV Lab 0.3.0
 
-51 testów Node oraz 8 testów Python przeszło. Nowe przypadki i ograniczenia opisano w [UPDATE-0.2.3.md](UPDATE-0.2.3.md). Sprawdzono również demonstracyjny wykres i tabelę w przeglądarce. Testy API używają symulowanego Home Assistant; brak testu na rzeczywistej instalacji użytkownika.
+- 75 testów Node: dotychczasowe adaptery i kalibracja, raporty, planowanie, zmiana czasu, nocne zachowanie i uruchomiona aplikacja z symulowanym HA.
+- 14 testów Python: kontrakt sensorów, metadane i pakowanie HACS, odczyt/zapis pól planu oraz dostępność sensorów dat po zmroku. Interfejsy HA dla nowych encji są zastępowane minimalnymi atrapami — to nie pełny runtime HA.
+- Przeglądarka: demonstracja tabeli godzinowej/dobowej/miesięcznej/rocznej, przełączanie trybów, formularz planowania i prezentacja rekomendacji.
+- Testy godzinowego salda: plus eksport, brak przenoszenia do następnej godziny, niewykorzystywanie już zbilansowanych liczników do salda kwadransowego, braki danych i niezależne oszacowanie poboru fizycznego.
+- Testy archiwum: odcięcie o 20:00, zakaz użycia późniejszych prognoz, wspólne kohorty, błędy godzinowe nieznikające przy zgodnej sumie dobowej, 25-godzinna doba i idempotentne przenoszenie do miesięcy/lat.
+- Test HTTP: autoryzowane zapisy planu przez osobny endpoint, odmowa innych pól i błędnego klucza, zachowanie eksportu bez sekretów i brak resetowania modelu przez samą zmianę retencji.
 
-# Weryfikacja 0.2.0
-
-## Poprawka aplikacji 0.2.2
-
-43 testy Node: dodano 7 przypadków regresji formatu metadanych, zgodności starszych wersji, jednostki zapisu kontra wyświetlania i diagnostyki. Istniejący test HTTP został rozszerzony o faktyczny klient WebSocket, odpowiedź HA w nowym formacie, wyszukiwanie liczników i import historii zakończony raportem. Nie testowano połączenia z rzeczywistą instalacją użytkownika.
-
-## Poprawka integracji 0.2.1
-
-Dodano 4 testy pakowania HACS: główny `hacs.json`, metadane i spójność wersji, struktura brand PNG/tłumaczenia oraz ścieżki w paczce poprawki. Sprawdzono również 4 testy kontraktu encji i składnię Pythona. Pobranie z HACS na rzeczywistej instancji pozostaje do sprawdzenia po wgraniu nowych plików na GitHub; starego commita nie można zmienić tą poprawką.
-
-- 36 testów Node: obliczenia i clipping, zachowanie energii, braki danych, ciągłe okna 2/3 h, rewizje i ich kierunek, wspólne próbki rankingów, chronologiczna ocena opublikowanych wariantów, statystyki energii i doby 23/25 h, flagi napięcia i retencja, zapis/odzyskiwanie plików, HTTP z symulowanym HA, klucz parowania i brak jego ujawnienia, prawdziwy klient WebSocket z serwerem testowym.
-- 4 testy Pythona: 49 unikalnych definicji i 25 domyślnie aktywnych encji, rozróżnienie 0/braku, mapowanie okien i rewizji, kompletne godzinowe agregacje dla Energii bez dublowania kwadransów.
-- Sprawdzenie składni wszystkich plików Pythona integracji.
-- Ręczne sprawdzenie w przeglądarce: prognozy, okna, dostawcy, historia, retencja, przeglądarka plików, konfiguracja integracji i ustawienia liczników; bez błędów konsoli.
-
-Nie przeprowadzono uruchomienia w rzeczywistym Home Assistant ani budowy Docker — te narzędzia/instancja nie są podłączone do tego testu. Trzeba potwierdzić rejestrację encji, endpoint wewnętrzny, platformę Energia oraz format danych/statystyki Twojej instalacji. Testy jednostkowe i symulowany HA nie dowodzą poprawy dokładności prognoz na przyszłej rzeczywistej produkcji.
-
-Paczka nie zawiera danych wykonawczych, kluczy, buforów podglądu ani plików `__pycache__`. Repozytorium GitHub i instalacja HA nie zostały automatycznie zmodyfikowane.
+Nie wykonano budowy Docker ani instalacji na rzeczywistym HA użytkownika. Dokładność licznika salda i opóźnienie jego resetu wymagają sprawdzenia po instalacji. Rekomendacja jest szacunkiem energetycznym opartym na średniej mocy, a nie pomiarem sekundowego profilu urządzenia czy wyceną faktury.

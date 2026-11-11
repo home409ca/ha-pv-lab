@@ -31,7 +31,7 @@ class HacsPackagingTests(unittest.TestCase):
             if isinstance(node,ast.Assign) and isinstance(node.value,ast.Constant):
                 values[node.targets[0].id]=node.value.value
         self.assertEqual(manifest['version'],values['VERSION'])
-        self.assertEqual(manifest['version'],'0.2.2')
+        self.assertEqual(manifest['version'],'0.3.0')
 
     def test_energy_dialog_can_list_integration_as_forecast_service(self):
         # HA's solar dialog requests config entries with type=["service"].
@@ -49,7 +49,7 @@ class HacsPackagingTests(unittest.TestCase):
         self.assertEqual(json.loads((COMPONENT/'strings.json').read_text(encoding='utf-8')),json.loads((COMPONENT/'translations'/'en.json').read_text(encoding='utf-8')))
 
     def test_patch_has_no_extra_parent_folder(self):
-        patch=ROOT.parent/'pv-lab-energy-fix-0.2.2.zip'
+        patch=ROOT.parent/'pv-lab-hacs-0.3.0.zip'
         if not patch.is_file():
             self.skipTest('Optional delivery ZIP is not present in this checkout')
         with zipfile.ZipFile(patch) as archive:
@@ -59,7 +59,7 @@ class HacsPackagingTests(unittest.TestCase):
             self.assertIn('custom_components/pv_lab/brand/icon.png',names)
             manifest=json.loads(archive.read('custom_components/pv_lab/manifest.json'))
             self.assertEqual(manifest['integration_type'],'service')
-            self.assertEqual(manifest['version'],'0.2.2')
+            self.assertEqual(manifest['version'],'0.3.0')
             self.assertNotIn('repository.yaml',names)  # Existing app repository is preserved.
             self.assertFalse(any(n.startswith('pv_lab/') for n in names))
             self.assertEqual(json.loads(archive.read('hacs.json')),json.loads((ROOT/'hacs.json').read_text(encoding='utf-8')))

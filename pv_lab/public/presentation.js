@@ -1,10 +1,12 @@
 const HOUR=3600000, SLOT=900000;
-const dayAt=(t,zone)=>new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(t);
+const dayFormatters=new Map(),boundsCache=new Map();
+const dayAt=(t,zone)=>{if(!dayFormatters.has(zone))dayFormatters.set(zone,new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}));return dayFormatters.get(zone).format(t);};
 export function dayBounds(day,zone){
+  const cacheKey=day+'|'+zone;if(boundsCache.has(cacheKey))return [...boundsCache.get(cacheKey)];
   if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!Number.isFinite(Date.parse(day+'T00:00:00Z'))||new Date(day+'T00:00:00Z').toISOString().slice(0,10)!==day)throw new Error('Nieprawidłowa data.');
   const utc=Date.parse(day+'T00:00:00Z');let start=null,end=null;
   for(let t=utc-18*HOUR;t<=utc+42*HOUR;t+=SLOT){if(dayAt(t,zone)===day){start??=t;end=t+SLOT;}else if(start!==null)break;}
-  if(start===null)throw new Error('Nie znaleziono dnia w wybranej strefie.');return [start,end];
+  if(start===null)throw new Error('Nie znaleziono dnia w wybranej strefie.');if(boundsCache.size>4096)boundsCache.clear();boundsCache.set(cacheKey,[start,end]);return [start,end];
 }
 export function hourlyRows(rows,day,zone,now){
   const [start,end]=dayBounds(day,zone),byTime=new Map(rows.map(r=>[r.start,r])),out=[];
@@ -19,3 +21,7 @@ export function forecastSeries(rows,actual,{raw=true,corrected=true,measured=tru
   // The wide dashed source line remains visible under an identical corrected line.
   return [...sourceSeries,...(raw?[{label:'Połączona prognoza po limicie',color:'#a7b4c5',width:7,dashed:true,points:rows.map(r=>({x:r.start+SLOT/2,y:r.rawWh*4}))}]:[]),...(corrected?[{label:'PV Lab — po korektach',color:'#bcf46b',width:3,points:rows.map(r=>({x:r.start+SLOT/2,y:r.wh*4}))}]:[]),...(measured?[{label:'Pomiar',color:'#72b8ff',width:2,points:actual.map(s=>({x:s.at,y:s.power}))}]:[])];
 }
+
+const inputFormatters=new Map();
+export function localInput(t,zone){if(t===null)return '';if(!inputFormatters.has(zone))inputFormatters.set(zone,new Intl.DateTimeFormat('sv-SE',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}));return inputFormatters.get(zone).format(t).replace(' ','T');}
+export function parseLocalInput(value,zone){if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))throw new Error('Niepoprawna data planu.');const [start,end]=dayBounds(value.slice(0,10),zone);for(let t=start;t<end;t+=60000)if(localInput(t,zone)===value)return t;throw new Error('Wybrana godzina nie istnieje w tej strefie czasowej.');}

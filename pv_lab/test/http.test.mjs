@@ -24,7 +24,7 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
     res.setHeader('Content-Type','application/json');if(req.url==='/api/states')return res.end(JSON.stringify(states));
     if(req.url==='/api/config/config_entries/entry?domain=pv_lab')return res.end(JSON.stringify([{domain:'pv_lab',entry_id:'pv-lab-test',title:'PV Lab',state:'loaded'}]));
     if(req.url==='/api/config')return res.end(JSON.stringify({latitude:52,longitude:21}));
-    if(req.url==='/api/template'&&payload.includes('as_timestamp'))return res.end(JSON.stringify({entity_id:defaults.entities.status,state:'On-grid',reported:now/1000}));
+    if(req.url==='/api/template'&&payload.includes('as_timestamp')){const id=JSON.parse(payload).template.match(/'entity_id': '([^']+)'/)[1];return res.end(JSON.stringify({entity_id:id,state:id===defaults.entities.status?'On-grid':'unavailable',reported:id===defaults.entities.status?now/1000:null}));}
     if(req.url==='/api/template')return res.end(JSON.stringify(payload.includes('today_2')?'pv2-entry':'pv1-entry'));
     if(req.url.startsWith('/api/services/forecast_solar/get_forecast')){const p=JSON.parse(payload);return res.end(JSON.stringify({service_response:{wh_period:{[new Date(hour).toISOString()]:p.config_entry==='pv1-entry'?1000:500}}}));}
     if(req.url.startsWith('/api/history/period/'))return res.end('[]');
@@ -59,8 +59,12 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
     assert.equal((await post('/api/settings',v.config,{'Sec-Fetch-Site':'cross-site'})).status,403);
     assert.equal((await post('/api/settings',{...v.config,inverter:{limitW:0}})).status,400);
     const before=(await get('/api/view')).storage;await get('/api/view?demo=1');const after=(await get('/api/view')).storage;assert.equal(after.samples,before.samples);assert.equal(after.snapshots,before.snapshots);
+    const planEdit=await post('/api/plan',{energyKWh:5});assert.equal(planEdit.status,200);assert.equal((await planEdit.json()).settings.energyKWh,5);
+    const externalPlan=await post('/api/plan',{durationHours:1},{Authorization:'Bearer '+pairingKey});assert.equal(externalPlan.status,200);assert.equal((await externalPlan.json()).settings.durationHours,1);
+    assert.equal((await post('/api/plan',{energyKWh:0},{Authorization:'Bearer '+pairingKey})).status,400);assert.equal((await post('/api/plan',{entities:{}},{Authorization:'Bearer '+pairingKey})).status,400);assert.equal((await post('/api/plan',{energyKWh:4},{Authorization:'Bearer wrong'})).status,401);
+    assert.ok((await get('/api/view')).reports);assert.ok((await get('/api/view')).planner);assert.equal((await fetch(base+'/planning.js')).status,200);
     const discovered=await get('/api/statistics/metadata');assert.equal(discovered.items.length,3);assert.equal(discovered.items[0].unit_of_measurement,'kWh');assert.equal(discovered.items[2].unit_of_measurement,'Wh');
-    assert.equal((await post('/api/statistics/import',{days:35})).status,200);await until(async()=>{const x=await get('/api/view');return x.job?.type==='statistics'&&!x.job.running;});const statisticsView=await get('/api/view');assert.equal(statisticsView.job.error,null);assert.equal(statisticsView.job.done,35);assert.ok(statisticsView.statistics.days.length>0);assert.equal(statsSocket.commands.filter(m=>m.type==='recorder/statistics_during_period').length,2);
+    assert.equal((await post('/api/statistics/import',{days:35})).status,200);await until(async()=>{const x=await get('/api/view');return x.job?.type==='statistics'&&!x.job.running;});const statisticsView=await get('/api/view');assert.equal(statisticsView.job.error,null);assert.equal(statisticsView.job.done,35);assert.ok(statisticsView.statistics.days.length>0);assert.equal(statsSocket.commands.filter(m=>m.type==='recorder/statistics_during_period').length,3);
     const exported=JSON.stringify(await get('/api/export'));assert.ok(!exported.includes('TEST_PRIVATE_TOKEN'));assert.ok(!exported.includes(pairingKey));assert.ok(!output.includes('TEST_PRIVATE_TOKEN'));
     assert.equal((await post('/api/history',{days:1})).status,200);await until(async()=>{const x=await get('/api/view');return x.job&&!x.job.running;});
     const imported=await get('/api/view');assert.equal(imported.latest.power,1000);assert.ok(imported.storage.samples>1000);assert.equal(imported.analysis.evaluated,0);
