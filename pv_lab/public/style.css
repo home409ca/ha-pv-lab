@@ -8,3 +8,5 @@ table th small{display:block;font-weight:400;color:var(--muted)}.legend .check-l
 .curve-basis{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}.curve-basis select{width:auto;max-width:100%}.legend .check-label i{flex-shrink:0}
 
 .window-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}#plan-form button{margin:8px 10px 0 0}td details{min-width:130px}td details p{white-space:normal;min-width:220px}.stats .stat{min-width:0}.stat-label{overflow-wrap:anywhere}
+
+#manual-profile-form textarea{min-height:180px}#learn-profile-form button,#manual-profile-form button{margin-top:12px}td input[type=checkbox]{width:auto}input[readonly]{opacity:.8}

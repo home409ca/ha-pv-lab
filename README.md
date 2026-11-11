@@ -1,35 +1,23 @@
-# PV Lab 0.3.0
+# PV Lab 0.4.0
 
-Lokalna aplikacja i integracja Home Assistant do analizy, korekty i oceny prognoz PV. Bez AI, SQL i nowej bazy danych. Aplikacja **0.3.0**, integracja **0.3.0**.
+Aplikacja i integracja Home Assistant do korekty prognoz PV, raportów i planowania odbiorników. Bez AI i nowej bazy danych.
 
-## Nowe w tej wersji
-
-- Raport **Prognoza a produkcja**: rzeczywista energia, PV Lab i trzej dostawcy, błędy oraz ranking na wspólnych okresach.
-- Oddzielnie plan na jutro znany przed 20:00 i prognoza bieżąca znana przed godziną. Godzinę zapisania planu można zmienić.
-- Archiwum raportów: godziny 7 dni, dni 30 dni, miesiące bieżący + 11 poprzednich, starsze dane rocznie. Błędy i liczby porównań pozostają po agregacji.
-- Najlepsze ciągłe okna 1/2/3 h, początki co 15 minut, dla dziś i jutra oraz opcjonalnie dalszych dni.
-- Wieczorem pozostała energia i energie okien wynoszą zero. Całodzienny wynik pozostaje końcową produkcją. Data nieistniejącego okna ma stan nieznany, obok dostępna jest osobna encja statusu.
-- Jeden plan urządzenia: energia, czas pracy, rezerwa domu, zakres dat, trzy tryby bilansowania, trzy najlepsze alternatywy.
-- Edytowalne pola planu także jako encje number/select/datetime w HA. Rekomendacja, pokrycie i saldo jako sensory.
+Nowe: profile pracy pralki i zmywarki z historii HA, wybór cykli, trzy warianty profilu, ręczna korekta faz i wybór w WWW/HA. Zachowano raporty, bilansowanie i okna 1/2/3 h z 0.3.0.
 
 ## Aktualizacja
 
-Wgraj **zawartość** `pv-lab-update-0.3.0.zip` do głównego katalogu istniejącego repozytorium GitHub. W głównym katalogu mają być `repository.yaml`, `hacs.json`, `pv_lab/` i `custom_components/` — bez dodatkowego katalogu nadrzędnego.
+Wgraj całą zawartość `pv-lab-update-0.4.0.zip` do głównego katalogu repozytorium w jednym zatwierdzeniu, także `.github/` i `scripts/`. GitHub sam przetestuje kod i opublikuje numerowane wydanie v0.4.0. Bez zewnętrznych Actions i bez osobnego tokenu.
 
-1. Zaktualizuj aplikację w sklepie aplikacji HA do **0.3.0**.
-2. W HACS odśwież i zaktualizuj integrację PV Lab do **0.3.0** (lub pobierz ponownie najnowszą gałąź).
-3. Uruchom ponownie **cały Home Assistant** i odśwież panel WWW.
+Poczekaj na pomyślne zadanie Publish PV Lab version i wydanie w Releases. Odśwież HACS, zaktualizuj aplikację oraz integrację do 0.4.0, uruchom ponownie cały HA i odśwież WWW. Numer wydania będzie widoczny przed instalacją; sam tekst przycisku ustala HACS. Domyślna gałąź jest ukryta.
 
-Nie usuwaj aplikacji, integracji ani `/data`. Zachowujemy ustawienia, dotychczasowy model, identyfikatory istniejących encji i klucz parowania. Nowe ustawienia są uzupełniane automatycznie. Zmiana parametrów instalacji lub jakości nadal może rozpocząć nową kalibrację; edycja planowania, bilansu i godziny raportów jej nie resetuje.
+[Pełna instrukcja 0.4.0](UPDATE-0.4.0.md) · [Funkcje 0.3.0](UPDATE-0.3.0.md) · [Przewodnik](GUIDE.md) · [Testy](VALIDATION.md).
 
-Szczegóły: [instrukcja 0.3.0](UPDATE-0.3.0.md), [przewodnik](GUIDE.md), [HACS](HACS-INSTALL.md), [testy i ograniczenia](VALIDATION.md).
+## Pierwszy profil
 
-## Parametry Twojej instalacji
+Profile urządzeń → Pralka/Zmywarka → Odczytaj historię → wybierz cykle tego samego programu → nazwij i zapisz profil → Użyj w planowaniu PV. Domyślnie ustawiono wskazane encje mocy i energii użytkownika; pełne identyfikatory są w instrukcji.
 
-PV1: 11 × 410 Wp = 4510 Wp, nachylenie 30°, azymut 220° od północy. PV2: 7 × 410 Wp = 2870 Wp, nachylenie 30°, azymut 130°. Limit Huawei: 5500 W. Parametry można edytować w panelu.
+Wymagana jest szczegółowa historia mocy w Recorder. Same dobowe kWh nie odtworzą faz pracy. Progi można zmienić w Ustawieniach. Profil z jednego cyklu jest wstępny i nie gwarantuje przyszłego poboru.
 
-## Dane i dostęp
+## Dane
 
-Pliki w trwałym katalogu `/data`: ustawienia, model, dzienniki pomiarów i prognoz, `reports.json` oraz niewielki cache końcowych wyników dobowych `daily-final.json`. Brak dodatkowego serwera bazy danych. Szczegółowe napięcia domyślnie nie trafiają na dysk; zachowujemy oznaczenia jakości.
-
-Panel jest dostępny przez Ingress. Klucz integracji umożliwia odczyt wyników i zmianę wyłącznie wejść planu urządzenia; nie umożliwia zmiany instalacji ani sterowania urządzeniami. Nie umieszczaj klucza, eksportu danych ani katalogu `/data` w GitHub.
+Dane pozostają w /data: ustawienia, model, raporty i pochodne profile. Surowa historia urządzeń jest odczytywana z HA tylko na czas analizy. Dane i kalibracja nie są kasowane. Nie publikuj katalogu /data, klucza parowania ani eksportu w GitHub.

@@ -43,7 +43,7 @@ def read_sensor(payload, spec):
         planner = payload.get("planner") or {}
         best = planner.get("best") or {}
         balance = planner.get("balance") or {}
-        attrs.update({"mode": planner.get("settings", {}).get("mode"), "alternatives": planner.get("alternatives", []), "balance_source": balance.get("source"), "note": "Równomierny pobór; rezerwa domu; saldo dodatnie oznacza eksport netto, ujemne import netto"})
+        attrs.update({"mode": planner.get("settings", {}).get("mode"), "alternatives": planner.get("alternatives", []), "balance_source": balance.get("source"), "note": planner.get("assumption", "Rezerwa domu") + "; saldo dodatnie oznacza eksport netto, ujemne import netto"})
         mapping = {"planner_start": best.get("start"), "planner_end": best.get("end"), "planner_covered": best.get("coveredKWh"), "planner_percent": best.get("coveragePercent"), "planner_deficit": best.get("deficitKWh"), "planner_physical": best.get("physicalImportKWh"), "planner_status": planner.get("status"), "planner_calculated": planner.get("calculatedAt"), "balance_now": balance.get("netKWh"), "balance_end": balance.get("forecastNetKWh"), "balance_after": balance.get("afterDeviceKWh"), "balance_source": {"measured": "pomiar", "estimated": "oszacowanie"}.get(balance.get("source"))}
         return mapping.get(kind), attrs
     if kind == "energy":

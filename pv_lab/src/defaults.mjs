@@ -1,4 +1,5 @@
 import {defaultPlan,validatePlan} from './planner.mjs';
+import {defaultAppliances,validateAppliance} from './appliances.mjs';
 import optimizers from './optimizers.json' with {type:'json'};
 export const defaults = {
   version: 1,
@@ -31,6 +32,7 @@ export const defaults = {
   optimizers: optimizers.sort((a,b)=>a.string.localeCompare(b.string)||a.panel.localeCompare(b.panel)),
   replacement: { string: 'pv2', panel: '01 (1.2.7)', previous: 'ns2299002886', current: 'ns2329141515', approximateFrom: '2023-09', approximateTo: '2023-10' },
   retention: { samplesDays: 7, forecastsDays: 14, voltageHours: 0, revisionsDays: 90 },
+  appliances: structuredClone(defaultAppliances),
   planner: structuredClone(defaultPlan),
   grid: {hourBalance:'sensor.energia_bilans_netto',importEnergy:'sensor.0_electricity_meter_total_forward_active_energy_balanced',exportEnergy:'sensor.0_electricity_meter_total_reverse_active_energy_balanced',confirmed:true,countersAreHourlyBalanced:true},
   reports: {freezeTime:'20:00'},
@@ -86,6 +88,8 @@ export function validate(c) {
   if(new Set(c.providers.map(p=>p.id)).size!==c.providers.length) throw new Error('Powielony dostawca.');
   if(!Array.isArray(c.optimizers)||c.optimizers.length>500) throw new Error('Nieprawidłowa lista optymalizatorów.');
   for(const o of c.optimizers) if(!id(o.power)||!id(o.energy)||!c.strings.some(s=>s.id===o.string)) throw new Error('Niepoprawny optymalizator.');
+  if(!Array.isArray(c.appliances)||c.appliances.length>20)throw new Error('Lista urządzeń: maksymalnie 20.');
+  c.appliances=c.appliances.map(validateAppliance);if(new Set(c.appliances.map(d=>d.id)).size!==c.appliances.length)throw new Error('Powielony identyfikator urządzenia.');
   validatePlan(c.planner);
   if(!c.grid||typeof c.grid.confirmed!=='boolean'||typeof c.grid.countersAreHourlyBalanced!=='boolean')throw new Error('Niepoprawne ustawienia bilansu.');
   for(const k of ['hourBalance','importEnergy','exportEnergy'])if(c.grid[k]!==''&&!id(c.grid[k]))throw new Error('Niepoprawna encja bilansu: '+k);
@@ -93,4 +97,4 @@ export function validate(c) {
   return c;
 }
 
-export function migrateConfig(c){return {...c,planner:{...defaultPlan,...c.planner},grid:{...defaults.grid,...c.grid},reports:{...defaults.reports,...c.reports},retention:{...defaults.retention,...c.retention},statistics:c.statistics||structuredClone(defaults.statistics)};}
+export function migrateConfig(c){return {...c,appliances:c.appliances||structuredClone(defaultAppliances),planner:{...defaultPlan,...c.planner},grid:{...defaults.grid,...c.grid},reports:{...defaults.reports,...c.reports},retention:{...defaults.retention,...c.retention},statistics:c.statistics||structuredClone(defaults.statistics)};}

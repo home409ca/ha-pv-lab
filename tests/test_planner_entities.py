@@ -91,3 +91,19 @@ class PlannerEntityTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(tomorrow.available)
         self.coordinator.last_update_success = False
         self.assertFalse(start.available)
+
+    async def test_profile_selectors_use_saved_ids_and_available_variants(self):
+        self.coordinator.data['planner']['profiles'] = [{'id': 'washer-eco', 'name': 'Pralka Eco', 'variants': ['typical', 'mean', 'maximum']}, {'id': 'manual', 'name': 'Ręczny test', 'variants': ['typical']}]
+        settings = self.coordinator.data['planner']['settings']
+        settings.update({'profileId': 'washer-eco', 'profileVariant': 'mean'})
+        profile = self.select.PlanProfile(self.coordinator, self.entry, 'profileId', 'Profil')
+        variant = self.select.PlanVariant(self.coordinator, self.entry, 'profileVariant', 'Wariant')
+        self.assertEqual(profile.current_option, 'Pralka Eco')
+        self.assertIn('Pralka Eco', profile.options)
+        self.assertEqual(variant.current_option, 'Średni')
+        await profile.async_select_option('Ręczne zapotrzebowanie')
+        await profile.async_select_option('Ręczny test')
+        await variant.async_select_option('Najbardziej energochłonny')
+        self.assertEqual(self.patches, [{'profileId': None, 'profileVariant': 'typical'}, {'profileId': 'manual', 'profileVariant': 'typical'}, {'profileVariant': 'maximum'}])
+        settings['profileId'] = 'manual'
+        self.assertEqual(variant.options, ['Typowy'])

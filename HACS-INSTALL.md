@@ -1,12 +1,9 @@
-# Integracja PV Lab 0.3.0 przez HACS
+# PV Lab 0.4.0 i HACS
 
-Pełne repozytorium zawiera obok siebie aplikację Supervisor i integrację. HACS instaluje tylko `custom_components/pv_lab`. Sklep aplikacji HA instaluje tylko `pv_lab`.
+Wgraj pełną paczkę do głównego katalogu repozytorium, także .github/ i scripts/. Po pomyślnym zadaniu Publish PV Lab version pojawi się wydanie v0.4.0. Odśwież HACS i zaktualizuj integrację. Aplikację aktualizuje się osobno w sklepie aplikacji HA. Następnie uruchom ponownie cały HA.
 
-1. Wgraj zawartość pełnej paczki do repozytorium. `hacs.json` musi być w głównym katalogu obok `repository.yaml`.
-2. W HACS dodaj repozytorium jako Integration, odśwież informacje i pobierz najnowszą gałąź albo wydanie zawierające manifest 0.3.0. Nie wybieraj starego commita.
-3. Najpierw zaktualizuj aplikację, następnie integrację; uruchom ponownie cały Home Assistant.
-4. Istniejącej integracji nie trzeba usuwać ani ponownie parować. Przy pierwszej instalacji dodaj PV Lab w Urządzenia i usługi, używając adresu i klucza z panelu aplikacji.
+Workflow używa tylko run, bez zewnętrznych Actions. Job deklaruje contents:write; ustawienia domyślne read-only i wyłączone tworzenie PR-ów są odpowiednie. Osobny token nie jest potrzebny.
 
-Osobna paczka `pv-lab-hacs-0.3.0.zip` zawiera wyłącznie część integracji i manifest HACS. Do zwykłej aktualizacji całego repozytorium wystarczy pełna paczka. Instalacja ręczna: kompletny katalog `custom_components/pv_lab` skopiuj do `/config/custom_components/pv_lab`, bez dodatkowego katalogu nadrzędnego.
+Osobna paczka pv-lab-hacs-0.4.0.zip zawiera wyłącznie integrację i nie wystarcza do skonfigurowania publikacji. Repozytorium aktualizuj pełną paczką pv-lab-update-0.4.0.zip.
 
-Wersja zachowuje `integration_type: service`, dzięki czemu wpis może pojawiać się w wyborze prognozy Energii. Dokumentacja interfejsów encji: [Number](https://developers.home-assistant.io/docs/core/entity/number/), [Select](https://developers.home-assistant.io/docs/core/entity/select/), [DateTime](https://developers.home-assistant.io/docs/core/entity/datetime/).
+[Instrukcja](UPDATE-0.4.0.md). Źródła: [wydania HACS](https://www.hacs.xyz/docs/publish/integration/#github-releases-optional), [uprawnienia GitHub](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions), [API wydań](https://docs.github.com/en/rest/releases/releases).

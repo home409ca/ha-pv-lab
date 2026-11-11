@@ -1,3 +1,10 @@
+# 0.4.0
+
+- Profile z historii mocy, wybór cykli i edytor przebiegu.
+- Planowanie według faz pracy co 5 minut.
+- Encje pralki i zmywarki oraz edytowalne progi.
+- Automatyczne wydania HACS.
+
 # 0.3.0
 
 - Raporty godzinowe/dobowe/miesięczne/roczne, plan na jutro i ocena bieżąca.
