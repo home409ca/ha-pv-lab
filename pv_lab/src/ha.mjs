@@ -7,7 +7,20 @@ export class HA {
     const res=await fetch(this.base+path,{method:body===undefined?'GET':'POST',headers:{Authorization:`Bearer ${this.token}`,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
     if(!res.ok)throw new Error(`Home Assistant: HTTP ${res.status} (${path.split('?')[0]}).`);
     const txt=await res.text();try{return JSON.parse(txt);}catch{return txt;}}
-  async states(){return new Map((await this.request('/states')).map(s=>[s.entity_id,s]));}
+  async states(c){
+    const states=new Map((await this.request('/states')).map(s=>[s.entity_id,s]));
+    if(c){
+      const id=c.entities.status;
+      if(!/^[a-z_]+\.[a-z0-9_]+$/.test(id))throw new Error('Niepoprawna encja statusu falownika.');
+      // Read the live State properties: an unchanged status can have an old serialized timestamp.
+      const template=`{% set s = states.${id} %}{% if s is defined and s is not none %}{{ {'entity_id': '${id}', 'state': s.state, 'reported': as_timestamp(s.last_reported if s.last_reported is defined else s.last_updated, none)} | to_json }}{% else %}{{ {'entity_id': '${id}', 'state': 'unavailable', 'reported': none} | to_json }}{% endif %}`;
+      let live=await this.request('/template',{template});
+      if(typeof live==='string')try{live=JSON.parse(live);}catch{throw new Error('Niepoprawna odpowiedź HA przy odczycie czasu zgłoszenia statusu.');}
+      if(!live||live.entity_id!==id||typeof live.state!=='string'||(live.reported!==null&&!Number.isFinite(live.reported)))throw new Error('Niepoprawne dane statusu falownika z HA.');
+      states.set(id,{...states.get(id),entity_id:id,state:live.state,last_reported:Number.isFinite(live.reported)?new Date(live.reported*1000).toISOString():null,last_updated:null});
+    }
+    return states;
+  }
   async websocket(command){if(!this.connected)throw new Error('Brak połączenia z HA.');const url=process.env.SUPERVISOR_TOKEN?'ws://supervisor/core/websocket':this.base.replace(/^http/,'ws')+'/websocket';
     return new Promise((resolve,reject)=>{const ws=new WebSocket(url);let done=false;const finish=(error,result)=>{if(done)return;done=true;clearTimeout(timer);ws.close();error?reject(error):resolve(result);},timer=setTimeout(()=>finish(new Error('Przekroczono czas odczytu statystyk HA.')),30000);
       ws.addEventListener('message',event=>{try{const msg=JSON.parse(event.data);if(msg.type==='auth_required')ws.send(JSON.stringify({type:'auth',access_token:this.token}));else if(msg.type==='auth_ok')ws.send(JSON.stringify({id:1,...command}));else if(msg.type==='auth_invalid')finish(new Error('HA odrzucił dostęp do statystyk.'));else if(msg.type==='result'&&msg.id===1)finish(msg.success?null:new Error(msg.error?.message||'Błąd statystyk HA.'),msg.result);}catch{finish(new Error('Niepoprawna odpowiedź statystyk HA.'));}});

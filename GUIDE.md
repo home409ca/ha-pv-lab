@@ -1,3 +1,5 @@
+Aktualna aplikacja **0.2.5** — [poprawka odczytu statusu falownika](UPDATE-0.2.5.md). Integracja HA nadal **0.2.2**.
+
 Aplikacja **0.2.4**: [porównanie wszystkich prognoz](UPDATE-0.2.4.md). Integracja HA: **0.2.2**.
 
 Aktualna integracja HA: **0.2.2** — [widoczność w Energii](ENERGY-FIX-0.2.2.md). Aplikacja: **0.2.3**.

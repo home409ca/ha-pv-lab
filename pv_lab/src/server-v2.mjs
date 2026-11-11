@@ -35,7 +35,7 @@ async function calculate(now,recordPublished=false,reasons=[]){cachedForecast=fo
   for(const event of update.events){await store.journal('revision',event);revisionEvents.unshift(event);}if(update.events.length)await store.atomic('revisions.json',revisions);
   if(recordPublished&&cachedForecast.fullRows.length){const pub={at:now,rows:cachedForecast.fullRows.map(({start,rawWh,simpleWh,staticWh,wh})=>({start,rawWh,simpleWh,staticWh,wh}))};await store.journal('published',pub);published.push(pub);}}
 async function poll(){if(busy)return;busy=true;
-  try{const states=await ha.states(),now=Date.now();if(!appInfo)try{appInfo=await ha.appInfo();}catch{}
+  try{const states=await ha.states(config),now=Date.now();if(!appInfo)try{appInfo=await ha.appInfo();}catch{}
     if(config.location.latitude===null){const hc=await ha.request('/config');if(Number.isFinite(hc.latitude)&&Number.isFinite(hc.longitude)){config.location={latitude:hc.latitude,longitude:hc.longitude};await store.atomic('settings.json',config);}}
     const sample=makeSample(states,config,now);await store.journal('sample',withoutExpiredVoltage(sample,config));samples.push(sample);lastPoll=now;lastError=null;
     let refreshed=false;if(now-lastForecast>=config.forecastRefreshMinutes*60000){const read=await ha.forecasts(config,states);diagnostics=read.diagnostics;for(const r of read.results){const snap={at:now,...r};await store.journal('forecast',snap);snapshots.push(snap);}lastForecast=now;refreshed=true;}

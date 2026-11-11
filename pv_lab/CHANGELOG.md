@@ -1,3 +1,9 @@
+# 0.2.5
+
+- Odczyt bieżącego stanu i czasu ostatniego zgłoszenia statusu przez API szablonów HA; usuwa fałszywe odrzucanie niezmiennego On-grid.
+- Kontrola rzeczywistej świeżości, awarii i jakości pomiarów pozostaje aktywna.
+- Bez resetowania kalibracji i zmiany integracji HACS.
+
 # 0.2.4
 
 - Osobne krzywe Forecast.Solar, Open-Meteo, Solcast i PV Lab ze wspólną osią czasu i mocy.

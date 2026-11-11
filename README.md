@@ -1,3 +1,5 @@
+Aktualna aplikacja **0.2.5** — [poprawka odczytu statusu falownika](UPDATE-0.2.5.md). Integracja HA nadal **0.2.2**.
+
 Aktualizacja wykresu porównującego trzech dostawców i PV Lab: [0.2.4](UPDATE-0.2.4.md).
 
 # PV Lab 0.2

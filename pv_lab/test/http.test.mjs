@@ -24,6 +24,7 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
     res.setHeader('Content-Type','application/json');if(req.url==='/api/states')return res.end(JSON.stringify(states));
     if(req.url==='/api/config/config_entries/entry?domain=pv_lab')return res.end(JSON.stringify([{domain:'pv_lab',entry_id:'pv-lab-test',title:'PV Lab',state:'loaded'}]));
     if(req.url==='/api/config')return res.end(JSON.stringify({latitude:52,longitude:21}));
+    if(req.url==='/api/template'&&payload.includes('as_timestamp'))return res.end(JSON.stringify({entity_id:defaults.entities.status,state:'On-grid',reported:now/1000}));
     if(req.url==='/api/template')return res.end(JSON.stringify(payload.includes('today_2')?'pv2-entry':'pv1-entry'));
     if(req.url.startsWith('/api/services/forecast_solar/get_forecast')){const p=JSON.parse(payload);return res.end(JSON.stringify({service_response:{wh_period:{[new Date(hour).toISOString()]:p.config_entry==='pv1-entry'?1000:500}}}));}
     if(req.url.startsWith('/api/history/period/'))return res.end('[]');

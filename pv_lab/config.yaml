@@ -1,5 +1,5 @@
 name: PV Lab
-version: "0.2.4"
+version: "0.2.5"
 slug: pv_lab
 description: Lokalna analiza produkcji PV, napięć i kalibracja prognoz bez AI i bazy danych.
 arch:
