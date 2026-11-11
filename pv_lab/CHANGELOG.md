@@ -1,3 +1,10 @@
+# 0.2.4
+
+- Osobne krzywe Forecast.Solar, Open-Meteo, Solcast i PV Lab ze wspólną osią czasu i mocy.
+- Niezależne przełączniki serii, pomiar i opcjonalna prognoza połączona bez korekt.
+- Wybór oryginalnych prognoz lub wartości po limicie; brakujące źródła oznaczone bez sztucznych zer.
+- Zmiany dotyczą prezentacji; ustawienia, kalibracja i integracja pozostają bez zmian.
+
 # 0.2.3
 
 - Osobne przełączniki krzywych, widoczne identyczne przebiegi, oś całej doby.

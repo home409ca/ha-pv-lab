@@ -4,3 +4,5 @@
 .window-grid+.hint{margin-top:14px}
 
 table th small{display:block;font-weight:400;color:var(--muted)}.legend .check-label{cursor:pointer}
+
+.curve-basis{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}.curve-basis select{width:auto;max-width:100%}.legend .check-label i{flex-shrink:0}

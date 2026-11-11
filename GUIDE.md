@@ -1,3 +1,7 @@
+Aplikacja **0.2.4**: [porównanie wszystkich prognoz](UPDATE-0.2.4.md). Integracja HA: **0.2.2**.
+
+Aktualna integracja HA: **0.2.2** — [widoczność w Energii](ENERGY-FIX-0.2.2.md). Aplikacja: **0.2.3**.
+
 Aktualna aplikacja: **0.2.3**. Zmiany i instrukcja: [UPDATE-0.2.3.md](UPDATE-0.2.3.md). Integracja HA: **0.2.1**.
 
 # PV Lab 0.2 — instalacja i obsługa

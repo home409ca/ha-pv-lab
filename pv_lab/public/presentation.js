@@ -13,7 +13,9 @@ export function hourlyRows(rows,day,zone,now){
     out.push({start:t,end:t+HOUR,complete,periods:present.length,rawKWh:complete?sum('rawWh'):null,kWh:complete?sum('wh'):null,remainingKWh:remainingCovered?present.reduce((s,r)=>s+r.wh*Math.max(0,Math.min(1,(r.start+SLOT-now)/SLOT)),0)/1000:null,providers:[...new Set(present.flatMap(r=>r.sources.map(s=>s.provider)))].map(provider=>{const src=present.map(r=>r.sources.find(s=>s.provider===provider));return {provider,kWh:complete&&src.every(Boolean)?src.reduce((s,r)=>s+r.rawWh,0)/1000:null};})});
   }return out;
 }
-export function forecastSeries(rows,actual,{raw=true,corrected=true,measured=true}={}){
+export const providerColors={forecast_solar:'#ffbd66',open_meteo:'#43d9ce',solcast:'#c39bff'};
+export function forecastSeries(rows,actual,{raw=true,corrected=true,measured=true,providers={},basis='original'}={},definitions=[]){
+  const sourceSeries=definitions.filter(p=>p.enabled&&providers[p.id]!==false).map((p,i)=>({label:p.name,provider:p.id,color:providerColors[p.id]||['#ffbd66','#43d9ce','#c39bff'][i%3],width:2,dashed:true,points:rows.map(r=>{const source=r.sources?.find(s=>s.provider===p.id),wh=source?.[basis==='limited'?'rawWh':'originalWh'];return {x:r.start+SLOT/2,y:Number.isFinite(wh)?wh*4:null};})}));
   // The wide dashed source line remains visible under an identical corrected line.
-  return [...(raw?[{label:'Prognoza źródłowa po limicie',color:'#ffbd66',width:7,dashed:true,points:rows.map(r=>({x:r.start+SLOT/2,y:r.rawWh*4}))}]:[]),...(corrected?[{label:'Po korektach',color:'#bcf46b',width:2,points:rows.map(r=>({x:r.start+SLOT/2,y:r.wh*4}))}]:[]),...(measured?[{label:'Pomiar',color:'#72b8ff',width:2,points:actual.map(s=>({x:s.at,y:s.power}))}]:[])];
+  return [...sourceSeries,...(raw?[{label:'Połączona prognoza po limicie',color:'#a7b4c5',width:7,dashed:true,points:rows.map(r=>({x:r.start+SLOT/2,y:r.rawWh*4}))}]:[]),...(corrected?[{label:'PV Lab — po korektach',color:'#bcf46b',width:3,points:rows.map(r=>({x:r.start+SLOT/2,y:r.wh*4}))}]:[]),...(measured?[{label:'Pomiar',color:'#72b8ff',width:2,points:actual.map(s=>({x:s.at,y:s.power}))}]:[])];
 }

@@ -1,3 +1,5 @@
+Aktualizacja integracji **0.2.2**: [poprawka listy prognoz Energii](ENERGY-FIX-0.2.2.md). Poniżej zachowano opis wcześniejszej poprawki instalacji 0.2.1.
+
 # Poprawka instalacji PV Lab przez HACS — integracja 0.2.1
 
 W paczce 0.2.0 brakowało głównego `hacs.json`. HACS pobierający referencję commita może wtedy zgłosić: „The version … for this integration can not be used with HACS”. Dodano ten plik, wymagane metadane integracji i lokalną ikonę.

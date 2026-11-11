@@ -21,6 +21,22 @@ test('identyczne krzywe zachowują szeroki ślad źródła; przełącznik ukrywa
   const r={...row(t),wh:250},series=forecastSeries([r],[sample(t)]);assert.equal(series[0].points[0].y,series[1].points[0].y);assert.ok(series[0].width>series[1].width);assert.equal(series[0].dashed,true);
   assert.equal(forecastSeries([r],[],{raw:false}).length,2);
 });
+test('wykres porównuje oddzielnych dostawców z PV Lab i nie wypełnia luk zerami',()=>{
+  const definitions=c.providers,rows=[{...row(t),sources:[{provider:'forecast_solar',originalWh:2000,rawWh:1375},{provider:'open_meteo',originalWh:600,rawWh:600},{provider:'solcast',originalWh:700,rawWh:700}]},{...row(t+SLOT),sources:[{provider:'solcast',originalWh:800,rawWh:800}]}];
+  const lines=forecastSeries(rows,[],{raw:false,measured:false},definitions);
+  assert.equal(lines.length,4);assert.equal(lines.find(s=>s.provider==='forecast_solar').points[0].y,8000);
+  assert.equal(lines.find(s=>s.provider==='open_meteo').points[1].y,null);
+  assert.equal(lines.find(s=>s.label==='PV Lab — po korektach').points[0].y,800);
+  assert.equal(new Set(lines.map(s=>s.color)).size,4);
+  const limited=forecastSeries(rows,[],{raw:false,measured:false,basis:'limited'},definitions);
+  assert.equal(limited.find(s=>s.provider==='forecast_solar').points[0].y,5500);
+  assert.equal(limited.find(s=>s.label==='PV Lab — po korektach').points[0].y,800);
+});
+test('wyłączenie dostawcy na wykresie nie zmienia PV Lab ani danych obliczeń',()=>{
+  const rows=[{...row(t),sources:[{provider:'solcast',originalWh:900,rawWh:900}]}],before=JSON.stringify(rows),options={raw:false,measured:false,providers:{forecast_solar:false,open_meteo:false,solcast:false}};
+  const lines=forecastSeries(rows,[],options,c.providers);assert.equal(lines.length,1);assert.equal(lines[0].label,'PV Lab — po korektach');assert.equal(JSON.stringify(rows),before);
+  assert.equal(forecastSeries(rows,[],{...options,corrected:false},c.providers).length,0);
+});
 test('kalibracja pokazuje brak wcześniejszej prognozy oraz wykluczenia pomiarów',()=>{
   const samples=Array.from({length:16},(_,i)=>sample(t+i*60000)),now=t+SLOT+1000;
   const status=calibrationStatus(emptyModel(),samples,[],c,now);assert.equal(status.lastInterval.coverage,1);assert.ok(status.blockers.some(r=>r.includes('przed jego rozpoczęciem')));
