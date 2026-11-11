@@ -29,7 +29,12 @@ export const defaults = {
   ],
   optimizers: optimizers.sort((a,b)=>a.string.localeCompare(b.string)||a.panel.localeCompare(b.panel)),
   replacement: { string: 'pv2', panel: '01 (1.2.7)', previous: 'ns2299002886', current: 'ns2329141515', approximateFrom: '2023-09', approximateTo: '2023-10' },
-  retention: { samplesDays: 30, forecastsDays: 14 },
+  retention: { samplesDays: 7, forecastsDays: 14, voltageHours: 0, revisionsDays: 90 },
+  statistics: { channels: [
+    {id:'total', name:'Produkcja AC falownika', statisticId:'sensor.inverter_total_yield', confirmed:true, basis:'AC'},
+    {id:'pv1', name:'Energia PV1 — do potwierdzenia', statisticId:'sensor.energia_czynna_pv1', confirmed:false, basis:'unknown'},
+    {id:'pv2', name:'Energia PV2 — do potwierdzenia', statisticId:'sensor.energia_czynna_pv2', confirmed:false, basis:'unknown'}
+  ] },
   pollSeconds: 60,
   forecastRefreshMinutes: 15
 };
@@ -49,6 +54,10 @@ export function validate(c) {
   number(c.quality.minSamples,5,1000,'liczba próbek kalibracji');
   if(!Array.isArray(c.quality.normalStatuses) || !c.quality.normalStatuses.length || c.quality.normalStatuses.some(x=>typeof x!=='string')) throw new Error('Podaj poprawne statusy normalnej pracy.');
   number(c.retention.samplesDays,1,90,'retencja pomiarów'); number(c.retention.forecastsDays,2,30,'retencja prognoz');
+  number(c.retention.voltageHours,0,168,'retencja napięć [h]');number(c.retention.revisionsDays,1,365,'retencja zmian prognozy');
+  if(!Array.isArray(c.statistics?.channels)||c.statistics.channels.length>8)throw new Error('Niepoprawna konfiguracja statystyk.');
+  for(const ch of c.statistics.channels)if(!/^[a-z0-9_]+$/.test(ch.id)||!id(ch.statisticId)||typeof ch.confirmed!=='boolean'||!['AC','DC','unknown'].includes(ch.basis))throw new Error('Niepoprawny kanał statystyk.');
+  if(new Set(c.statistics.channels.map(ch=>ch.id)).size!==c.statistics.channels.length)throw new Error('Powielone identyfikatory kanałów statystyk.');
   if(!Array.isArray(c.strings) || !c.strings.length || c.strings.length>8) throw new Error('Wymagany przynajmniej jeden string (maks. 8).');
   for(const s of c.strings) {
     if(!/^[a-z0-9_]+$/.test(s.id)) throw new Error('Niepoprawny identyfikator stringu.');
@@ -75,3 +84,5 @@ export function validate(c) {
   for(const o of c.optimizers) if(!id(o.power)||!id(o.energy)||!c.strings.some(s=>s.id===o.string)) throw new Error('Niepoprawny optymalizator.');
   return c;
 }
+
+export function migrateConfig(c){return {...c,retention:{...defaults.retention,...c.retention},statistics:c.statistics||structuredClone(defaults.statistics)};}

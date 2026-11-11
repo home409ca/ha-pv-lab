@@ -6,3 +6,13 @@
 - Zapisywanie prognoz i pomiarów w JSON/JSONL, kalibracja według dostawcy, horyzontu i sezonu.
 - Analiza napięć, jakości pomiarów i względnej produkcji paneli.
 - Oddzielny tryb demonstracyjny i import historii do inspekcji.
+# 0.2.0
+
+- Integracja HA z encjami prognoz, pozostałej energii, zmian i najlepszych okien 2/3 h; platforma prognozy dla Energii.
+- Widoczne prognozy źródłowe, mnożniki, wagi, rozpisane kwadranse i historia rewizji.
+- Ranking wspólnych okresów oraz walidacja zapisanych wariantów przed zdarzeniem, MAE/RMSE/WAPE.
+- Poprawiona kolejność: korekta produkcji przed limitem 5500 W; nowy model z archiwizacją checkpointu 0.1.
+- Napięcia domyślnie tylko w buforze pamięci, na dysku flagi jakości; edytowalna retencja i przeglądarka plików.
+- Import statystyk energii HA partiami po 30 dni, raporty dobowe, miesięczne i godzinowe, z potwierdzaniem liczników.
+- Retencja i kanały statystyk nie zerują kalibracji.
+

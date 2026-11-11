@@ -1,0 +1,76 @@
+import http from 'node:http';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {readFile,open} from 'node:fs/promises';
+import {randomBytes,timingSafeEqual} from 'node:crypto';
+import {Storage,withoutExpiredVoltage} from './storage.mjs';
+import {defaults,validate,migrateConfig} from './defaults.mjs';
+import {HA} from './ha.mjs';
+import {makeSample} from './adapters.mjs';
+import {emptyModel,train,forecast,sampleReasons} from './engine.mjs';
+import {demoData} from './demo.mjs';
+import {floorSlot,DAY} from './time.mjs';
+import {updateRevisions} from './revisions.mjs';
+import {integrationPayload} from './integration.mjs';
+import {importStatistics} from './statistics.mjs';
+import {validatePublished} from './validation.mjs';
+
+const root=path.dirname(fileURLToPath(import.meta.url)),store=new Storage(process.env.DATA_DIR||path.join(root,'../data'));await store.init();
+let config=validate(migrateConfig(await store.read('settings.json',defaults))),model=await store.read('model.json',emptyModel());
+if(model.version!==2){await store.atomic('model-v0.1-backup.json',model);model=emptyModel();model.validationWatermark=floorSlot(Date.now());model.calibrationFrom=config.calibrationFrom||0;}
+if((model.calibrationFrom||0)!==(config.calibrationFrom||0)){model=emptyModel();model.watermark=floorSlot(config.calibrationFrom||Date.now());model.validationWatermark=model.watermark;model.calibrationFrom=config.calibrationFrom||0;}
+let samples=(await store.load('sample',config.retention.samplesDays)).sort((a,b)=>a.at-b.at),snapshots=(await store.load('forecast',config.retention.forecastsDays)).sort((a,b)=>a.at-b.at),published=(await store.load('published',config.retention.forecastsDays)).sort((a,b)=>a.at-b.at);
+let revisions=await store.read('revisions.json',{}),revisionEvents=(await store.load('revision',config.retention.revisionsDays)).sort((a,b)=>b.at-a.at),statistics=await store.read('statistics.json',null);
+const pairing=await store.read('integration-key.json',null)||{token:randomBytes(32).toString('hex')};await store.atomic('integration-key.json',pairing);
+const ha=new HA();let lastPoll=samples.filter(s=>!s.imported).at(-1)?.at||null,lastForecast=0,lastError=null,diagnostics=[],busy=false,lastPrune=0,job=null,appInfo=null;
+let cachedForecast=forecast(model,snapshots,samples,config,Date.now());
+const events=[];function log(message){events.unshift({at:Date.now(),message});events.length=Math.min(events.length,80);console.log(message);}
+async function maintain(force=false){const now=Date.now();if(!force&&now-lastPrune<3600000)return;await store.prune(config);samples=samples.filter(s=>s.at>now-config.retention.samplesDays*DAY).map(s=>withoutExpiredVoltage(s,{...config,retention:{...config.retention,voltageHours:Math.max(1,config.retention.voltageHours)}},now));snapshots=snapshots.filter(s=>s.at>now-config.retention.forecastsDays*DAY);published=published.filter(s=>s.at>now-config.retention.forecastsDays*DAY);revisionEvents=revisionEvents.filter(s=>s.at>now-config.retention.revisionsDays*DAY);lastPrune=now;}
+await maintain(true);
+async function calculate(now,recordPublished=false,reasons=[]){cachedForecast=forecast(model,snapshots,samples,config,now);const update=updateRevisions(revisions,cachedForecast,now,reasons);revisions=update.state;
+  for(const event of update.events){await store.journal('revision',event);revisionEvents.unshift(event);}if(update.events.length)await store.atomic('revisions.json',revisions);
+  if(recordPublished&&cachedForecast.fullRows.length){const pub={at:now,rows:cachedForecast.fullRows.map(({start,rawWh,simpleWh,staticWh,wh})=>({start,rawWh,simpleWh,staticWh,wh}))};await store.journal('published',pub);published.push(pub);}}
+async function poll(){if(busy)return;busy=true;
+  try{const states=await ha.states(),now=Date.now();if(!appInfo)try{appInfo=await ha.appInfo();}catch{}
+    if(config.location.latitude===null){const hc=await ha.request('/config');if(Number.isFinite(hc.latitude)&&Number.isFinite(hc.longitude)){config.location={latitude:hc.latitude,longitude:hc.longitude};await store.atomic('settings.json',config);}}
+    const sample=makeSample(states,config,now);await store.journal('sample',withoutExpiredVoltage(sample,config));samples.push(sample);lastPoll=now;lastError=null;
+    let refreshed=false;if(now-lastForecast>=config.forecastRefreshMinutes*60000){const read=await ha.forecasts(config,states);diagnostics=read.diagnostics;for(const r of read.results){const snap={at:now,...r};await store.journal('forecast',snap);snapshots.push(snap);}lastForecast=now;refreshed=true;}
+    const watermark=model.watermark;train(model,samples,snapshots,config,now);validatePublished(model,samples,published,config,now);
+    await calculate(now,refreshed,[...(refreshed?['odczyt prognoz dostawców']:[]),...(model.watermark!==watermark?['kalibracja po zakończonym przedziale']:[]),'bieżąca produkcja i upływ czasu']);
+    await store.atomic('model.json',model);await maintain();
+  }catch(e){lastError=e.message;log(`Odczyt: ${e.message}`);}finally{busy=false;}}
+function integrationSetup(){const hostname=appInfo?.hostname;return {url:hostname&&/^[a-z0-9_.-]+$/i.test(hostname)?`http://${hostname}:8099`:process.env.SUPERVISOR_TOKEN?null:`http://127.0.0.1:${process.env.PORT||8099}`,token:pairing.token};}
+function view(demo=false){let s=samples,m=model,d=diagnostics,f=cachedForecast,rs=revisions,ev=revisionEvents,stats=statistics;if(demo){const x=demoData(config);s=x.samples;m=x.model;d=x.diagnostics;f=forecast(m,x.snapshots,s,config,Date.now());rs=updateRevisions({},f,f.calculatedAt,['demonstracja']).state;ev=Object.values(rs);stats=null;}
+  const now=Date.now(),last=s.filter(s=>!s.imported).at(-1),latest=last&&now-last.at<config.quality.staleSeconds*1000?last:null,filtered=s.filter(s=>s.at>=now-2*DAY),chart=filtered.filter((_,i)=>i%5===0||i===filtered.length-1).map(s=>({...s,voltages:s.voltages||[null,null,null]}));
+  return {version:'0.2.0',demo,now,config,connection:{configured:ha.connected,lastPoll:demo?now:lastPoll,error:demo?null:lastError,busy},latest:latest?{...latest,voltages:latest.voltages||[null,null,null]}:null,quality:latest?sampleReasons(latest,config):['oczekiwanie na dane'],forecast:f,revisions:rs,revisionEvents:ev.slice(0,150),statistics:stats,integrationSetup:demo?null:integrationSetup(),diagnostics:d,analysis:{scores:m.scores,commonScores:m.commonScores||{},ensembleScores:m.ensembleScores||{},bins:m.bins,shading:m.shading,excluded:m.excluded,evaluated:m.evaluated,watermark:m.watermark},samples:chart,storage:{bytes:store.bytes,samples:s.length,snapshots:snapshots.length,path:'/data',voltageHours:config.retention.voltageHours},events,job};}
+async function body(req){let size=0,chunks=[];for await(const ch of req){size+=ch.length;if(size>2*1024*1024)throw new Error('Maksymalny rozmiar żądania to 2 MB.');chunks.push(ch);}return JSON.parse(Buffer.concat(chunks).toString()||'{}');}
+function json(res,value,status=200){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value));}
+async function statisticsImport(days){job={type:'statistics',running:true,done:0,days,error:null};try{statistics=await importStatistics(ha,structuredClone(config),days,p=>Object.assign(job,p));await store.atomic('statistics.json',statistics);log('Zaimportowano statystyki przyrostów energii z HA.');}catch(e){job.error=e.message;log(`Statystyki: ${e.message}`);}finally{job.running=false;}}
+async function historyImport(days){if(busy||job?.running)throw new Error('Poczekaj na zakończenie innej operacji.');busy=true;job={type:'history',running:true,done:0,days,error:null,imported:0};const ids=[...new Set([...Object.values(config.entities).flat(),...config.strings.flatMap(s=>[s.voltage,s.current])])];
+  try{const end=Date.now(),begin=end-days*DAY;for(let from=begin;from<end;from+=DAY){const to=Math.min(from+DAY,end),response=await ha.request(`/history/period/${new Date(from).toISOString()}?end_time=${encodeURIComponent(new Date(to).toISOString())}&filter_entity_id=${encodeURIComponent(ids.join(','))}&significant_changes_only=0`),series=new Map(response.filter(a=>a.length).map(a=>[a[0].entity_id,a.map(s=>({...s,at:Date.parse(s.last_updated||s.last_changed)})).sort((a,b)=>a.at-b.at)])),pointers=new Map(),existing=new Set(samples.map(s=>Math.floor(s.at/60000)));
+    for(let t=Math.ceil(from/60000)*60000;t<to;t+=60000){if(existing.has(Math.floor(t/60000)))continue;const states=new Map();for(const [id,rows] of series){let i=pointers.get(id)||0;if(rows[i]?.at>t)continue;while(i+1<rows.length&&rows[i+1].at<=t)i++;pointers.set(id,i);states.set(id,{...rows[i],last_reported:new Date(t).toISOString()});}const sample={...makeSample(states,config,t),imported:true,historyUnverified:true};await store.journal('sample',withoutExpiredVoltage(sample,config));samples.push(sample);job.imported++;}job.done++;}samples.sort((a,b)=>a.at-b.at);log(`Import inspekcyjny: ${job.imported} punktów.`);}catch(e){job.error=e.message;}finally{job.running=false;busy=false;}}
+const modelConfig=c=>JSON.stringify({strings:c.strings.map(({name,...s})=>s),entities:c.entities,inverter:c.inverter,quality:c.quality,providers:c.providers.map(({name,...p})=>p),location:c.location,timezone:c.timezone});
+async function saveSettings(candidate){if(busy||job?.running)throw new Error('Trwa odczyt lub import. Spróbuj ponownie.');busy=true;try{const reset=modelConfig(candidate)!==modelConfig(config);candidate.calibrationFrom=reset?Date.now():config.calibrationFrom||0;await store.atomic('settings-backup.json',config);await store.atomic('settings.json',candidate);config=candidate;if(reset){model=emptyModel();model.watermark=floorSlot(Date.now());model.validationWatermark=model.watermark;model.calibrationFrom=config.calibrationFrom;await store.atomic('model.json',model);lastForecast=0;}await maintain(true);await calculate(Date.now(),false,['zmiana ustawień']);return {ok:true,reset};}finally{busy=false;}}
+function validPairing(req){const token=(req.headers.authorization||'').replace(/^Bearer /,'');return Buffer.byteLength(token)===Buffer.byteLength(pairing.token)&&timingSafeEqual(Buffer.from(token),Buffer.from(pairing.token));}
+const server=http.createServer(async(req,res)=>{
+  res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'");
+  try{const url=new URL(req.url,'http://localhost'),route=url.pathname;
+    if(route==='/api/integration'){if(req.method!=='GET')return json(res,{error:'Tylko odczyt.'},405);if(!validPairing(req))return json(res,{error:'Nieprawidłowy klucz integracji.'},401);const payload=integrationPayload(cachedForecast,revisions,config);payload.available=!!(payload.available&&lastPoll&&Date.now()-lastPoll<Math.max(config.pollSeconds*4,300)*1000);return json(res,payload);}
+    const peer=req.socket.remoteAddress?.replace('::ffff:','');if(process.env.SUPERVISOR_TOKEN?peer!=='172.30.32.2':!['127.0.0.1','::1'].includes(peer)){res.writeHead(403);res.end('Ingress only');return;}
+    if(req.method==='POST'&&(req.headers['x-pv-lab']!=='1'||req.headers['sec-fetch-site']==='cross-site'))return json(res,{error:'Odrzucono żądanie z innej strony.'},403);
+    if(req.method==='GET'&&route==='/api/view')return json(res,view(url.searchParams.get('demo')==='1'));
+    if(req.method==='GET'&&route==='/api/settings')return json(res,config);
+    if(req.method==='GET'&&route==='/api/export'){res.setHeader('Content-Disposition','attachment; filename="pv-lab-backup.json"');return json(res,{version:2,exportedAt:Date.now(),config,model,samples:samples.map(s=>withoutExpiredVoltage(s,config)),snapshots,published,revisions,revisionEvents,statistics});}
+    if(req.method==='GET'&&route==='/api/files')return json(res,{files:await store.files(),retention:config.retention});
+    if(req.method==='GET'&&route==='/api/file'){const name=url.searchParams.get('name');if(!/^[a-zA-Z0-9_.-]+$/.test(name||'')||!(await store.files()).some(f=>f.name===name))return json(res,{error:'Nie znaleziono pliku.'},404);const handle=await open(path.join(store.dir,name),'r');try{const size=(await handle.stat()).size,buffer=Buffer.alloc(Math.min(32000,size));await handle.read(buffer,0,buffer.length,0);return json(res,{name,text:buffer.toString('utf8'),truncated:size>buffer.length});}finally{await handle.close();}}
+    if(req.method==='POST'&&route==='/api/poll'){if(busy)return json(res,{error:'Trwa inna operacja.'},409);await poll();return json(res,{ok:!lastError,error:lastError});}
+    if(req.method==='POST'&&route==='/api/settings'){if(busy||job?.running)return json(res,{error:'Trwa odczyt lub import.'},409);const candidate=validate(migrateConfig(await body(req)));return json(res,await saveSettings(candidate));}
+    if(req.method==='GET'&&route==='/api/statistics/metadata'){if(!ha.connected)throw new Error('Brak połączenia z HA.');const all=await ha.websocket({type:'recorder/list_statistic_ids',statistic_type:'sum'});return json(res,{items:all.filter(m=>['kWh','Wh'].includes(m.unit_of_measurement))});}
+    if(req.method==='POST'&&route==='/api/statistics/import'){if(!ha.connected)throw new Error('Brak połączenia z HA.');if(job?.running)return json(res,{error:'Trwa inny import.'},409);const b=await body(req);if(!Number.isInteger(b.days)||b.days<1||b.days>730)throw new Error('Zakres importu: 1–730 dni.');void statisticsImport(b.days);return json(res,{ok:true});}
+    if(req.method==='POST'&&route==='/api/history'){if(!ha.connected)throw new Error('Brak połączenia z HA.');if(busy||job?.running)return json(res,{error:'Trwa inna operacja.'},409);const b=await body(req);if(!Number.isInteger(b.days)||b.days<1||b.days>7)throw new Error('Import obejmuje 1–7 dni.');void historyImport(b.days);return json(res,{ok:true});}
+    if(req.method!=='GET')return json(res,{error:'Nie znaleziono.'},404);const assets={'/':'index.html','/index.html':'index.html','/app.js':'app.js','/insights.js':'insights.js','/style.css':'style.css'};if(!assets[route])return json(res,{error:'Nie znaleziono.'},404);const file=assets[route],content=await readFile(path.join(root,'../public',file));res.writeHead(200,{'Content-Type':file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8','Cache-Control':'no-cache'});res.end(content);
+  }catch(e){json(res,{error:e.message},400);}
+});
+const port=Number(process.env.PORT||8099),host=process.env.SUPERVISOR_TOKEN?'0.0.0.0':'127.0.0.1';server.listen(port,host,()=>log(`PV Lab: http://127.0.0.1:${port}`));
+let timer;async function tick(){if(ha.connected)await poll();timer=setTimeout(tick,config.pollSeconds*1000);timer.unref();}void tick();
+async function shutdown(){clearTimeout(timer);server.close();while(busy||job?.running)await new Promise(r=>setTimeout(r,50));await store.atomic('model.json',model);process.exit(0);}process.on('SIGTERM',shutdown);process.on('SIGINT',shutdown);

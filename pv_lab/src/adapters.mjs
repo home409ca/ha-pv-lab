@@ -45,8 +45,9 @@ export function makeSample(states,c,at=Date.now()) {
   const val=(id,unit)=>readValue(states,id,at,c,unit);
   const statusEntity=states.get(c.entities.status), statusAt=Date.parse(statusEntity?.last_reported||statusEntity?.last_updated);
   const status=Number.isFinite(statusAt)&&at-statusAt<=c.quality.staleSeconds*1000?statusEntity.state:null;
+  const voltages=c.entities.voltages.map(id=>val(id,'V'));
   return {at,power:val(c.entities.power,'W'),inputPower:val(c.entities.inputPower,'W'),totalEnergy:val(c.entities.totalEnergy,'kWh'),dailyEnergy:val(c.entities.dailyEnergy,'kWh'),
-    status,alarms:states.get(c.entities.alarms)?.state??null,voltages:c.entities.voltages.map(id=>val(id,'V')),
-    strings:Object.fromEntries(c.strings.map(s=>{const v=val(s.voltage,'V'),i=val(s.current,'A');return [s.id,v===null||i===null?null:v*i];})),
+    status,alarms:states.get(c.entities.alarms)?.state??null,voltages,voltageFlag:voltages.some(v=>v===null)?'missing':voltages.some(v=>v>=c.quality.voltageWarning)?'high':'normal',voltageThreshold:c.quality.voltageWarning,
+    strings:Object.fromEntries(c.strings.map(s=>{const v=val(s.voltage,'V'),i=val(s.current,'A'),a=Date.parse(states.get(s.voltage)?.last_reported||states.get(s.voltage)?.last_updated),b=Date.parse(states.get(s.current)?.last_reported||states.get(s.current)?.last_updated);return [s.id,v===null||i===null||!Number.isFinite(a)||!Number.isFinite(b)||Math.abs(a-b)>c.quality.maxGapSeconds*1000?null:v*i];})),
     optimizers:Object.fromEntries(c.optimizers.map(o=>[o.id,{power:val(o.power,'W'),energy:val(o.energy,'kWh')}]))};
 }

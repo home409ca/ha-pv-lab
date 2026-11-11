@@ -33,13 +33,20 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
     const v=await until(async()=>{const x=await get('/api/view');return x.diagnostics?.length===3?x:null;});
     assert.equal(v.latest.power,1000);assert.equal(v.latest.strings.pv1,600);assert.equal(v.config.location.latitude,52);assert.equal(v.diagnostics.filter(d=>d.ok).length,3);assert.equal(v.forecast.details.length,3);
     const html=await fetch(base+'/');assert.equal(html.status,200);assert.ok((await html.text()).includes('PV Lab'));assert.equal((await fetch(base+'/app.js')).status,200);
+    assert.equal((await fetch(base+'/insights.js')).status,200);
+    assert.equal((await fetch(base+'/api/integration')).status,401);
+    const pairingKey=v.integrationSetup.token,paired=await fetch(base+'/api/integration',{headers:{Authorization:'Bearer '+pairingKey}});assert.equal(paired.status,200);const contract=await paired.json();assert.equal(contract.schema,1);assert.equal(contract.days.length,8);assert.ok(!JSON.stringify(contract).includes(pairingKey));
+    assert.equal((await post('/api/integration',{}, {Authorization:'Bearer '+pairingKey})).status,405);
+    const files=await get('/api/files');assert.ok(!files.files.some(f=>f.name==='integration-key.json'));assert.equal((await fetch(base+'/api/file?name=integration-key.json')).status,404);
+    const sampleName=files.files.find(f=>f.name.startsWith('sample-')).name,preview=await get('/api/file?name='+sampleName);assert.ok(!preview.text.includes('voltages'));assert.ok(preview.text.includes('voltageFlag'));
     assert.equal((await post('/api/settings',v.config,{'Sec-Fetch-Site':'cross-site'})).status,403);
     assert.equal((await post('/api/settings',{...v.config,inverter:{limitW:0}})).status,400);
     const before=(await get('/api/view')).storage;await get('/api/view?demo=1');const after=(await get('/api/view')).storage;assert.equal(after.samples,before.samples);assert.equal(after.snapshots,before.snapshots);
-    const exported=JSON.stringify(await get('/api/export'));assert.ok(!exported.includes('TEST_PRIVATE_TOKEN'));assert.ok(!output.includes('TEST_PRIVATE_TOKEN'));
+    const exported=JSON.stringify(await get('/api/export'));assert.ok(!exported.includes('TEST_PRIVATE_TOKEN'));assert.ok(!exported.includes(pairingKey));assert.ok(!output.includes('TEST_PRIVATE_TOKEN'));
     assert.equal((await post('/api/history',{days:1})).status,200);await until(async()=>{const x=await get('/api/view');return x.job&&!x.job.running;});
     const imported=await get('/api/view');assert.equal(imported.latest.power,1000);assert.ok(imported.storage.samples>1000);assert.equal(imported.analysis.evaluated,0);
-    const changed=structuredClone(v.config);changed.inverter.limitW=5000;assert.equal((await post('/api/settings',changed)).status,200);assert.equal((await get('/api/settings')).inverter.limitW,5000);
+    const retentionOnly=structuredClone(v.config);retentionOnly.retention.samplesDays=10;const retentionResponse=await (await post('/api/settings',retentionOnly)).json();assert.equal(retentionResponse.reset,false);
+    const changed=structuredClone(retentionOnly);changed.inverter.limitW=5000;const changedResponse=await post('/api/settings',changed);assert.equal(changedResponse.status,200);assert.equal((await changedResponse.json()).reset,true);assert.equal((await get('/api/settings')).inverter.limitW,5000);
     assert.equal(JSON.parse(await readFile(path.join(dir,'settings.json'),'utf8')).inverter.limitW,5000);assert.equal(badCall,false);
   }finally{child.kill();await new Promise(r=>child.once('exit',r));await new Promise(r=>mock.close(r));await rm(dir,{recursive:true,force:true});}
 });

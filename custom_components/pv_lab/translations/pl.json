@@ -1,0 +1,8 @@
+{
+  "title":"PV Lab",
+  "config": {
+    "step":{"user":{"title":"Połącz aplikację PV Lab","description":"Skopiuj adres wewnętrzny i klucz z PV Lab → Integracja HA. Klucz pozwala tylko odczytywać prognozę.","data":{"url":"Wewnętrzny adres aplikacji","token":"Klucz parowania"}}},
+    "error":{"cannot_connect":"Nie można połączyć się z aplikacją PV Lab.","invalid_auth":"Klucz parowania został odrzucony.","invalid_url":"Podaj adres serwera http/https bez ścieżki i danych logowania."},
+    "abort":{"already_configured":"Ta aplikacja PV Lab jest już skonfigurowana."}
+  }
+}

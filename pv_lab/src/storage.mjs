@@ -13,5 +13,12 @@ export class Storage {
       // Save a crash-truncated last record separately so subsequent appends cannot corrupt the journal.
       await writeFile(path.join(this.dir,name+'.partial'),lines[i]);await writeFile(path.join(this.dir,name),lines.slice(0,i).join('\n')+'\n');}}
   }return rows;}
-  async prune(c){let bytes=0;for(const name of await readdir(this.dir)){const days=name.startsWith('sample-')?c.retention.samplesDays:name.startsWith('forecast-')?c.retention.forecastsDays:null;const p=path.join(this.dir,name);if(days!==null&&Date.parse(name.split('-').slice(1).join('-').slice(0,10))+86400000<Date.now()-days*86400000){await unlink(p);continue;}bytes+=(await stat(p)).size;}this.bytes=bytes;}
+  async prune(c){let bytes=0;for(const name of await readdir(this.dir)){const days=name.startsWith('sample-')?c.retention.samplesDays:name.startsWith('forecast-')||name.startsWith('published-')?c.retention.forecastsDays:name.startsWith('revision-')?c.retention.revisionsDays:null;const p=path.join(this.dir,name);if(name.startsWith('sample-')&&name.endsWith('.partial')&&c.retention.voltageHours===0){await unlink(p);continue;}if(days!==null&&Date.parse(name.split('-').slice(1).join('-').slice(0,10))+86400000<Date.now()-days*86400000){await unlink(p);continue;}
+    if(/^sample-.*\.jsonl$/.test(name)){const lines=(await readFile(p,'utf8')).split('\n');let changed=false;const out=[];for(const line of lines){if(!line)continue;let row;try{row=JSON.parse(line);}catch{throw new Error(`Uszkodzony dziennik ${name}; retencja nie zmieniła jego zawartości.`);}const clean=withoutExpiredVoltage(row,c);if(clean!==row)changed=true;out.push(JSON.stringify(clean));}if(changed){await writeFile(p+'.tmp',out.join('\n')+'\n');await rename(p+'.tmp',p);}}
+    bytes+=(await stat(p)).size;}this.bytes=bytes;}
+  async files(){return Promise.all((await readdir(this.dir)).filter(n=>n!=='integration-key.json'&&!n.endsWith('.tmp')).map(async name=>({name,bytes:(await stat(path.join(this.dir,name))).size})));}
+}
+export function withoutExpiredVoltage(row,c,now=Date.now()){
+  if(!Array.isArray(row.voltages)||c.retention.voltageHours>0&&row.at>=now-c.retention.voltageHours*3600000)return row;
+  const {voltages,...rest}=row;return {...rest,voltageFlag:row.voltageFlag||(voltages.some(v=>v===null)?'missing':voltages.some(v=>v>=c.quality.voltageWarning)?'high':'normal'),voltageThreshold:row.voltageThreshold||c.quality.voltageWarning};
 }
