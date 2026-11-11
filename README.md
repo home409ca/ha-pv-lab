@@ -1,6 +1,6 @@
 # PV Lab 0.2
 
-Integracja **0.2.1** obsługuje instalację z HACS. Aplikacja obliczeniowa pozostaje w wersji **0.2.0**. [Instalacja HACS i poprawka błędu pobierania commita](HACS-INSTALL.md).
+Integracja **0.2.1** obsługuje instalację z HACS. Aplikacja obliczeniowa **0.2.2** poprawia odczyt metadanych statystyk HA. [Poprawka importu statystyk](STATISTICS-FIX.md) · [Instalacja HACS](HACS-INSTALL.md).
 
 Lokalna analiza produkcji i kalibracja prognoz PV dla Home Assistant, bez AI i bez dodatkowej bazy danych.
 

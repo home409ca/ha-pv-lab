@@ -1,5 +1,7 @@
 # PV Lab 0.2 — instalacja i obsługa
 
+Aktualna aplikacja: **0.2.2**, integracja HA: **0.2.1**. Błąd importu „0/365 dni” związany z jednostką w metadanych HA został poprawiony w aplikacji. Patrz [STATISTICS-FIX.md](STATISTICS-FIX.md).
+
 Wersja zawiera aplikację HA OS z panelem WWW oraz osobną integrację HA udostępniającą encje. Obliczenia są lokalne i deterministyczne. Nie dodajemy bazy danych, MQTT ani wywołań chmurowego AI. Aplikacja nie steruje falownikiem ani odbiornikami.
 
 ## Aktualizacja aplikacji

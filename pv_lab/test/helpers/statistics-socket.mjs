@@ -1,0 +1,10 @@
+import {createHash} from 'node:crypto';
+function frame(value){const payload=Buffer.from(JSON.stringify(value)),head=Buffer.alloc(payload.length<126?2:4);head[0]=0x81;if(payload.length<126)head[1]=payload.length;else{head[1]=126;head.writeUInt16BE(payload.length,2);}return Buffer.concat([head,payload]);}
+export function attachStatisticsSocket(server,handler){const sockets=new Set(),commands=[];server.on('upgrade',(req,socket)=>{
+  sockets.add(socket);socket.on('close',()=>sockets.delete(socket));socket.on('error',()=>{});
+  const accept=createHash('sha1').update(req.headers['sec-websocket-key']+'258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);socket.write(frame({type:'auth_required'}));let buffer=Buffer.alloc(0),authenticated=false;
+  socket.on('data',chunk=>{buffer=Buffer.concat([buffer,chunk]);while(buffer.length>=2){const opcode=buffer[0]&15,masked=!!(buffer[1]&128);let length=buffer[1]&127,offset=2;if(length===126){if(buffer.length<4)return;length=buffer.readUInt16BE(2);offset=4;}if(length===127){socket.destroy();return;}const header=offset+(masked?4:0);if(buffer.length<header+length)return;const key=masked?buffer.subarray(offset,offset+4):null,payload=Buffer.from(buffer.subarray(header,header+length));if(masked)for(let i=0;i<payload.length;i++)payload[i]^=key[i%4];buffer=buffer.subarray(header+length);if(opcode===8){socket.end(Buffer.from([0x88,0]));return;}if(opcode!==1)continue;const msg=JSON.parse(payload);
+    if(msg.type==='auth'){authenticated=msg.access_token==='TEST_PRIVATE_TOKEN';socket.write(frame({type:authenticated?'auth_ok':'auth_invalid'}));}
+    else if(authenticated){commands.push(msg);try{socket.write(frame({type:'result',id:msg.id,success:true,result:handler(msg)}));}catch(error){socket.write(frame({type:'result',id:msg.id,success:false,error:{message:error.message}}));}}
+  }});
+});return {commands,close(){for(const socket of sockets)socket.destroy();}};}

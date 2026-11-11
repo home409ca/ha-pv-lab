@@ -16,3 +16,11 @@
 - Import statystyk energii HA partiami po 30 dni, raporty dobowe, miesięczne i godzinowe, z potwierdzaniem liczników.
 - Retencja i kanały statystyk nie zerują kalibracji.
 
+# 0.2.2
+
+- Poprawiono rozpoznawanie jednostki w metadanych Recorder: `statistics_unit_of_measurement` w nowym HA i `unit_of_measurement` w starszym formacie.
+- Ta sama normalizacja działa w imporcie i wyszukiwarce liczników.
+- Dodano komunikaty per identyfikator: brak statystyki, brak sumy, nieobsługiwana jednostka oraz pusty zakres historii.
+- Dodano regresję prawdziwego schematu publicznej odpowiedzi HA i pełnego przepływu HTTP/WebSocket z symulowaną historią.
+- Wersja aplikacji jest publikowana spójnie w API i panelu. Integracja HACS pozostaje w wersji 0.2.1, bez zmiany protokołu.
+

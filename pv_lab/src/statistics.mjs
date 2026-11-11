@@ -1,4 +1,5 @@
 import {localParts,DAY} from './time.mjs';
+import {inspectStatisticsChannels} from './statistics-metadata.mjs';
 function timestamp(v){return typeof v==='number'?(v>1e12?v:v*1000):Date.parse(v);}
 function expectedHours(date,zone){let n=0;const m=Date.parse(date+'T00:00:00Z');for(let t=m-18*3600000;t<m+42*3600000;t+=3600000)if(localParts(t,zone).date===date)n++;return n;}
 export function aggregateStatistics(data,channels,c,start,end){const daily=new Map(),profiles=new Map(),warnings=[];
@@ -17,9 +18,9 @@ export function aggregateStatistics(data,channels,c,start,end){const daily=new M
 }
 export async function importStatistics(ha,c,days,onProgress=()=>{}){
   const channels=c.statistics.channels.filter(ch=>ch.confirmed);if(!channels.length)throw new Error('Najpierw wybierz i potwierdź przynajmniej jeden licznik energii.');
-  const metadata=await ha.metadata(channels.map(ch=>ch.statisticId)),valid=channels.filter(ch=>metadata.some(m=>m.statistic_id===ch.statisticId&&m.has_sum&&['kWh','Wh'].includes(m.unit_of_measurement)));
-  if(!valid.length)throw new Error('Wybrane encje nie mają statystyk przyrostów energii Wh/kWh. Sprawdź ich wybór i state_class.');
+  const metadata=await ha.metadata(channels.map(ch=>ch.statisticId)),checks=inspectStatisticsChannels(channels,metadata),valid=checks.filter(check=>check.ok).map(check=>check.channel);
+  if(!valid.length)throw new Error('Nie można rozpocząć importu. '+checks.map(check=>`${check.channel.statisticId}: ${check.reason}`).join(' '));
   const end=Math.floor(Date.now()/3600000)*3600000,start=end-days*DAY,all={};
   for(let from=start;from<end;from+=30*DAY){const to=Math.min(end,from+30*DAY),data=await ha.statistics(valid.map(ch=>ch.statisticId),from,to);for(const ch of valid)(all[ch.statisticId]??=[]).push(...(data[ch.statisticId]||[]));onProgress({done:Math.ceil((to-start)/DAY),days});}
-  const report=aggregateStatistics(all,valid,c,start,end);for(const ch of channels.filter(ch=>!valid.includes(ch)))report.warnings.push(`${ch.name}: brak obsługiwanych statystyk, pominięto.`);return report;
+  const report=aggregateStatistics(all,valid,c,start,end);report.metadata=checks.filter(check=>check.ok).map(check=>check.metadata);for(const check of checks.filter(check=>!check.ok))report.warnings.push(`${check.channel.name} (${check.channel.statisticId}): ${check.reason} Pominięto.`);if(!report.days.length)report.warnings.push('Liczniki zostały rozpoznane, ale HA nie zwrócił poprawnych przyrostów godzinowych w wybranym zakresie. Sprawdź dostępność długoterminowych statystyk i zakres dat.');return report;
 }

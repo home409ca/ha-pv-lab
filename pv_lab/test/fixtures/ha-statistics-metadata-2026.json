@@ -1,0 +1,35 @@
+[
+  {
+    "statistic_id": "sensor.inverter_total_yield",
+    "display_unit_of_measurement": "kWh",
+    "statistics_unit_of_measurement": "kWh",
+    "has_mean": false,
+    "mean_type": 0,
+    "has_sum": true,
+    "name": "Inwerter Całkowita produkcja energii",
+    "source": "recorder",
+    "unit_class": "energy"
+  },
+  {
+    "statistic_id": "sensor.energia_czynna_pv1",
+    "display_unit_of_measurement": "kWh",
+    "statistics_unit_of_measurement": "kWh",
+    "has_mean": false,
+    "mean_type": 0,
+    "has_sum": true,
+    "name": "Energia czynna - PV1",
+    "source": "recorder",
+    "unit_class": "energy"
+  },
+  {
+    "statistic_id": "sensor.energia_czynna_pv2",
+    "display_unit_of_measurement": "kWh",
+    "statistics_unit_of_measurement": "Wh",
+    "has_mean": false,
+    "mean_type": 0,
+    "has_sum": true,
+    "name": "Energia czynna - PV2",
+    "source": "recorder",
+    "unit_class": "energy"
+  }
+]

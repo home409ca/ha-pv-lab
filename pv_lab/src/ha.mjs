@@ -1,4 +1,5 @@
 import {groupSeries,combineGroups,seriesFromMap,quarterHours} from './adapters.mjs';
+import {normalizeStatisticsMetadata} from './statistics-metadata.mjs';
 export class HA {
   constructor(){this.token=process.env.SUPERVISOR_TOKEN||process.env.HA_TOKEN;this.base=process.env.SUPERVISOR_TOKEN?'http://supervisor/core/api':(process.env.HA_URL||'').replace(/\/$/,'')+'/api';}
   get connected(){return !!this.token;}
@@ -11,7 +12,8 @@ export class HA {
     return new Promise((resolve,reject)=>{const ws=new WebSocket(url);let done=false;const finish=(error,result)=>{if(done)return;done=true;clearTimeout(timer);ws.close();error?reject(error):resolve(result);},timer=setTimeout(()=>finish(new Error('Przekroczono czas odczytu statystyk HA.')),30000);
       ws.addEventListener('message',event=>{try{const msg=JSON.parse(event.data);if(msg.type==='auth_required')ws.send(JSON.stringify({type:'auth',access_token:this.token}));else if(msg.type==='auth_ok')ws.send(JSON.stringify({id:1,...command}));else if(msg.type==='auth_invalid')finish(new Error('HA odrzucił dostęp do statystyk.'));else if(msg.type==='result'&&msg.id===1)finish(msg.success?null:new Error(msg.error?.message||'Błąd statystyk HA.'),msg.result);}catch{finish(new Error('Niepoprawna odpowiedź statystyk HA.'));}});
       ws.addEventListener('error',()=>finish(new Error('Nie udało się połączyć z API statystyk HA.')));ws.addEventListener('close',()=>{if(!done)finish(new Error('HA zamknął połączenie statystyk.'));});});}
-  async metadata(ids){return this.websocket({type:'recorder/get_statistics_metadata',statistic_ids:ids});}
+  async metadata(ids){return normalizeStatisticsMetadata(await this.websocket({type:'recorder/get_statistics_metadata',statistic_ids:ids}));}
+  async listStatistics(){return normalizeStatisticsMetadata(await this.websocket({type:'recorder/list_statistic_ids',statistic_type:'sum'}));}
   async statistics(ids,start,end){return this.websocket({type:'recorder/statistics_during_period',statistic_ids:ids,start_time:new Date(start).toISOString(),end_time:new Date(end).toISOString(),period:'hour',types:['change'],units:{energy:'kWh'}});}
   async appInfo(){if(!process.env.SUPERVISOR_TOKEN)return null;const r=await fetch('http://supervisor/addons/self/info',{headers:{Authorization:`Bearer ${this.token}`},signal:AbortSignal.timeout(5000)});if(!r.ok)return null;return (await r.json()).data;}
   async forecasts(c,states){const results=[],diagnostics=[];
