@@ -1,4 +1,8 @@
 const glossary={
+ 'PV Lab przed historią':'Wynik po kalibracji dostawców i korekcie bieżącej, przed zastosowaniem profilu historycznego. To punkt odniesienia do oceny wpływu historii.',
+ 'Wynik końcowy PV Lab':'Prognoza po wszystkich aktywnych korektach, w tym historycznej, z limitem falownika.',
+ 'Zmiana przez historię':'Wynik końcowy minus wynik przed profilem historycznym. Minus oznacza obniżenie. Zmiana nie dowodzi poprawy trafności; do oceny potrzebny jest pomiar.',
+
  'Odchylenie od modelu':'Różnica wysokiego poziomu po normalizacji wobec modelu bezchmurnego nieba. Minus oznacza niższy poziom historyczny. Nie jest to procent strat udowodnionych jako zacienienie.',
  'Produkcja wybranego dnia':'Rzeczywista energia tej konkretnej godziny ze statystyk HA, niezależnie od filtrów uczenia. Gwiazdka oznacza pomiar wykluczony z uczenia. Dla godzin bez zaimportowanego pomiaru pokazujemy brak.',
  'Rekord historyczny':'Największy poprawny godzinowy przyrost energii znaleziony w ruchomym oknie sezonowym, w podobnym czasie słonecznym. Nie jest twardą granicą produkcji.',

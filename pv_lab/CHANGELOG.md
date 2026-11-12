@@ -1,3 +1,10 @@
+# 0.5.2
+
+- Zakres godzin produkcyjnych w prognozach i raportach, bez zapisywania nocnych zer.
+- Podświetlenie bieżącej godziny.
+- Widoczny wpływ korekty historycznej oraz porównanie błędów przed i po korekcie.
+- Automatyczna skala napięć i dzienne próbki wymagające uwagi.
+
 # 0.5.1
 
 - Stopniowe wykorzystanie profilu historycznego, statusy nocne i zachowanie pomiarów wykluczonych z uczenia w widoku produkcji rzeczywistej.

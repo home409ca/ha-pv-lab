@@ -1,0 +1,1 @@
+export function voltageBounds(values){const valid=values.filter(v=>Number.isFinite(v)&&v>=0);if(!valid.length)return {min:200,max:260};const low=Math.min(...valid),high=Math.max(...valid),margin=Math.max(2,(high-low)*.15);return {min:Math.max(0,Math.floor(low-margin)),max:Math.ceil(high+margin)};}

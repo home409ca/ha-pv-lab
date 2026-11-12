@@ -57,10 +57,10 @@ export function createHistoricalProfile(archive,c,now=Date.now()){
  return {summary,hour};
 }
 export function historicalDay(profile,date,c){const [begin,end]=dayBounds(date,c.timezone);return {...profile.summary,date,rows:profile.summary.channels.map(channel=>({...channel,hours:Array.from({length:(end-begin)/3600000},(_,i)=>profile.hour(channel.id,begin+i*3600000))}))};}
-export function applyHistoricalProfile(rows,profile,c){const opts={...historyDefaults,...c.historyProfile};for(const r of rows){r.beforeHistoryWh=r.wh;r.historyFactor=1;}if(!opts.enabled||!profile)return;
+export function applyHistoricalProfile(rows,profile,c){const opts={...historyDefaults,...c.historyProfile};for(const r of rows){r.beforeHistoryWh=r.wh;r.historyFactor=1;r.historyCheck={status:!opts.enabled?'disabled':'missing',reason:!opts.enabled?'Korekta historyczna wyłączona':'Brak potwierdzonego profilu AC całości'};}if(!opts.enabled||!profile)return;
  if(!profile.summary.channels.some(ch=>ch.id==='total'&&ch.basis==='AC'))return;
  const groups=new Map();for(const row of rows){const hour=Math.floor(row.start/3600000)*3600000;(groups.get(hour)||groups.set(hour,[]).get(hour)).push(row);}
- for(const [start,parts] of groups){if(parts.length!==4||new Set(parts.map(r=>r.start)).size!==4)continue;const ref=profile.hour('total',start),sum=parts.reduce((s,r)=>s+r.wh,0);if(!ref?.eligible||ref.attainableKWh===null||sum<=0)continue;const target=ref.attainableKWh*1000*(1+opts.margin);if(sum<=target)continue;
+ for(const [start,parts] of groups){if(parts.length!==4||new Set(parts.map(r=>r.start)).size!==4)continue;const ref=profile.hour('total',start),sum=parts.reduce((s,r)=>s+r.wh,0);if(ref)for(const row of parts)row.historyCheck={status:ref.status,reason:ref.reason,eligible:ref.eligible,confidence:ref.confidence,referenceKWh:ref.attainableKWh};if(!ref?.eligible||ref.attainableKWh===null||sum<=0)continue;const target=ref.attainableKWh*1000*(1+opts.margin);if(sum<=target)continue;
   // A soft upper-envelope check on the already calibrated result, never another loss multiplier.
   const factor=Math.max(1-opts.maxReduction,1-opts.maxReduction*ref.confidence*(1-target/sum));for(const row of parts){row.wh*=factor;row.historyFactor=factor;row.history={days:ref.brightDays,years:ref.brightYears,referenceKWh:ref.attainableKWh,confidence:ref.confidence};}
  }

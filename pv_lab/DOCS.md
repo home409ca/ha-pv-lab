@@ -29,3 +29,7 @@ Zmiana parametrów modelu rozpoczyna nową kalibrację. Sama retencja, ustawieni
 Encje oraz przebieg dla panelu Energia dostarcza osobna integracja **PV Lab**, instalowana przez HACS albo z katalogu `custom_components/pv_lab`. Po instalacji uruchom ponownie HA i dodaj integrację. Adres aplikacji, klucz parowania i diagnostykę znajdziesz w **Integracja HA**. W panelu Energia zachowaj rzeczywisty licznik produkcji i wybierz PV Lab jako źródło prognozy.
 
 Aktualizuj zarówno aplikację, jak i integrację. Pełna paczka `pv-lab-update` zawiera obie części oraz pliki GitHub Actions. Interfejs używa adresów plików z numerem wydania; po aktualizacji zamknij starą kartę i otwórz PV Lab ponownie.
+
+## Widoczny efekt korekt
+
+W Prognozach i korektach karta **Wpływ historii na prognozę** pokazuje wynik przed i po profilu oraz różnicę. W **Prognoza a produkcja → Czy historia poprawiła prognozę?** sprawdzisz rzeczywiste błędy obu wariantów na wspólnych zakończonych godzinach. Sama zmiana prognozy nie dowodzi poprawy trafności. Nocne zerowe okresy są pomijane, a bieżąca godzina w tabeli prognozy jest wyróżniona na zielono. Napięcia mają skalę dopasowaną do odczytów, a lista próbek wymagających uwagi obejmuje godziny dzienne.
