@@ -25,3 +25,6 @@ export function forecastSeries(rows,actual,{raw=true,corrected=true,measured=tru
 const inputFormatters=new Map();
 export function localInput(t,zone){if(t===null)return '';if(!inputFormatters.has(zone))inputFormatters.set(zone,new Intl.DateTimeFormat('sv-SE',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}));return inputFormatters.get(zone).format(t).replace(' ','T');}
 export function parseLocalInput(value,zone){if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))throw new Error('Niepoprawna data planu.');const [start,end]=dayBounds(value.slice(0,10),zone);for(let t=start;t<end;t+=60000)if(localInput(t,zone)===value)return t;throw new Error('Wybrana godzina nie istnieje w tej strefie czasowej.');}
+
+export function shortTime(at,zone){return new Intl.DateTimeFormat('pl-PL',{timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(at);}
+export function shortRange(start,end,zone,includeOffset=false){const options={timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23',...(includeOffset?{timeZoneName:'shortOffset'}:{})},fmt=new Intl.DateTimeFormat('pl-PL',options);return fmt.format(start)+'–'+fmt.format(end);}

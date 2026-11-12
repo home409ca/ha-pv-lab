@@ -4,11 +4,12 @@ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 export function coverage(rows,date,c,now=-Infinity){const available=new Set(rows.map(r=>r.start)),midnight=Date.parse(date+'T00:00:00Z');let missing=0,expected=0;
   for(let t=midnight-18*3600000;t<midnight+42*3600000;t+=SLOT){if(t+SLOT<=now||localParts(t,c.timezone).date!==date)continue;const sun=sunPosition(t+SLOT/2,c.location);if(!sun||sun.elevation>0){expected++;if(!available.has(t))missing++;}}
   return {complete:missing===0,missingPeriods:missing,expectedPeriods:expected};}
-export function bestWindow(rows,date,hours,zone,now){const count=hours*4,map=new Map(rows.map(r=>[r.start,r]));let best=null;
+export function bestWindows(rows,date,hours,zone,now,limit=5){const count=hours*4,map=new Map(rows.map(r=>[r.start,r])),found=[];
   for(const r of rows){if(r.start<now||localParts(r.start,zone).date!==date)continue;let wh=0,valid=true,peakW=0;
     for(let i=0;i<count;i++){const x=map.get(r.start+i*SLOT);if(!x||localParts(x.start,zone).date!==date){valid=false;break;}wh+=x.wh;peakW=Math.max(peakW,x.wh*4);}
-    if(valid&&wh>0&&(!best||wh>best.kWh*1000+1e-6))best={start:r.start,end:r.start+hours*3600000,hours,kWh:wh/1000,averageW:wh/hours,peakW};}
-  return best;}
+    if(valid&&wh>0)found.push({start:r.start,end:r.start+hours*3600000,hours,kWh:wh/1000,averageW:wh/hours,peakW});}
+  return found.sort((a,b)=>b.kWh-a.kWh||a.start-b.start).slice(0,limit);}
+export function bestWindow(rows,date,hours,zone,now){return bestWindows(rows,date,hours,zone,now,1)[0]||null;}
 export function forecast(model,snapshots,samples,c,now=Date.now()){
   const today=localParts(now,c.timezone).date,latest=new Map();
   for(const s of snapshots)if(s.at>=(c.calibrationFrom||0)&&s.at<=now&&now-s.at<36*3600000&&c.providers.some(p=>p.id===s.provider&&p.enabled))if(!latest.has(s.provider)||latest.get(s.provider).at<s.at)latest.set(s.provider,s);

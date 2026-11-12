@@ -1,3 +1,4 @@
+import {tableHelp} from './table-help.js';
 import {renderAppliances,applianceSettings,bindAppliances} from './appliances.js';
 import {renderPlanner,renderReports,planningSettings,bindPlanning} from './planning.js';
 import {dayBounds,hourlyRows,forecastSeries,providerColors} from './presentation.js';
@@ -78,6 +79,7 @@ function render(){if(!data)return;if(!titles[tab])tab='overview';$('#page-title'
   $('#updated').textContent='Ostatni odczyt: '+(data.connection.lastPoll?date(data.connection.lastPoll):'oczekiwanie');
   if(['settings','planner','appliances'].includes(tab)&&dirty)return;
   content.innerHTML=({appliances:()=>renderAppliances(data,helpers()),reports:()=>renderReports(data,helpers()),planner:()=>renderPlanner(data,helpers()),overview,forecast:forecastPage,panels:panelPage,voltage:voltagePage,sources:sourcesPage,settings:settingsPage,history:historyPage,storage:storagePage,integration:integrationPage}[tab])();
+  tableHelp(content);
   bindCharts();
   bindAppliances(data,helpers(),api,load,toast,render,value=>dirty=value);
   bindPlanning(data,helpers(),api,load,toast,render,value=>dirty=value);

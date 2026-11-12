@@ -1,12 +1,12 @@
-# PV Lab 0.4.1 — wersje HACS i profile urządzeń
+# PV Lab 0.4.2 — wersje HACS i profile urządzeń
 
 ## Wgraj na GitHub
 
-1. Rozpakuj `pv-lab-update-0.4.1.zip`. Wgraj **całą zawartość do głównego katalogu repozytorium w jednym zatwierdzeniu**, zastępując pliki. Bez katalogu nadrzędnego i bez przesyłania samego ZIP.
+1. Rozpakuj `pv-lab-update-0.4.2.zip`. Wgraj **całą zawartość do głównego katalogu repozytorium w jednym zatwierdzeniu**, zastępując pliki. Bez katalogu nadrzędnego i bez przesyłania samego ZIP.
 2. Wgraj także **`.github/workflows/release.yml`** i **`scripts/release.py`**. Wybrane ustawienia Actions są odpowiednie. Nie dodawaj osobnego tokenu.
-3. GitHub sam uruchomi **Publish PV Lab version**, sprawdzi wersje i testy, a następnie opublikuje **v0.4.1** z dokładnie przesłanego commita.
+3. GitHub sam uruchomi **Publish PV Lab version**, sprawdzi wersje i testy, a następnie opublikuje **v0.4.2** z dokładnie przesłanego commita.
 4. Poczekaj na pomyślne zadanie i wydanie w **Releases**. Odśwież informacje repozytorium w HACS. Numer będzie widoczny w informacjach i oknie pobierania; tekst samego przycisku ustala HACS.
-5. Zaktualizuj aplikację do **0.4.1**, następnie integrację HACS do **0.4.1**, uruchom ponownie cały Home Assistant i odśwież WWW.
+5. Zaktualizuj aplikację do **0.4.2**, następnie integrację HACS do **0.4.2**, uruchom ponownie cały Home Assistant i odśwież WWW.
 
 Workflow nie używa zewnętrznych Actions: tylko `run`, Python, Node i własny kod. Uprawnienie `contents: write` otrzymuje wyłącznie zadanie publikacji. Nie potrzeba prawa tworzenia lub zatwierdzania PR-ów. Testy potomne nie otrzymują tokenu publikacji ani tokenów HA.
 

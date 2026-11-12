@@ -13,3 +13,7 @@ table th small{display:block;font-weight:400;color:var(--muted)}.legend .check-l
 
 [hidden]{display:none!important}
 .chart-wrap{position:relative}.chart-tip{position:relative;min-height:3em;padding:.5rem;color:var(--text);font-size:.85rem}.chart-tip span{margin-right:1rem;display:inline-block}.interactive-plot{touch-action:pan-y}
+
+.has-help{cursor:help;text-decoration:underline dotted;text-underline-offset:4px}.table-legend{margin:12px 0;font-size:.85rem}.table-legend dt{font-weight:700;margin-top:.8rem}.table-legend dd{margin:.25rem 0 .6rem;color:#a7b4c5}.best-window-list{padding-left:1.3rem;line-height:1.9;font-size:.85rem}
+
+.table-scroll td:first-child{white-space:nowrap}

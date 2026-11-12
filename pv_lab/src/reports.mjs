@@ -3,7 +3,7 @@ import {actualInterval} from './engine.mjs';
 import {dayBounds} from '../public/presentation.js';
 const HOUR=3600000,freezeCache=new Map();
 const dateShift=(day,n)=>new Date(Date.parse(day+'T12:00:00Z')+n*DAY).toISOString().slice(0,10);
-export const emptyReports=()=>({version:2,hours:{},pending:{},days:{},months:{},years:{},lastAt:0});
+export const emptyReports=()=>({version:3,hours:{},pending:{},days:{},months:{},years:{},lastAt:0});
 function hourPrediction(pub,start,c){
   const map=pub.rowMap||new Map(pub.rows.map(r=>[r.start,r])),date=localParts(start,c.timezone).date,ids=['pv_lab',...(pub.providers||c.providers.filter(p=>p.enabled).map(p=>p.id))],predictions={},issued={};
   for(const id of ids){let sum=0,ok=true;
@@ -77,4 +77,28 @@ export function reportView(state){
   return {method:'limited',legacy:state.legacy||null,at:state.lastAt,hours:Object.values(state.hours).sort((a,b)=>b.start-a.start),days:Object.values(state.days).sort((a,b)=>b.date.localeCompare(a.date)),months:Object.values(months).sort((a,b)=>b.date.localeCompare(a.date)),years:Object.values(years).sort((a,b)=>b.date.localeCompare(a.date))};
 }
 
-export function migrateReports(state){if(state.version===2)return state;const legacy=reportView(state);delete legacy.legacy;legacy.method='original';return {...emptyReports(),legacy};}
+export function migrateReports(state,c){
+  if(state.version===3)return state;
+  if(state.version===1)return {...state,version:3};
+  const out=structuredClone(state),legacy=out.legacy;out.version=3;delete out.legacy;
+  if(!legacy)return out;
+  // The legacy view contains derived months/years. Remove their child contributions
+  // before returning them to storage, so later aggregation cannot count them twice.
+  function subtract(parent,child){const value=structuredClone(parent);for(const key of ['actualSum','actualHours','expectedHours','observedHours'])value[key]-=child[key];
+    for(const [id,f] of Object.entries(child.forecasts||{})){const target=value.forecasts[id];if(target){target.sum-=f.sum;target.hours-=f.hours;if(target.hours<=0)delete value.forecasts[id];}}
+    for(const [id,s] of Object.entries(child.paired||{})){const target=value.paired[id];if(target){for(const key of Object.keys(s))target[key]=(target[key]||0)-s[key];if(target.n<=0)delete value.paired[id];}}
+    for(const [cohort,scores] of Object.entries(child.cohorts||{})){const targets=value.cohorts[cohort];if(!targets)continue;for(const [id,s] of Object.entries(scores)){const target=targets[id];if(target){for(const key of Object.keys(s))target[key]=(target[key]||0)-s[key];if(target.n<=0)delete targets[id];}}if(!Object.keys(targets).length)delete value.cohorts[cohort];}return value;}
+  const months=Object.fromEntries((legacy.months||[]).map(row=>[row.mode+'|'+row.date,structuredClone(row)]));
+  const years=Object.fromEntries((legacy.years||[]).map(row=>[row.mode+'|'+row.date,structuredClone(row)]));
+  for(const month of legacy.months||[]){const key=month.mode+'|'+month.date.slice(0,4);if(years[key])years[key]=subtract(years[key],month);}
+  for(const day of legacy.days||[]){const key=day.mode+'|'+day.date.slice(0,7);if(months[key])months[key]=subtract(months[key],day);}
+  for(const [key,row] of Object.entries(months))if(row.expectedHours>0)promote(out.months,key,row);
+  for(const [key,row] of Object.entries(years))if(row.expectedHours>0)promote(out.years,key,row);
+  for(const row of legacy.hours||[]){const key=row.mode+'|'+row.start,current=out.hours[key];if(!current)out.hours[key]=row;else{
+      current.predictions={...row.predictions,...Object.fromEntries(Object.entries(current.predictions||{}).filter(([,v])=>v!==null))};current.issued={...row.issued,...current.issued};
+      if(current.actualKWh===null&&row.actualKWh!==null){current.actualKWh=row.actualKWh;current.actualSource=row.actualSource;}
+    }}
+  for(const row of legacy.days||[]){const key=row.mode+'|'+row.date;if(!out.days[key]||out.days[key].observedHours<row.observedHours)out.days[key]=row;}
+  if(c){const groups={};for(const row of Object.values(out.hours))(groups[row.mode+'|'+row.date]??=[]).push(row);for(const [key,rows] of Object.entries(groups))out.days[key]=aggregateDay(rows,c);}
+  return out;
+}

@@ -20,9 +20,9 @@ test('continuous device uses complete fixed windows and rejects unavailable inte
  const bad=detectWindows([{x:start,y:1200},{x:start+30*M,y:null},{x:start+60*M,y:1200}],device,start,start+120*M);assert.equal(bad.cycles.length,1);assert.equal(bad.rejected.missing,1);
  assert.throws(()=>validateAppliance({...device,windowMinutes:16}));
 });
-test('legacy reports remain accessible without mixing old scores into the new method',()=>{
+test('earlier reports remain in the same history without changing their predictions',()=>{
  const old={version:1,hours:{test:{start,date:'2026-06-10',predictions:{pv_lab:2}}},days:{},months:{},years:{},pending:{},lastAt:start};
- const next=migrateReports(old);assert.equal(next.version,2);assert.deepEqual(next.hours,{});assert.equal(next.legacy.hours.length,1);assert.equal(reportView(next).legacy.method,'original');assert.equal(migrateReports(next),next);
+ const next=migrateReports(old);assert.equal(next.version,3);assert.equal(next.hours.test.predictions.pv_lab,2);assert.equal(reportView(next).hours.length,1);assert.equal(next.legacy,undefined);assert.equal(migrateReports(next),next);
 });
 test('provider cap applies to every quarter before summing, not merely to hourly total',()=>{
  const state=emptyReports(),c=structuredClone(defaults),rows=[2000,0,2000,0].map((value,i)=>({start:start+i*15*M,wh:Math.min(value,1375),sources:[{provider:'solcast',originalWh:value,rawWh:Math.min(value,1375)}]}));

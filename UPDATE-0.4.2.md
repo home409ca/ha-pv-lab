@@ -1,0 +1,10 @@
+# PV Lab 0.4.2
+
+Wgraj całą zawartość ZIP do głównego katalogu repozytorium, razem z .github i scripts, jednym zatwierdzeniem. Poczekaj na poprawne zakończenie Actions i wydanie v0.4.2. Zaktualizuj aplikację i integrację HACS, uruchom ponownie HA i odśwież widok aplikacji.
+
+- Jedna historia raportów. Wcześniejsze prognozy, według potwierdzenia użytkownika poniżej limitu falownika, pozostają z dotychczasowymi wartościami. Wersja scala także archiwum utworzone w 0.4.1 bez powielania godzin, dni, miesięcy i lat. Nie zmieniamy prognoz zapisanych przed produkcją.
+- Klimatyzację dodasz w Ustawieniach → Urządzenia do analizy profilu → Dodaj urządzenie. Wskaż moc W/kW i opcjonalnie energię Wh/kWh. Wybierz cykle dla wyraźnych startów/końców albo pracę ciągłą i długość okna obserwacji. Profile można nazwać według trybu urządzenia. Aplikacja nie uruchamia klimatyzacji automatycznie i nie ocenia komfortu cieplnego.
+- Godziny w tabeli i najlepszych oknach mają krótką postać, np. 12:30–13:30. Strefa pojawia się wyłącznie dla powtórzonej godziny przy jesiennej zmianie czasu, aby odróżnić dwa różne okresy.
+- Najlepsze okna: zachowane trzy karty 1/2/3 h, a pod nimi do pięciu zakresów z największą prognozowaną energią. Okna mogą się nakładać — są alternatywami, nie pięcioma niezależnymi zadaniami. Początek co kwadrans, z zachowaniem ciągłości danych i granicy dnia.
+- Tabele: podpowiedzi przy nagłówkach oraz rozwijana legenda „Jak czytać tę tabelę?” dla myszy i telefonu. Wyjaśnione m.in. mnożnik, limit falownika, kalibracja, udział wag, prognoza połączona, wynik końcowy, pozostała energia i pokrycie danych. Rozbicie kwadransów wyraźnie wskazuje wynik końcowy PV Lab i jego składniki.
+- Historia zmian: obliczenia i encje nadal aktualizują się na bieżąco. Zapis do historii najwyżej raz na godzinę przy drobnych zmianach albo od razu, gdy różnica od ostatniego zapisu wynosi co najmniej 0,5 kWh. Drobne zmiany kumulują się. Gdy wynik się nie zmienił, nie dodajemy pustego wpisu. Dotychczasowe wpisy pozostają zachowane.
