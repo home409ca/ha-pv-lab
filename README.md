@@ -1,4 +1,4 @@
-# PV Lab 0.4.2
+# PV Lab 0.5.0
 
 Aplikacja i integracja Home Assistant do korekty prognoz PV, raportów i planowania odbiorników. Bez AI i nowej bazy danych.
 
@@ -6,11 +6,11 @@ Nowe: profile pracy pralki i zmywarki z historii HA, wybór cykli, trzy warianty
 
 ## Aktualizacja
 
-Wgraj całą zawartość `pv-lab-update-0.4.2.zip` do głównego katalogu repozytorium w jednym zatwierdzeniu, także `.github/` i `scripts/`. GitHub sam przetestuje kod i opublikuje numerowane wydanie v0.4.2. Bez zewnętrznych Actions i bez osobnego tokenu.
+Wgraj całą zawartość `pv-lab-update-0.5.0.zip` do głównego katalogu repozytorium w jednym zatwierdzeniu, także `.github/` i `scripts/`. GitHub sam przetestuje kod i opublikuje numerowane wydanie v0.5.0. Bez zewnętrznych Actions i bez osobnego tokenu.
 
-Poczekaj na pomyślne zadanie Publish PV Lab version i wydanie w Releases. Odśwież HACS, zaktualizuj aplikację oraz integrację do 0.4.2, uruchom ponownie cały HA i odśwież WWW. Numer wydania będzie widoczny przed instalacją; sam tekst przycisku ustala HACS. Domyślna gałąź jest ukryta.
+Poczekaj na pomyślne zadanie Publish PV Lab version i wydanie w Releases. Odśwież HACS, zaktualizuj aplikację oraz integrację do 0.5.0, uruchom ponownie cały HA i odśwież WWW. Numer wydania będzie widoczny przed instalacją; sam tekst przycisku ustala HACS. Domyślna gałąź jest ukryta.
 
-[Pełna instrukcja 0.4.2](UPDATE-0.4.2.md) · [Funkcje 0.3.0](UPDATE-0.3.0.md) · [Przewodnik](GUIDE.md) · [Testy](VALIDATION.md).
+[Pełna instrukcja 0.5.0](UPDATE-0.5.0.md) · [Funkcje 0.3.0](UPDATE-0.3.0.md) · [Przewodnik](GUIDE.md) · [Testy](VALIDATION.md).
 
 ## Pierwszy profil
 

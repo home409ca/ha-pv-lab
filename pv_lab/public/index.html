@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>PV Lab — analiza Twojej instalacji</title>
+  <meta name="pv-lab-ui-version" content="__PV_LAB_UI_VERSION__"><title>PV Lab — analiza Twojej instalacji</title>
   <link rel="stylesheet" href="./style.css"><script type="module" src="./app.js"></script>
 </head>
 <body>
@@ -18,12 +18,13 @@
       <a href="#panels" data-tab="panels"><span>▦</span> Panele i zacienienie</a>
       <a href="#voltage" data-tab="voltage"><span>ϟ</span> Napięcia i przestoje</a>
       <a href="#sources" data-tab="sources"><span>⇄</span> Źródła danych</a>
+      <a href="#potential" data-tab="potential">◒ <span>Historyczny potencjał</span></a>
       <a href="#history" data-tab="history"><span>◷</span> Historia i trendy</a>
       <a href="#storage" data-tab="storage"><span>▤</span> Pliki i retencja</a>
       <a href="#integration" data-tab="integration"><span>⌁</span> Integracja HA</a>
       <a href="#settings" data-tab="settings"><span>⚙</span> Ustawienia</a>
     </nav>
-    <div class="sidebar-bottom"><span class="local-dot"></span> Dane pozostają u Ciebie<p>Bez AI · bez bazy danych</p><small>PV Lab 0.2 · wersja eksperymentalna</small></div>
+    <div class="sidebar-bottom"><span class="local-dot"></span> Dane pozostają u Ciebie<p>Bez AI · bez bazy danych</p><small>PV Lab · wersja eksperymentalna</small></div>
   </aside>
   <main>
     <header><div><span class="eyebrow">ANALIZA FOTOWOLTAIKI</span><h1 id="page-title">Przegląd instalacji</h1><p id="subtitle">Dwie połacie. Jedna prognoza, bliższa rzeczywistości.</p></div><div class="header-actions"><span id="connection" class="badge">Łączenie…</span><button id="refresh" class="button secondary">↻ Odczytaj dane</button></div></header>

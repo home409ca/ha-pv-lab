@@ -1,3 +1,4 @@
+import {historyDefaults} from './historical-profile.mjs';
 import {defaultPlan,validatePlan} from './planner.mjs';
 import {defaultAppliances,validateAppliance} from './appliances.mjs';
 import optimizers from './optimizers.json' with {type:'json'};
@@ -36,10 +37,11 @@ export const defaults = {
   planner: structuredClone(defaultPlan),
   grid: {hourBalance:'sensor.energia_bilans_netto',importEnergy:'sensor.0_electricity_meter_total_forward_active_energy_balanced',exportEnergy:'sensor.0_electricity_meter_total_reverse_active_energy_balanced',confirmed:true,countersAreHourlyBalanced:false,semanticsVersion:2},
   reports: {freezeTime:'20:00'},
+  historyProfile: structuredClone(historyDefaults),
   statistics: { channels: [
     {id:'total', name:'Produkcja AC falownika', statisticId:'sensor.inverter_total_yield', confirmed:true, basis:'AC'},
-    {id:'pv1', name:'Energia PV1 — do potwierdzenia', statisticId:'sensor.energia_czynna_pv1', confirmed:false, basis:'unknown'},
-    {id:'pv2', name:'Energia PV2 — do potwierdzenia', statisticId:'sensor.energia_czynna_pv2', confirmed:false, basis:'unknown'}
+    {id:'pv1', estimated:true, name:'Energia PV1 — do potwierdzenia', statisticId:'sensor.energia_czynna_pv1', confirmed:false, basis:'unknown'},
+    {id:'pv2', estimated:true, name:'Energia PV2 — do potwierdzenia', statisticId:'sensor.energia_czynna_pv2', confirmed:false, basis:'unknown'}
   ] },
   pollSeconds: 60,
   forecastRefreshMinutes: 15
@@ -94,7 +96,14 @@ export function validate(c) {
   if(!c.grid||typeof c.grid.confirmed!=='boolean'||typeof c.grid.countersAreHourlyBalanced!=='boolean')throw new Error('Niepoprawne ustawienia bilansu.');
   for(const k of ['hourBalance','importEnergy','exportEnergy'])if(c.grid[k]!==''&&!id(c.grid[k]))throw new Error('Niepoprawna encja bilansu: '+k);
   if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(c.reports?.freezeTime||''))throw new Error('Godzina zapisania planu: HH:MM.');
+  c.historyProfile={...historyDefaults,...c.historyProfile};const hp=c.historyProfile;
+  if(typeof hp.enabled!=='boolean'||typeof hp.autoRefresh!=='boolean')throw new Error('Niepoprawny przełącznik profilu historycznego.');
+  for(const [key,min,max] of [['windowDays',7,91],['percentile',.8,.99],['minDays',10,500],['minYears',1,10],['maxReduction',0,.5],['margin',0,.5],['dcFactor',.5,1],['acEfficiency',.8,1]])number(hp[key],min,max,'profil historyczny: '+key);
+  if(!Number.isInteger(hp.windowDays)||hp.windowDays%2!==1||!Number.isInteger(hp.minDays)||!Number.isInteger(hp.minYears))throw new Error('Okno profilu musi mieć nieparzystą liczbę dni, progi dni i lat muszą być całkowite.');
+  const date=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(Date.parse(v+'T00:00:00Z'))&&new Date(v+'T00:00:00Z').toISOString().slice(0,10)===v;
+  if(hp.validFrom!==''&&!date(hp.validFrom))throw new Error('Początek zgodnego okresu: RRRR-MM-DD.');
+  if(!Array.isArray(hp.excluded)||hp.excluded.length>100||hp.excluded.some(x=>!['all','total',...c.strings.map(s=>s.id)].includes(x.channel)||!date(x.from)||!date(x.to)||x.from>x.to))throw new Error('Wykluczenia profilu: kanał, data od i data do.');
   return c;
 }
 
-export function migrateConfig(c){if(!c.grid?.semanticsVersion&&c.grid?.hourBalance==='sensor.energia_bilans_netto'&&c.grid?.importEnergy===defaults.grid.importEnergy&&c.grid?.exportEnergy===defaults.grid.exportEnergy)c={...c,grid:{...c.grid,countersAreHourlyBalanced:false,semanticsVersion:2}};return {...c,appliances:c.appliances||structuredClone(defaultAppliances),planner:{...defaultPlan,...c.planner},grid:{...defaults.grid,...c.grid},reports:{...defaults.reports,...c.reports},retention:{...defaults.retention,...c.retention},statistics:c.statistics||structuredClone(defaults.statistics)};}
+export function migrateConfig(c){if(!c.grid?.semanticsVersion&&c.grid?.hourBalance==='sensor.energia_bilans_netto'&&c.grid?.importEnergy===defaults.grid.importEnergy&&c.grid?.exportEnergy===defaults.grid.exportEnergy)c={...c,grid:{...c.grid,countersAreHourlyBalanced:false,semanticsVersion:2}};return {...c,historyProfile:{...historyDefaults,...c.historyProfile},appliances:c.appliances||structuredClone(defaultAppliances),planner:{...defaultPlan,...c.planner},grid:{...defaults.grid,...c.grid},reports:{...defaults.reports,...c.reports},retention:{...defaults.retention,...c.retention},statistics:c.statistics||structuredClone(defaults.statistics)};}

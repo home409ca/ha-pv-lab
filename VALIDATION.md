@@ -1,4 +1,4 @@
-# Weryfikacja PV Lab 0.4.2
+# Weryfikacja PV Lab 0.5.0
 
 - 82 testy Node: wcześniejszy silnik, raporty i saldo oraz nowe profile cykli, fazy poboru, jednostki W/kW, niepełne cykle, braki danych, reset licznika dziennego, warianty i ręczna korekta.
 - Test HTTP przechodzi przez uruchomioną aplikację i symulowany HA: import historii, zapis profilu, wybór w planie, powrót do trybu ręcznego i usunięcie aktywnego profilu. Surowe stany nie trafiają do zapisanego pliku.

@@ -37,7 +37,7 @@ export class HA {
       ws.addEventListener('error',()=>finish(new Error('Nie udało się połączyć z API statystyk HA.')));ws.addEventListener('close',()=>{if(!done)finish(new Error('HA zamknął połączenie statystyk.'));});});}
   async metadata(ids){return normalizeStatisticsMetadata(await this.websocket({type:'recorder/get_statistics_metadata',statistic_ids:ids}));}
   async listStatistics(){return normalizeStatisticsMetadata(await this.websocket({type:'recorder/list_statistic_ids',statistic_type:'sum'}));}
-  async statistics(ids,start,end){return this.websocket({type:'recorder/statistics_during_period',statistic_ids:ids,start_time:new Date(start).toISOString(),end_time:new Date(end).toISOString(),period:'hour',types:['change'],units:{energy:'kWh'}});}
+  async statistics(ids,start,end,period='hour'){return this.websocket({type:'recorder/statistics_during_period',statistic_ids:ids,start_time:new Date(start).toISOString(),end_time:new Date(end).toISOString(),period,types:['change'],units:{energy:'kWh'}});}
   async appInfo(){if(!process.env.SUPERVISOR_TOKEN)return null;const r=await fetch('http://supervisor/addons/self/info',{headers:{Authorization:`Bearer ${this.token}`},signal:AbortSignal.timeout(5000)});if(!r.ok)return null;return (await r.json()).data;}
   async forecasts(c,states){const results=[],diagnostics=[];
     for(const p of c.providers.filter(p=>p.enabled)){try{const groups=[],serviceEntries=new Set();
