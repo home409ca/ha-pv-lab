@@ -1,4 +1,4 @@
-# 0.4.0
+# 0.4.1
 
 - Profile z historii mocy, wybór cykli i edytor przebiegu.
 - Planowanie według faz pracy co 5 minut.

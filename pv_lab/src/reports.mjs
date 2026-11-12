@@ -3,14 +3,14 @@ import {actualInterval} from './engine.mjs';
 import {dayBounds} from '../public/presentation.js';
 const HOUR=3600000,freezeCache=new Map();
 const dateShift=(day,n)=>new Date(Date.parse(day+'T12:00:00Z')+n*DAY).toISOString().slice(0,10);
-export const emptyReports=()=>({version:1,hours:{},pending:{},days:{},months:{},years:{},lastAt:0});
+export const emptyReports=()=>({version:2,hours:{},pending:{},days:{},months:{},years:{},lastAt:0});
 function hourPrediction(pub,start,c){
   const map=pub.rowMap||new Map(pub.rows.map(r=>[r.start,r])),date=localParts(start,c.timezone).date,ids=['pv_lab',...(pub.providers||c.providers.filter(p=>p.enabled).map(p=>p.id))],predictions={},issued={};
   for(const id of ids){let sum=0,ok=true;
     const dayAvailable=pub.daySources?.[date]?.has(id);
     if(!dayAvailable){predictions[id]=null;continue;}
-    for(let t=start;t<start+HOUR;t+=SLOT){const row=map.get(t),value=id==='pv_lab'?row?.wh:row?.sources?.find(s=>s.provider===id)?.originalWh;
-      if(Number.isFinite(value))sum+=value;else {const sun=sunPosition(t+SLOT/2,c.location);if(!sun||sun.elevation>0){ok=false;break;}}}
+    for(let t=start;t<start+HOUR;t+=SLOT){const row=map.get(t),value=id==='pv_lab'?row?.wh:row?.sources?.find(s=>s.provider===id)?.rawWh;
+      if(Number.isFinite(value))sum+=Math.min(c.inverter.limitW/4,Math.max(0,value));else {const sun=sunPosition(t+SLOT/2,c.location);if(!sun||sun.elevation>0){ok=false;break;}}}
     const at=id==='pv_lab'?pub.at:pub.sourceTimes?.[id]??pub.at;predictions[id]=ok&&pub.at-at<=6*HOUR?sum/1000:null;issued[id]=at;
   }return {predictions,issued};
 }
@@ -74,5 +74,7 @@ export function updateReports(state,samples,c,now=Date.now(),statistics={}){
 export function reportView(state){
   const months=structuredClone(state.months),years=structuredClone(state.years);for(const d of Object.values(state.days))promote(months,d.mode+'|'+d.date.slice(0,7),{...d,date:d.date.slice(0,7)});
   for(const m of Object.values(months))promote(years,m.mode+'|'+m.date.slice(0,4),{...m,date:m.date.slice(0,4)});
-  return {at:state.lastAt,hours:Object.values(state.hours).sort((a,b)=>b.start-a.start),days:Object.values(state.days).sort((a,b)=>b.date.localeCompare(a.date)),months:Object.values(months).sort((a,b)=>b.date.localeCompare(a.date)),years:Object.values(years).sort((a,b)=>b.date.localeCompare(a.date))};
+  return {method:'limited',legacy:state.legacy||null,at:state.lastAt,hours:Object.values(state.hours).sort((a,b)=>b.start-a.start),days:Object.values(state.days).sort((a,b)=>b.date.localeCompare(a.date)),months:Object.values(months).sort((a,b)=>b.date.localeCompare(a.date)),years:Object.values(years).sort((a,b)=>b.date.localeCompare(a.date))};
 }
+
+export function migrateReports(state){if(state.version===2)return state;const legacy=reportView(state);delete legacy.legacy;legacy.method='original';return {...emptyReports(),legacy};}

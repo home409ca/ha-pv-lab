@@ -10,7 +10,7 @@ export function validateAppliance(d){
   if(!d||!/^[a-z0-9_]{1,40}$/.test(d.id)||typeof d.name!=='string'||!d.name.trim()||d.name.length>80)throw new Error('Niepoprawna nazwa lub identyfikator urządzenia.');
   const id=v=>typeof v==='string'&&/^[a-z_]+\.[a-z0-9_]+$/.test(v);
   if(!id(d.powerEntity)||(d.energyEntity!==''&&!id(d.energyEntity)))throw new Error('Wskaż encję mocy oraz opcjonalną encję energii.');
-  d={...d,name:d.name.trim(),detection:{...detectionDefaults,...d.detection}};const s=d.detection;
+  d={...d,workType:d.workType||'cyclic',windowMinutes:d.windowMinutes??120,name:d.name.trim(),detection:{...detectionDefaults,...d.detection}};const s=d.detection;if(!['cyclic','continuous'].includes(d.workType)||!Number.isInteger(d.windowMinutes)||d.windowMinutes<15||d.windowMinutes>1440||d.windowMinutes%15)throw new Error('Okno pracy: 15–1440 minut, wielokrotność 15.');
   for(const [key,min,max] of [['startW',1,30000],['stopW',0,1000],['idleMinutes',1,120],['minActiveMinutes',.5,60],['minDurationMinutes',1,240],['maxDurationMinutes',15,1440],['minEnergyKWh',.001,20]])if(!Number.isFinite(s[key])||s[key]<min||s[key]>max)throw new Error('Niepoprawny próg wykrywania: '+key);
   if(s.stopW>=s.startW||s.minDurationMinutes>=s.maxDurationMinutes)throw new Error('Próg zakończenia musi być niższy od progu startu; minimum czasu niższe od maksimum.');return d;
 }
@@ -45,7 +45,7 @@ export function detectCycles(power,energy,device,begin,end,zone){
     }
   }
   if(run)rejected.incomplete++;
-  return {cycles:cycles.slice(-120),rejected,warnings:cycles.length>120?['Zachowano ostatnie 120 zakończonych cykli.']:[],detected:cycles.length};
+  return {cycles:cycles.slice(-2000),rejected,warnings:cycles.length>2000?['Zachowano ostatnie 2000 zakończonych cykli.']:[],detected:cycles.length};
 }
 export async function analyzeAppliance(ha,device,days,zone,onProgress=()=>{},now=Date.now()){
   device=validateAppliance(device);if(!Number.isInteger(days)||days<1||days>30)throw new Error('Historia urządzenia: 1–30 dni.');
@@ -55,8 +55,8 @@ export async function analyzeAppliance(ha,device,days,zone,onProgress=()=>{},now
     onProgress({done:Math.min(days,Math.max(0,Math.ceil((to-begin)/DAY))),days});
   }
   if(!power.some(p=>p.y!==null))throw new Error('Brak historii mocy W/kW dla '+device.powerEntity+'. Same sumy kWh nie odtworzą przebiegu cyklu.');
-  const detected=detectCycles(uniquePoints(power),uniquePoints(energy),device,begin,now,zone);
-  return {at:now,begin,end:now,deviceId:device.id,deviceName:device.name,powerEntity:device.powerEntity,energyEntity:device.energyEntity,settings:device.detection,...detected,warnings:[...detected.warnings,...(!energy.length&&device.energyEntity?['Brak historii licznika energii; użyto całkowania mocy.']:[])],note:'Historia zmian mocy jest traktowana jako przebieg schodkowy. Surowa historia nie jest zapisywana. Cykle i grupowanie programów wymagają Twojego sprawdzenia.'};
+  const detected=device.workType==='continuous'?detectWindows(uniquePoints(power),device,begin,now):detectCycles(uniquePoints(power),uniquePoints(energy),device,begin,now,zone);
+  return {at:now,begin,end:now,deviceId:device.id,deviceName:device.name,powerEntity:device.powerEntity,energyEntity:device.energyEntity,settings:device.detection,workType:device.workType,windowMinutes:device.windowMinutes,...detected,warnings:[...detected.warnings,...(!energy.length&&device.energyEntity?['Brak historii licznika energii; użyto całkowania mocy.']:[])],note:'Historia zmian mocy jest traktowana jako przebieg schodkowy. Surowa historia nie jest zapisywana. Cykle i grupowanie programów wymagają Twojego sprawdzenia.'};
 }
 const median=values=>{const a=[...values].sort((a,b)=>a-b),i=Math.floor(a.length/2);return a.length%2?a[i]:(a[i-1]+a[i])/2;};
 function shape(wh){const values=[...wh];while(values.length%3)values.push(0);return {stepMinutes:5,wh:values,durationMinutes:values.length*5,energyKWh:values.reduce((a,b)=>a+b,0)/1000};}
@@ -76,4 +76,19 @@ export function manualProfile(name,powersW,existingId=null,now=Date.now()){
 }
 export function selectProfile(library,id,variant='typical'){
   if(!id)return null;const profile=library.profiles.find(p=>p.id===id);if(!profile)throw new Error('Wybrany profil urządzenia nie istnieje.');const curve=profile.variants[variant];if(!curve)throw new Error('Wybrany wariant profilu nie istnieje.');validateShape(curve);return {id:profile.id,name:profile.name,variant,...curve,durationMinutes:curve.wh.length*5,energyKWh:curve.wh.reduce((a,b)=>a+b,0)/1000};
+}
+
+export function detectWindows(points,device,begin,end){
+ const length=device.windowMinutes*60000,cycles=[],rejected={incomplete:0,short:0,missing:0,long:0};
+ for(let start=Math.ceil(begin/length)*length;start+length<=end;start+=length){const stop=start+length,segments=[];let covered=0,peak=0;
+  for(let i=0;i<points.length;i++){const p=points[i],a=Math.max(start,p.x),b=Math.min(stop,points[i+1]?.x??end);if(b<=a)continue;if(p.y===null)continue;covered+=b-a;peak=Math.max(peak,p.y);segments.push({start:a,end:b,y:p.y});}
+  if(covered<length){rejected.missing++;continue;}const wh=binsFromSegments(segments,start,stop),energyKWh=wh.reduce((a,b)=>a+b,0)/1000;if(energyKWh<device.detection.minEnergyKWh){rejected.short++;continue;}cycles.push({id:device.id+'-'+start,start,end:stop,durationMinutes:device.windowMinutes,energyKWh,peakW:peak,meterKWh:null,warning:'Stałe okno obserwacji, nie automatycznie rozpoznany cykl.',stepMinutes:5,wh});
+ }return {cycles:cycles.slice(-2000),rejected,warnings:['Praca ciągła: stałe okna obserwacji. Przesunięcie pracy pompy wymaga Twojej oceny komfortu i ograniczeń urządzenia.'],detected:cycles.length};
+}
+export function mergeAnalysis(old,next){
+ if(!old)return {...next,added:next.cycles.length};
+ const signature=a=>JSON.stringify([a.powerEntity,a.energyEntity,a.settings,a.workType||'cyclic',a.windowMinutes||120]);
+ if(signature(old)!==signature(next))return {...next,added:next.cycles.length,warnings:[...next.warnings,'Zmieniły się encje lub zasady wykrywania. Bieżąca lista zawiera nową analizę; zapisane profile pozostają zachowane.']};
+ const cycles=[...old.cycles];let added=0;for(const cycle of next.cycles){const i=cycles.findIndex(c=>c.id===cycle.id||Math.max(0,Math.min(c.end,cycle.end)-Math.max(c.start,cycle.start))>.8*Math.min(c.end-c.start,cycle.end-cycle.start));if(i>=0)cycles[i]=cycle;else{cycles.push(cycle);added++;}}
+ cycles.sort((a,b)=>a.start-b.start);return {...next,begin:Math.min(old.begin,next.begin),cycles:cycles.slice(-2000),added,warnings:[...next.warnings,...(cycles.length>2000?['Biblioteka zachowuje ostatnie 2000 cykli tego urządzenia.']:[])]};
 }

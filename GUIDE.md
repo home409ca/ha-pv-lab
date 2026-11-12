@@ -1,6 +1,6 @@
-# PV Lab 0.4.0
+# PV Lab 0.4.1
 
-[Instalacja, automatyczne wydania i profile](UPDATE-0.4.0.md). Nowe menu: Profile urządzeń. Nowe wybory HA: Plan profil urządzenia i Plan wariant profilu. Integracja: 101 sensorów (47 domyślnie aktywnych), trzy pola liczbowe, trzy wybory i dwie daty. Istniejące identyfikatory są zachowane.
+[Instalacja, automatyczne wydania i profile](UPDATE-0.4.1.md). Nowe menu: Profile urządzeń. Nowe wybory HA: Plan profil urządzenia i Plan wariant profilu. Integracja: 101 sensorów (47 domyślnie aktywnych), trzy pola liczbowe, trzy wybory i dwie daty. Istniejące identyfikatory są zachowane.
 
 Poniżej opis funkcji zachowanych z 0.3.0:
 

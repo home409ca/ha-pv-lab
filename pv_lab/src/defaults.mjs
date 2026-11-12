@@ -34,7 +34,7 @@ export const defaults = {
   retention: { samplesDays: 7, forecastsDays: 14, voltageHours: 0, revisionsDays: 90 },
   appliances: structuredClone(defaultAppliances),
   planner: structuredClone(defaultPlan),
-  grid: {hourBalance:'sensor.energia_bilans_netto',importEnergy:'sensor.0_electricity_meter_total_forward_active_energy_balanced',exportEnergy:'sensor.0_electricity_meter_total_reverse_active_energy_balanced',confirmed:true,countersAreHourlyBalanced:true},
+  grid: {hourBalance:'sensor.energia_bilans_netto',importEnergy:'sensor.0_electricity_meter_total_forward_active_energy_balanced',exportEnergy:'sensor.0_electricity_meter_total_reverse_active_energy_balanced',confirmed:true,countersAreHourlyBalanced:false,semanticsVersion:2},
   reports: {freezeTime:'20:00'},
   statistics: { channels: [
     {id:'total', name:'Produkcja AC falownika', statisticId:'sensor.inverter_total_yield', confirmed:true, basis:'AC'},
@@ -97,4 +97,4 @@ export function validate(c) {
   return c;
 }
 
-export function migrateConfig(c){return {...c,appliances:c.appliances||structuredClone(defaultAppliances),planner:{...defaultPlan,...c.planner},grid:{...defaults.grid,...c.grid},reports:{...defaults.reports,...c.reports},retention:{...defaults.retention,...c.retention},statistics:c.statistics||structuredClone(defaults.statistics)};}
+export function migrateConfig(c){if(!c.grid?.semanticsVersion&&c.grid?.hourBalance==='sensor.energia_bilans_netto'&&c.grid?.importEnergy===defaults.grid.importEnergy&&c.grid?.exportEnergy===defaults.grid.exportEnergy)c={...c,grid:{...c.grid,countersAreHourlyBalanced:false,semanticsVersion:2}};return {...c,appliances:c.appliances||structuredClone(defaultAppliances),planner:{...defaultPlan,...c.planner},grid:{...defaults.grid,...c.grid},reports:{...defaults.reports,...c.reports},retention:{...defaults.retention,...c.retention},statistics:c.statistics||structuredClone(defaults.statistics)};}

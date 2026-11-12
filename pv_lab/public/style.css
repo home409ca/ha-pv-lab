@@ -10,3 +10,6 @@ table th small{display:block;font-weight:400;color:var(--muted)}.legend .check-l
 .window-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}#plan-form button{margin:8px 10px 0 0}td details{min-width:130px}td details p{white-space:normal;min-width:220px}.stats .stat{min-width:0}.stat-label{overflow-wrap:anywhere}
 
 #manual-profile-form textarea{min-height:180px}#learn-profile-form button,#manual-profile-form button{margin-top:12px}td input[type=checkbox]{width:auto}input[readonly]{opacity:.8}
+
+[hidden]{display:none!important}
+.chart-wrap{position:relative}.chart-tip{position:relative;min-height:3em;padding:.5rem;color:var(--text);font-size:.85rem}.chart-tip span{margin-right:1rem;display:inline-block}.interactive-plot{touch-action:pan-y}

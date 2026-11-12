@@ -24,7 +24,7 @@ test('identyczne krzywe zachowują szeroki ślad źródła; przełącznik ukrywa
 test('wykres porównuje oddzielnych dostawców z PV Lab i nie wypełnia luk zerami',()=>{
   const definitions=c.providers,rows=[{...row(t),sources:[{provider:'forecast_solar',originalWh:2000,rawWh:1375},{provider:'open_meteo',originalWh:600,rawWh:600},{provider:'solcast',originalWh:700,rawWh:700}]},{...row(t+SLOT),sources:[{provider:'solcast',originalWh:800,rawWh:800}]}];
   const lines=forecastSeries(rows,[],{raw:false,measured:false},definitions);
-  assert.equal(lines.length,4);assert.equal(lines.find(s=>s.provider==='forecast_solar').points[0].y,8000);
+  assert.equal(lines.length,4);assert.equal(lines.find(s=>s.provider==='forecast_solar').points[0].y,5500);
   assert.equal(lines.find(s=>s.provider==='open_meteo').points[1].y,null);
   assert.equal(lines.find(s=>s.label==='PV Lab — po korektach').points[0].y,800);
   assert.equal(new Set(lines.map(s=>s.color)).size,4);

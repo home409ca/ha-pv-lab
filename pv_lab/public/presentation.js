@@ -16,7 +16,7 @@ export function hourlyRows(rows,day,zone,now){
   }return out;
 }
 export const providerColors={forecast_solar:'#ffbd66',open_meteo:'#43d9ce',solcast:'#c39bff'};
-export function forecastSeries(rows,actual,{raw=true,corrected=true,measured=true,providers={},basis='original'}={},definitions=[]){
+export function forecastSeries(rows,actual,{raw=true,corrected=true,measured=true,providers={},basis='limited'}={},definitions=[]){
   const sourceSeries=definitions.filter(p=>p.enabled&&providers[p.id]!==false).map((p,i)=>({label:p.name,provider:p.id,color:providerColors[p.id]||['#ffbd66','#43d9ce','#c39bff'][i%3],width:2,dashed:true,points:rows.map(r=>{const source=r.sources?.find(s=>s.provider===p.id),wh=source?.[basis==='limited'?'rawWh':'originalWh'];return {x:r.start+SLOT/2,y:Number.isFinite(wh)?wh*4:null};})}));
   // The wide dashed source line remains visible under an identical corrected line.
   return [...sourceSeries,...(raw?[{label:'Połączona prognoza po limicie',color:'#a7b4c5',width:7,dashed:true,points:rows.map(r=>({x:r.start+SLOT/2,y:r.rawWh*4}))}]:[]),...(corrected?[{label:'PV Lab — po korektach',color:'#bcf46b',width:3,points:rows.map(r=>({x:r.start+SLOT/2,y:r.wh*4}))}]:[]),...(measured?[{label:'Pomiar',color:'#72b8ff',width:2,points:actual.map(s=>({x:s.at,y:s.power}))}]:[])];
