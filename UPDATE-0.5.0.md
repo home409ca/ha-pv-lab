@@ -1,6 +1,6 @@
-# PV Lab 0.5.0
+# PV Lab 0.5.1
 
-Wgraj całą zawartość ZIP do głównego katalogu repozytorium, razem z .github i scripts, jednym zatwierdzeniem. Poczekaj na poprawne zakończenie Actions i wydanie v0.5.0. Zaktualizuj aplikację i integrację HACS; uruchom ponownie HA. Zmiana nie zeruje dotychczasowej kalibracji.
+Wgraj całą zawartość ZIP do głównego katalogu repozytorium, razem z .github i scripts, jednym zatwierdzeniem. Poczekaj na poprawne zakończenie Actions i wydanie v0.5.1. Zaktualizuj aplikację i integrację HACS; uruchom ponownie HA. Zmiana nie zeruje dotychczasowej kalibracji.
 
 ## Pierwsze uruchomienie analizy
 

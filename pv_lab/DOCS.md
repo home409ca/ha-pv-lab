@@ -1,14 +1,31 @@
-# PV Lab 0.2 — pierwsze kroki
+# PV Lab — pierwsze kroki
 
 1. Uruchom aplikację i włącz **Pokaż w panelu bocznym**.
-2. Otwórz **Ustawienia**, sprawdź parametry instalacji i współrzędne pobrane z HA.
-3. W **Źródłach danych** sprawdź diagnostykę Forecast.Solar, Open-Meteo i Solcast. Potwierdź w konfiguracji integracji, że Open-Meteo obejmuje obie połacie. W **Prognozach** zobaczysz wartości źródłowe, korekty i okna 2/3 h.
-4. Poczekaj na pełne przedziały pomiarów i wcześniejsze prognozy. Bez nich aplikacja nie może ocenić dokładności dostawców.
+2. W **Ustawieniach** sprawdź parametry instalacji, współrzędne, encje wejściowe i ograniczenia falownika. Domyślne parametry odpowiadają uzgodnionej instalacji; można je zmienić.
+3. W **Źródłach danych** sprawdź odczyty Forecast.Solar, Open-Meteo i Solcast. Prognoza każdego dostawcy powinna obejmować obie połacie, bez dublowania tej samej instalacji.
+4. W **Prognozach** porównasz dostawców z wynikiem PV Lab, zobaczysz energię godzina po godzinie i pięć najlepszych okien dla 1, 2 oraz 3 godzin. Objaśnienia znajdziesz przy nagłówkach i pod tabelami.
+5. Poczekaj na zakończone przedziały z pomiarami i prognozami zapisanymi przed produkcją. Na ich podstawie powstają korekty dostawców i raporty. Import dawnej produkcji nie odtwarza dawnych prognoz.
 
-Limit falownika ustawiono na **5500 W**. Próg napięcia **253 V** służy analizie i odrzucaniu próbek, a nie sterowaniu urządzeniem. Zmienisz go w ustawieniach.
+## Historyczny potencjał
 
-Tryb demonstracyjny korzysta ze sztucznych danych. Aby oglądać swoją instalację, wybierz **Wróć do danych rzeczywistych**.
+W ustawieniach potwierdź właściwe statystyki energii AC/DC dla całego falownika i połaci, oznaczając oszacowany podział energii. Następnie wybierz **Historyczny potencjał → Odczytaj całą historię HA**, poczekaj na zakończenie i kliknij **Pokaż profil dnia**.
 
-Zmiana wejść modelu rozpoczyna kalibrację od nowa; sama retencja i kanały statystyk jej nie zerują. Surowe napięcia domyślnie nie są zapisywane na dysku; zostają flagi jakości. W **Pliki i retencja** obejrzysz dane i ustawisz okresy przechowywania. W **Historia i trendy** odczytasz statystyki przyrostów energii z HA, po potwierdzeniu liczników.
+Wykresy pokazują rzeczywistą produkcję wybranego dnia, rekord, wysoki percentyl, medianę i przybliżony model bezchmurnego nieba. Profil wstępny może działać od 10 jasnych, kompletnych dni i domyślnie co najmniej 2 niezależnych sezonów rocznych. Wpływ rośnie stopniowo; docelowo 30 dni oznacza profil dojrzały. Ustawienie liczby dni jest w konfiguracji. W nocy korekta nie dotyczy. To wskaźnik jakości danych, a nie dowód fizycznego zacienienia.
 
-Encje i przebieg dla Energii dostarcza osobna integracja z katalogu `custom_components/pv_lab`. Skopiuj ją do `/config/custom_components/pv_lab`, zrestartuj HA i dodaj integrację PV Lab przez formularz. Adres aplikacji i klucz parowania znajdziesz w sekcji **Integracja HA**. Szczegółowy przewodnik jest w `GUIDE.md` repozytorium.
+Pomiar wykluczony z uczenia pozostaje widoczny jako produkcja rzeczywista i jest oznaczony gwiazdką. Kreska oznacza brak zaimportowanej energii tej konkretnej godziny. Korekta końcowej prognozy używa potwierdzonego licznika AC całości. Nie sumujemy niezależnych rekordów połaci. Po pierwszym imporcie ostatni tydzień może być uzupełniany raz na dobę.
+
+## Profile i planowanie urządzeń
+
+W **Ustawieniach** dodaj urządzenie, wskaż encję mocy W/kW i opcjonalnie energii Wh/kWh. W **Profilach urządzeń** odczytaj historię, wybierz cykle odpowiedniego programu i zapisz profil typowy, średni lub najbardziej energochłonny. Kolejne odczyty dołączają cykle bez powtórzeń. Dla pracy ciągłej, np. klimatyzacji lub pompy ciepła, wybierz stałe okna obserwacji.
+
+W **Planowaniu urządzenia** wybierz profil albo ręczne zapotrzebowanie i czas pracy. Ustaw zużycie bazowe domu oraz tryb bilansowania: godzinowy, kwadransowy lub bez bilansowania czasowego. Osobne saldo godzinowe ma pierwszeństwo; nie jest ponownie bilansowane licznikami importu i eksportu. Aplikacja proponuje godziny, ale nie uruchamia urządzeń automatycznie.
+
+## Napięcia, dane i integracja
+
+Limit falownika domyślnie wynosi **5500 W**. Próg **253 V** służy oznaczaniu danych i ochronie kalibracji, nie sterowaniu zabezpieczeniami. Szczegółowe napięcia domyślnie nie są zapisywane na dysku; pozostają flagi jakości. Pliki, retencję i eksport znajdziesz w **Pliki i retencja**.
+
+Zmiana parametrów modelu rozpoczyna nową kalibrację. Sama retencja, ustawienia profilu historycznego i kanały statystyk jej nie zerują. Dane demonstracyjne nie są pomiarami i nie służą uczeniu instalacji; aby wrócić do własnych danych, wybierz **Wróć do danych rzeczywistych**.
+
+Encje oraz przebieg dla panelu Energia dostarcza osobna integracja **PV Lab**, instalowana przez HACS albo z katalogu `custom_components/pv_lab`. Po instalacji uruchom ponownie HA i dodaj integrację. Adres aplikacji, klucz parowania i diagnostykę znajdziesz w **Integracja HA**. W panelu Energia zachowaj rzeczywisty licznik produkcji i wybierz PV Lab jako źródło prognozy.
+
+Aktualizuj zarówno aplikację, jak i integrację. Pełna paczka `pv-lab-update` zawiera obie części oraz pliki GitHub Actions. Interfejs używa adresów plików z numerem wydania; po aktualizacji zamknij starą kartę i otwórz PV Lab ponownie.

@@ -1,6 +1,6 @@
 const glossary={
  'Odchylenie od modelu':'Różnica wysokiego poziomu po normalizacji wobec modelu bezchmurnego nieba. Minus oznacza niższy poziom historyczny. Nie jest to procent strat udowodnionych jako zacienienie.',
- 'Produkcja wybranego dnia':'Rzeczywista energia tej konkretnej godziny z zaimportowanych statystyk HA. Dla dat poza archiwum pokazujemy brak.',
+ 'Produkcja wybranego dnia':'Rzeczywista energia tej konkretnej godziny ze statystyk HA, niezależnie od filtrów uczenia. Gwiazdka oznacza pomiar wykluczony z uczenia. Dla godzin bez zaimportowanego pomiaru pokazujemy brak.',
  'Rekord historyczny':'Największy poprawny godzinowy przyrost energii znaleziony w ruchomym oknie sezonowym, w podobnym czasie słonecznym. Nie jest twardą granicą produkcji.',
  'Wysoki percentyl':'Domyślnie 95. percentyl: 95% obserwacji miało energię nie większą od tej wartości. Pojedynczy rekord mniej wpływa na ten poziom niż na maksimum.',
  'Mediana':'Środkowa wartość historycznych obserwacji. Opisuje typowy wynik łącznie z wpływem pogody.',
@@ -8,7 +8,7 @@ const glossary={
  'Wysoki poziom po normalizacji':'Wysoki percentyl stosunku rzeczywistej energii do modelu na jasnych, kompletnych dniach, przeliczony na model wybranej daty. Starsze lata mają mniejszą wagę. To punkt odniesienia dla łagodnej korekty.',
  'Dni / lata':'Liczba różnych dni i lat z poprawnymi obserwacjami w dopasowanym oknie sezonowym i czasie słonecznym.',
  'Jasne dni / lata':'Dni i lata spełniające wstępne kryterium jasnego, kompletnego dnia. To podzbiór używany do korekty, a nie potwierdzone pomiary pogody.',
- 'Pewność / zastosowanie':'Ostrożny wskaźnik oparty na liczbie jasnych dni i lat, z obniżeniem dla oszacowanych liczników. Nie jest statystycznym prawdopodobieństwem. Obok podajemy powód gotowości albo blokady.',
+ 'Pewność / zastosowanie':'Ostrożny wskaźnik liczby jasnych dni i lat, z obniżeniem dla oszacowanych liczników. Profil wstępny od 10 dni ma mniejszy wpływ; docelowo 30 dni oznacza profil dojrzały. To nie prawdopodobieństwo statystyczne. W nocy nie wyliczamy pewności korekty.',
  'Przedział położenia':'Położenie Słońca: kierunek od północy oraz wysokość nad horyzontem. Wspólne dla instalacji; każdy panel porównujemy wyłącznie z panelami tej samej połaci.',
  'Relacja':'Średnia relacja mocy panelu do mediany paneli tej samej połaci w tym położeniu Słońca i sezonie. 70% oznacza moc około 70% mediany, nie 70% sprawności.',
  'Sezon':'Kwartał roku, w którym zebrano porównania paneli. Nie jest numerem roku.',

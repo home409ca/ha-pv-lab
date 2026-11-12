@@ -1,6 +1,6 @@
-# PV Lab 0.5.0
+# PV Lab 0.5.1
 
-Wgraj całą zawartość ZIP do katalogu głównego repozytorium GitHub, łącznie z .github oraz scripts. Nie wgrywaj nadrzędnego katalogu. Zrób to jednym zatwierdzeniem. Po pomyślnym zakończeniu Actions pojawi się wydanie v0.5.0 i numer w HACS. Zaktualizuj aplikację oraz integrację HACS, następnie uruchom ponownie Home Assistant. W telefonie odśwież widok aplikacji.
+Wgraj całą zawartość ZIP do katalogu głównego repozytorium GitHub, łącznie z .github oraz scripts. Nie wgrywaj nadrzędnego katalogu. Zrób to jednym zatwierdzeniem. Po pomyślnym zakończeniu Actions pojawi się wydanie v0.5.1 i numer w HACS. Zaktualizuj aplikację oraz integrację HACS, następnie uruchom ponownie Home Assistant. W telefonie odśwież widok aplikacji.
 
 - Poprawiony ukryty baner demonstracyjny na telefonach i usuwanie parametru demonstracji po powrocie do rzeczywistych danych.
 - Wykresy: pionowy wskaźnik, czas i wartości widocznych serii; mysz i dotyk. Prognozy pokazują też energię pełnej godziny. Braki pozostają brakami.

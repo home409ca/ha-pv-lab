@@ -1,6 +1,6 @@
-# PV Lab 0.5.0
+# PV Lab 0.5.1
 
-Wgraj całą zawartość ZIP do głównego katalogu repozytorium, razem z .github i scripts, jednym zatwierdzeniem. Poczekaj na poprawne zakończenie Actions i wydanie v0.5.0. Zaktualizuj aplikację i integrację HACS, uruchom ponownie HA i odśwież widok aplikacji.
+Wgraj całą zawartość ZIP do głównego katalogu repozytorium, razem z .github i scripts, jednym zatwierdzeniem. Poczekaj na poprawne zakończenie Actions i wydanie v0.5.1. Zaktualizuj aplikację i integrację HACS, uruchom ponownie HA i odśwież widok aplikacji.
 
 - Jedna historia raportów. Wcześniejsze prognozy, według potwierdzenia użytkownika poniżej limitu falownika, pozostają z dotychczasowymi wartościami. Wersja scala także archiwum utworzone w 0.4.1 bez powielania godzin, dni, miesięcy i lat. Nie zmieniamy prognoz zapisanych przed produkcją.
 - Klimatyzację dodasz w Ustawieniach → Urządzenia do analizy profilu → Dodaj urządzenie. Wskaż moc W/kW i opcjonalnie energię Wh/kWh. Wybierz cykle dla wyraźnych startów/końców albo pracę ciągłą i długość okna obserwacji. Profile można nazwać według trybu urządzenia. Aplikacja nie uruchamia klimatyzacji automatycznie i nie ocenia komfortu cieplnego.

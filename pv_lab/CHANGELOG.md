@@ -1,4 +1,10 @@
-# 0.5.0
+# 0.5.1
+
+- Stopniowe wykorzystanie profilu historycznego, statusy nocne i zachowanie pomiarów wykluczonych z uczenia w widoku produkcji rzeczywistej.
+- Poprawiona wielkość pozycji menu Historyczny potencjał.
+- Uaktualniona dokumentacja dodatku bez starego numeru 0.2 w tytule.
+
+# 0.5.1
 
 - Profile z historii mocy, wybór cykli i edytor przebiegu.
 - Planowanie według faz pracy co 5 minut.
