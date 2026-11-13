@@ -1,3 +1,9 @@
+# 0.5.3
+
+- Rozwinięte szczegóły i objaśnienia pozostają otwarte podczas automatycznego odświeżania widoku.
+- Czytelny opis brakującego wariantu przed historią oraz osobne informacje o źródle energii i jakości próbek.
+- Wyjaśnione wykorzystanie i automatyczne uzupełnianie danych w Historii i trendach.
+
 # 0.5.2
 
 - Zakres godzin produkcyjnych w prognozach i raportach, bez zapisywania nocnych zer.

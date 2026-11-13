@@ -1,3 +1,4 @@
+import {captureDetails,restoreDetails} from './view-state.js';
 import {voltageBounds} from './chart-ranges.js';
 import {productionRange,sunPosition} from './production-hours.js';
 import {renderHistorical,historicalSettings,bindHistorical} from './historical.js';
@@ -6,6 +7,7 @@ import {renderAppliances,applianceSettings,bindAppliances} from './appliances.js
 import {renderPlanner,renderReports,planningSettings,bindPlanning} from './planning.js';
 import {dayBounds,hourlyRows,forecastSeries,providerColors} from './presentation.js';
 import {renderForecast,renderSources,renderHistory,renderStorage,renderIntegration,settingsExtra,insightAction} from './insights.js';
+const detailsByTab=new Map();let renderedTab=null;
 const $=s=>document.querySelector(s),content=$('#content');
 let data=null,demo=new URLSearchParams(location.search).get('demo')==='1',tab=location.hash.slice(1)||'overview',selectedDate='',dirty=false,loading=false;
 let curveVisibility={raw:false,corrected:true,measured:true,providers:{},basis:'limited'},voltageDay='',voltageData=null,voltageLoading=false,voltageError='';
@@ -81,9 +83,11 @@ function render(){if(!data)return;if(!titles[tab])tab='overview';$('#page-title'
   $('#notice').hidden=demo||(!data.connection.error&&data.connection.configured);$('#notice').textContent=data.connection.error||'Aplikacja nie jest jeszcze połączona z Home Assistant. Po instalacji w HA OS połączenie zostanie skonfigurowane automatycznie. Możesz już sprawdzić ustawienia i obejrzeć demonstrację.';
   $('#updated').textContent='Ostatni odczyt: '+(data.connection.lastPoll?date(data.connection.lastPoll):'oczekiwanie');
   if(['settings','planner','appliances'].includes(tab)&&dirty)return;
+  if(renderedTab)detailsByTab.set(renderedTab,captureDetails(content));
   content.innerHTML=({potential:()=>renderHistorical(data,helpers()),appliances:()=>renderAppliances(data,helpers()),reports:()=>renderReports(data,helpers()),planner:()=>renderPlanner(data,helpers()),overview,forecast:forecastPage,panels:panelPage,voltage:voltagePage,sources:sourcesPage,settings:settingsPage,history:historyPage,storage:storagePage,integration:integrationPage}[tab])();
   bindHistorical(data,helpers(),api,load,toast,render);
   tableHelp(content);
+  restoreDetails(content,detailsByTab.get(tab));renderedTab=tab;
   bindCharts();
   bindAppliances(data,helpers(),api,load,toast,render,value=>dirty=value);
   bindPlanning(data,helpers(),api,load,toast,render,value=>dirty=value);

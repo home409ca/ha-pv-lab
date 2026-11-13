@@ -43,8 +43,8 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
   const child=spawn(process.execPath,[fileURLToPath(new URL('../src/server.mjs',import.meta.url))],{env,stdio:'pipe'});let output='';child.stdout.on('data',x=>output+=x);child.stderr.on('data',x=>output+=x);
   const base=`http://127.0.0.1:${appPort}`,get=p=>fetch(base+p).then(r=>r.json()),post=(p,b,h={})=>fetch(base+p,{method:'POST',headers:{'Content-Type':'application/json','X-PV-Lab':'1',...h},body:JSON.stringify(b)});
   try{
-    const v=await until(async()=>{const x=await get('/api/view');return x.diagnostics?.length===3?x:null;});
-    assert.equal(v.latest.power,1000);assert.equal(v.latest.strings.pv1,600);assert.equal(v.config.location.latitude,52);assert.equal(v.diagnostics.filter(d=>d.ok).length,3);assert.equal(v.forecast.details.length,3);
+    const v=await until(async()=>{const x=await get('/api/view');return x.diagnostics?.length===3&&!x.connection.busy?x:null;});
+    assert.equal(v.latest.power,1000);assert.equal(v.latest.strings.pv1,600);assert.equal(v.config.location.latitude,52);assert.equal(v.diagnostics.filter(d=>d.ok).length,3,JSON.stringify(v.diagnostics));assert.equal(v.forecast.details.length,3);
     assert.equal(typeof v.analysis.status.lastInterval.coverage,'number');
     assert.equal((await fetch(base+'/presentation.js')).status,200);
     const today=new Intl.DateTimeFormat('en-CA',{timeZone:v.config.timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(now),voltage=await get('/api/voltage?date='+today);assert.equal(voltage.series.length,3);assert.equal(voltage.day,today);assert.equal((await fetch(base+'/api/voltage?date=invalid')).status,400);assert.equal((await get('/api/view')).storage.samples,v.storage.samples);
@@ -64,9 +64,9 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
     assert.equal((await post('/api/plan',{energyKWh:0},{Authorization:'Bearer '+pairingKey})).status,400);assert.equal((await post('/api/plan',{entities:{}},{Authorization:'Bearer '+pairingKey})).status,400);assert.equal((await post('/api/plan',{energyKWh:4},{Authorization:'Bearer wrong'})).status,401);
     assert.ok((await get('/api/view')).reports);assert.ok((await get('/api/view')).planner);assert.equal((await fetch(base+'/planning.js')).status,200);
     assert.equal((await fetch(base+'/appliances.js')).status,200);
-    const htmlResponse=await fetch(base+'/');assert.equal(htmlResponse.headers.get('cache-control'),'no-store');assert.ok((await htmlResponse.text()).includes('./ui/0.5.2/app.js'));
-    const uiResponse=await fetch(base+'/ui/0.5.2/app.js');assert.equal(uiResponse.status,200);assert.ok(uiResponse.headers.get('cache-control').includes('immutable'));
-    assert.equal((await fetch(base+'/ui/0.5.2/historical.js')).status,200);assert.equal((await fetch(base+'/ui/0.4.2/app.js')).status,410);
+    const htmlResponse=await fetch(base+'/');assert.equal(htmlResponse.headers.get('cache-control'),'no-store');assert.ok((await htmlResponse.text()).includes('./ui/0.5.3/app.js'));
+    const uiResponse=await fetch(base+'/ui/0.5.3/app.js');assert.equal(uiResponse.status,200);assert.ok(uiResponse.headers.get('cache-control').includes('immutable'));
+    assert.equal((await fetch(base+'/ui/0.5.3/historical.js')).status,200);assert.equal((await fetch(base+'/ui/0.5.3/view-state.js')).status,200);assert.equal((await fetch(base+'/ui/0.4.2/app.js')).status,410);
     assert.ok((await get('/api/historical-profile?date=2026-06-10')).rows);
 
     assert.equal((await post('/api/profiles/analyze',{deviceId:'pralka',days:1})).status,200);
