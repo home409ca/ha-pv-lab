@@ -1,32 +1,27 @@
-# PV Lab 0.5.1
+# PV Lab
 
-Aplikacja i integracja Home Assistant do korekty prognoz PV, raportów i planowania odbiorników. Bez AI i nowej bazy danych.
+Aplikacja i integracja Home Assistant do korekty prognoz fotowoltaiki, analizy produkcji i planowania urządzeń. Reguły i obliczenia, bez modelu AI i bez nowej bazy danych.
 
-Nowe: profile pracy pralki i zmywarki z historii HA, wybór cykli, trzy warianty profilu, ręczna korekta faz i wybór w WWW/HA. Zachowano raporty, bilansowanie i okna 1/2/3 h z 0.3.0.
+## Funkcje
 
-## Aktualizacja
+- Łączy prognozy Forecast.Solar, Open-Meteo Solar i Solcast. Uwzględnia limit falownika, kalibrację, bieżącą produkcję i sezonowy profil instalacji.
+- Porównuje prognozy z rzeczywistą produkcją. Pokazuje błędy i wpływ korekt historycznych.
+- Analizuje optymalizatory, napięcia i przestoje. Wysokie napięcie i braki nie są interpretowane jako zacienienie.
+- Importuje historię produkcji i optymalizatorów z istniejącej bazy InfluxDB. Uzupełnia historyczny potencjał i obserwacje paneli; nie dubluje danych HA.
+- Odczytuje zachowane archiwa Solcast i Open-Meteo do opisowych porównań. Bez potwierdzonego czasu wydania nie używa ich do rankingu horyzontów ani uczenia wag.
+- Wskazuje najlepsze okna produkcji 1/2/3 h, planuje pracę urządzeń według profilu i uwzględnia bilansowanie energii.
+- Udostępnia encje i prognozę w panelu Energia HA. Archiwum prognozy dla Energii nie jest automatycznie kasowane.
 
-Wgraj całą zawartość `pv-lab-update-0.5.1.zip` do głównego katalogu repozytorium w jednym zatwierdzeniu, także `.github/` i `scripts/`. GitHub sam przetestuje kod i opublikuje numerowane wydanie v0.5.1. Bez zewnętrznych Actions i bez osobnego tokenu.
+## Instalacja i aktualizacja
 
-Poczekaj na pomyślne zadanie Publish PV Lab version i wydanie w Releases. Odśwież HACS, zaktualizuj aplikację oraz integrację do 0.5.1, uruchom ponownie cały HA i odśwież WWW. Numer wydania będzie widoczny przed instalacją; sam tekst przycisku ustala HACS. Domyślna gałąź jest ukryta.
+Dodaj to repozytorium w sklepie dodatków/aplikacji HA, zainstaluj PV Lab i otwórz jego panel. Osobną integrację z katalogu `custom_components/pv_lab` zainstaluj przez HACS, uruchom ponownie HA i sparuj z aplikacją według zakładki „Integracja HA”.
 
-[Pełna instrukcja 0.5.1](UPDATE-0.5.1.md) · [Funkcje 0.3.0](UPDATE-0.3.0.md) · [Przewodnik](GUIDE.md) · [Testy](VALIDATION.md).
+Przy aktualizacji plików repozytorium wgrywaj zawartość przekazanej paczki różnicowej do katalogu głównego, zachowując strukturę. Paczka zawiera tylko zmienione i nowe pliki; nie wymaga usuwania pozostałych. Zadanie GitHub Actions publikuje numerowane wydanie, które HACS może wyświetlić. Zaktualizuj osobno aplikację i integrację.
 
-## Pierwszy profil
+## Import z InfluxDB
 
-Profile urządzeń → Pralka/Zmywarka → Odczytaj historię → wybierz cykle tego samego programu → nazwij i zapisz profil → Użyj w planowaniu PV. Domyślnie ustawiono wskazane encje mocy i energii użytkownika; pełne identyfikatory są w instrukcji.
+Od wersji 0.6.0 otwórz „Import historii”, wpisz hasło InfluxDB, zapisz połączenie i sprawdź encje. Zacznij od kilku zakończonych dni, obejrzyj wynik, następnie rozszerz zakres. Dostępne są ponowny import, pomijanie zapisanych dni, zatrzymywanie oraz automatyczne uzupełnianie ostatnich trzech dni raz na dobę.
 
-Wymagana jest szczegółowa historia mocy w Recorder. Same dobowe kWh nie odtworzą faz pracy. Progi można zmienić w Ustawieniach. Profil z jednego cyklu jest wstępny i nie gwarantuje przyszłego poboru.
+Hasło pozostaje w osobnym pliku `/data/influx-credentials.json`, poza przeglądarką plików i eksportem z panelu. Kopia dodatku HA obejmuje również dane logowania. Dodatek ma dostęp tylko do odczytu katalogu konfiguracji HA do odczytu archiwów prognoz. Parametry początkowe są edytowalne; nie zawierają hasła.
 
-## Dane
-
-Dane pozostają w /data: ustawienia, model, raporty i pochodne profile. Surowa historia urządzeń jest odczytywana z HA tylko na czas analizy. Dane i kalibracja nie są kasowane. Nie publikuj katalogu /data, klucza parowania ani eksportu w GitHub.
-
-
-### Trwałe prognozy w panelu Energia
-
-Od wersji 0.5.4 plik `/data/energy-forecast-archive.json` przechowuje godzinowe prognozy PV Lab dla panelu Energia. Aplikacja nigdy nie usuwa ich automatycznie: retencja dzienników, import statystyk i zmiana ustawień nie kasują tego archiwum. Plik jest widoczny w przeglądarce plików aplikacji oraz w eksporcie kopii danych. Zabezpiecz katalog danych kopią zapasową HA — usunięcie danych dodatku usuwa też archiwum.
-
-Dla zakończonej godziny zachowujemy ostatnią kompletną prognozę zapisaną przed jej początkiem. Nie zastępujemy jej produkcją rzeczywistą ani wynikiem późniejszego modelu. Godziny bieżące i przyszłe są aktualizowane. Czasy zapisujemy w UTC, więc zmiana czasu nie łączy dwóch różnych godzin.
-
-Pierwsze uruchomienie odzyskuje dostępne wcześniejsze prognozy z zachowanych dzienników `published` (domyślnie 14 dni). Brakujących, wcześniej niezapisanych prognoz nie odtwarzamy. Trwała historia jest przekazywana osobnej integracji PV Lab — zaktualizuj również ją w HACS i uruchom ponownie HA. Nie wymaga nowej bazy danych.
+Szczegóły: [instrukcja aplikacji](pv_lab/DOCS.md), [aktualizacja 0.6.0](UPDATE-0.6.0.md).

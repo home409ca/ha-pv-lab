@@ -39,7 +39,7 @@ class FakeGitHub:
 
 class ReleaseTests(unittest.TestCase):
     def test_versions_match_and_workflow_has_no_external_actions(self):
-        self.assertEqual(release.validate_versions(ROOT), '0.5.4')
+        self.assertEqual(release.validate_versions(ROOT), '0.6.0')
         workflow = (ROOT / '.github/workflows/release.yml').read_text(encoding='utf-8')
         self.assertNotIn('uses:', workflow)
         self.assertIn('contents: write', workflow)
@@ -50,28 +50,28 @@ class ReleaseTests(unittest.TestCase):
 
     def test_publish_creates_checked_commit_draft_uploads_then_patches_to_public(self):
         api = FakeGitHub()
-        release.publish(api, '0.5.4', SHA, pathlib.Path('pv-lab-update-0.5.4.zip'))
+        release.publish(api, '0.6.0', SHA, pathlib.Path('pv-lab-update-0.6.0.zip'))
         post = next(payload for path, payload, method in api.calls if path == '/releases')
         self.assertEqual(post['target_commitish'], SHA)
         self.assertTrue(post['draft'])
         self.assertEqual(api.calls[-1], ('/releases/1', {'draft': False, 'make_latest': 'true'}, 'PATCH'))
 
     def test_published_version_never_overwritten_and_older_not_latest(self):
-        api = FakeGitHub(existing={'draft': False, 'tag_name': 'v0.5.4'})
-        release.publish(api, '0.5.4', SHA, pathlib.Path('x.zip'))
+        api = FakeGitHub(existing={'draft': False, 'tag_name': 'v0.6.0'})
+        release.publish(api, '0.6.0', SHA, pathlib.Path('x.zip'))
         self.assertEqual(len(api.calls), 1)
-        api = FakeGitHub(latest={'tag_name': 'v0.5.4'})
-        release.publish(api, '0.5.4', SHA, pathlib.Path('x.zip'))
+        api = FakeGitHub(latest={'tag_name': 'v0.6.0'})
+        release.publish(api, '0.6.0', SHA, pathlib.Path('x.zip'))
         self.assertFalse(any(payload is not None for path, payload, method in api.calls))
 
     def test_retry_resumes_draft_and_rejects_mismatched_tag(self):
         api = FakeGitHub(existing={'id': 1, 'draft': True, 'target_commitish': SHA, 'assets': [{'name': 'x.zip'}]})
-        release.publish(api, '0.5.4', SHA, pathlib.Path('x.zip'))
+        release.publish(api, '0.6.0', SHA, pathlib.Path('x.zip'))
         self.assertFalse(any(path == 'upload' for path, payload, method in api.calls))
         self.assertEqual(api.calls[-1][2], 'PATCH')
         api = FakeGitHub(ref={'object': {'type': 'commit', 'sha': 'b' * 40}})
         with self.assertRaises(ValueError):
-            release.publish(api, '0.5.4', SHA, pathlib.Path('x.zip'))
+            release.publish(api, '0.6.0', SHA, pathlib.Path('x.zip'))
 
     def test_archive_includes_workflow_and_excludes_runtime_data(self):
         with tempfile.TemporaryDirectory() as directory:

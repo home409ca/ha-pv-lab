@@ -1,9 +1,7 @@
-# PV Lab 0.5.1 i HACS
+# PV Lab i HACS
 
-Wgraj pełną paczkę do głównego katalogu repozytorium, także .github/ i scripts/. Po pomyślnym zadaniu Publish PV Lab version pojawi się wydanie v0.5.1. Odśwież HACS i zaktualizuj integrację. Aplikację aktualizuje się osobno w sklepie aplikacji HA. Następnie uruchom ponownie cały HA.
+Dodaj repozytorium jako niestandardową integrację HACS. Pliki integracji są w `custom_components/pv_lab`. Numer dostępnej wersji pochodzi z opublikowanego wydania GitHub Release; sam numer w manifest.json nie wystarcza. Po wgraniu aktualizacji sprawdź zielony wynik „Publish PV Lab version” w Actions i odśwież informacje repozytorium w HACS.
 
-Workflow używa tylko run, bez zewnętrznych Actions. Job deklaruje contents:write; ustawienia domyślne read-only i wyłączone tworzenie PR-ów są odpowiednie. Osobny token nie jest potrzebny.
+Plik hacs.json zawiera render_readme:true, więc opis integracji jest pobierany z README.md. Numerowane wydania są niezmienne — poprawki wymagają kolejnej wersji.
 
-Osobna paczka pv-lab-hacs-0.5.1.zip zawiera wyłącznie integrację i nie wystarcza do skonfigurowania publikacji. Repozytorium aktualizuj pełną paczką pv-lab-update-0.5.1.zip.
-
-[Instrukcja](UPDATE-0.5.1.md). Źródła: [wydania HACS](https://www.hacs.xyz/docs/publish/integration/#github-releases-optional), [uprawnienia GitHub](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions), [API wydań](https://docs.github.com/en/rest/releases/releases).
+Aplikację aktualizuj osobno w sklepie dodatków HA. Po aktualizacji integracji uruchom ponownie HA. Nie usuwaj integracji ani jej ustawień przy zwykłej aktualizacji.

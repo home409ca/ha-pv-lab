@@ -29,9 +29,9 @@ export function captureReportForecasts(state,pub,c){
     }
   }
 }
-function actualHour(samples,start,c,statistics){
+function actualHour(samples,start,c,statistics,sources={}){
   const periods=Array.from({length:4},(_,i)=>actualInterval(samples,start+i*SLOT,c)),reasons=[...new Set(periods.flatMap(p=>p.reasons))];
-  const stat=statistics?.[start];if(Number.isFinite(stat)&&stat>=0&&stat<=c.inverter.limitW/1000*1.25)return {actualKWh:stat,actualSource:'statystyki HA',quality:reasons};
+  const stat=statistics?.[start];if(Number.isFinite(stat)&&stat>=0&&stat<=c.inverter.limitW/1000*1.25)return {actualKWh:stat,actualSource:sources[start]||'statystyki HA',quality:reasons};
   return {actualKWh:periods.every(p=>p.coverage>=.95)?periods.reduce((s,p)=>s+p.wh,0)/1000:null,actualSource:'całkowanie pomiarów AC',quality:reasons};
 }
 const blank=()=>({n:0,actualKWh:0,forecastKWh:0,absErrorKWh:0,squaredError:0,biasKWh:0,dailyAbsErrorKWh:0,dailyN:0});
@@ -56,15 +56,15 @@ function aggregateDay(rows,c){const first=rows[0],[a,b]=dayBounds(first.date,c.t
   return result;
 }
 function promote(store,key,item){const old=store[key];store[key]=merge(old,item);}
-export function updateReports(state,samples,c,now=Date.now(),statistics={}){
+export function updateReports(state,samples,c,now=Date.now(),statistics={},sources={}){
   const today=localParts(now,c.timezone).date,hourKeep=dateShift(today,-6),monthKeep=dateShift(today,-30),yearKeep=new Date(Date.UTC(Number(today.slice(0,4)),Number(today.slice(5,7))-1-11,1)).toISOString().slice(0,7);
   const observed=[...(samples.length?[samples[0].at]:[]),...Object.keys(statistics).map(Number)],first=Math.max(dayBounds(hourKeep,c.timezone)[0],observed.length?Math.floor(Math.min(...observed)/HOUR)*HOUR:Math.floor(now/HOUR)*HOUR);
   for(let start=first;start+HOUR<=now;start+=HOUR)for(const mode of ['rolling','day_ahead']){const key=mode+'|'+start;if(!isProductionHour(start,c,{actualKWh:statistics[start]||0}))continue;if(!state.hours[key]&&!state.pending[key])state.pending[key]={mode,start,date:localParts(start,c.timezone).date,at:null,cutoff:null,predictions:Object.fromEntries(['pv_lab',...c.providers.filter(p=>p.enabled).map(p=>p.id)].map(id=>[id,null])),issued:{},providers:c.providers.filter(p=>p.enabled).map(p=>p.id),policy:'brak wcześniejszej prognozy'};}
   for(const [key,p] of Object.entries(state.pending)){if(!rowProductionHour({...p,actualKWh:statistics[p.start]||0},c)){delete state.pending[key];continue;}if(p.start+HOUR>now)continue;
-    const old=state.hours[key];if(!old||old.actualKWh===null){const actual=actualHour(samples,p.start,c,statistics);state.hours[key]={...p,...actual};}
+    const old=state.hours[key];if(!old||old.actualKWh===null){const actual=actualHour(samples,p.start,c,statistics,sources);state.hours[key]={...p,...actual};}
     if(p.date<hourKeep||state.hours[key].actualKWh!==null)delete state.pending[key];
   }
-  for(const r of Object.values(state.hours))if(Number.isFinite(statistics[r.start])&&r.actualSource!=='statystyki HA')Object.assign(r,actualHour(samples,r.start,c,statistics));
+  for(const r of Object.values(state.hours))if(Number.isFinite(statistics[r.start])&&(r.actualSource!=='statystyki HA'||!sources[r.start]))Object.assign(r,actualHour(samples,r.start,c,statistics,sources));
   const groups={};for(const r of Object.values(state.hours).filter(r=>rowProductionHour(r,c)))(groups[r.mode+'|'+r.date]??=[]).push(r);
   for(const [key,rows] of Object.entries(groups))state.days[key]=aggregateDay(rows,c);
   // A contribution moves exactly once: aggregate and remove it in the same atomic state file.

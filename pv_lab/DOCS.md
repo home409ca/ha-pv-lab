@@ -42,3 +42,8 @@ Od wersji 0.5.4 plik `/data/energy-forecast-archive.json` przechowuje godzinowe 
 Dla zakończonej godziny zachowujemy ostatnią kompletną prognozę zapisaną przed jej początkiem. Nie zastępujemy jej produkcją rzeczywistą ani wynikiem późniejszego modelu. Godziny bieżące i przyszłe są aktualizowane. Czasy zapisujemy w UTC, więc zmiana czasu nie łączy dwóch różnych godzin.
 
 Pierwsze uruchomienie odzyskuje dostępne wcześniejsze prognozy z zachowanych dzienników `published` (domyślnie 14 dni). Brakujących, wcześniej niezapisanych prognoz nie odtwarzamy. Trwała historia jest przekazywana osobnej integracji PV Lab — zaktualizuj również ją w HACS i uruchom ponownie HA. Nie wymaga nowej bazy danych.
+
+
+## Import InfluxDB i archiwów dostawców
+
+Instrukcja: [UPDATE-0.6.0.md](../UPDATE-0.6.0.md). Nowa zakładka „Import historii” pozwala skonfigurować połączenie, sprawdzić encje, importować zakończone dni i obejrzeć jakość kwadransów. Dane zasilają historyczny potencjał, historię i trendy oraz porównania paneli. Dane logowania są oddzielone od eksportu panelu.

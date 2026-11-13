@@ -1,3 +1,11 @@
+# 0.6.0
+
+- Import wieloletniej produkcji, napięć/statusów jako flag jakości i optymalizatorów z istniejącej bazy InfluxDB.
+- Profile godzinowe i sezonowe oraz historyczne porównania paneli bez duplikowania godzin HA.
+- Nowy panel importu, postęp, zatrzymywanie, ponowne odczyty i automatyczne uzupełnianie po zakończonym imporcie.
+- Odczyt archiwów Solcast/Open-Meteo do porównań opisowych, bez udawania znanego czasu wydania prognozy.
+- Opis HACS z README.md; aktualna dokumentacja i zachowane trwałe archiwum Energii.
+
 # 0.5.4
 
 - Trwałe archiwum godzinowych prognoz dla panelu Energia, bez automatycznego kasowania.
