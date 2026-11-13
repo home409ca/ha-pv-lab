@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.7.3 -->
+<!-- pv-lab-manual-version: 0.7.4 -->
 
-**Wersja aplikacji i instrukcji: 0.7.3.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.7.4.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -192,6 +192,10 @@ Rekonstrukcja wymaga importu/eksportu **niezbilansowanego już godzinowo**, praw
 Godziny zapisywane są jako godziny; rozkład wewnątrz godziny w symulacji jest szacowany równomiernie. To nie odtworzony pomiar kwadransowy. Prawdziwe kwadranse mają pierwszeństwo w swoich przedziałach.
 
 Model używa mediany dla sezonu, dnia tygodnia i kwadransa. Przy małej liczbie dni próbuje szerszego profilu dnia tygodnia, potem pory dnia, a na końcu rezerwy. Świeża oczyszczona moc może dostosować najbliższe 2 godziny, ze słabnącym wpływem.
+
+**Profil zużycia domu używany w symulacji** to osobny wykres nad rozwijaną tabelą kwadransów. Niebieska linia pokazuje średnią moc bazy W dla całego horyzontu, także w nocy; przerywana szara jest ustawioną rezerwą, wyłącznie jako odniesienie. Nie jest dodawana drugi raz. To ten sam przebieg, który jest używany do oceny terminów urządzeń. Nie obejmuje cykli dodawanych do planu.
+
+Po wskazaniu/dotknięciu odcinka odczytasz czas, moc, energię kWh, źródło i liczbę dni profilu. Dla rozpoczętego kwadransa energia obejmuje tylko pozostałą część, a moc jest wyliczana z jej rzeczywistego czasu. Zmienny profil nie musi oznaczać pomiarów co 15 minut — przy imporcie godzinowym rozkład wewnątrz godziny jest oszacowany. Wykres jest prezentacją danych tabeli i nie dodaje nowej korekty ani nie zmienia prognozy PV.
 
 Widać liczby kwadransów/godzin, dni, postęp, brakujące encje i niezgodności. „Jakiej bazy używa każdy kwadrans?” pokazuje energię, źródło i liczbę dni. Import bez poprawnych danych musi być opisany jako pusty, nie jako udane nauczenie modelu.
 

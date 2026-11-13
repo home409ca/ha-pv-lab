@@ -1,3 +1,9 @@
+# 0.7.4
+
+- Dodano wykres profilu bazy domu używanego w bieżącej symulacji optymalizatora, nad tabelą kwadransów. Podgląd pokazuje moc, energię, źródło i liczbę dni; linia odniesienia wskazuje rezerwę.
+- Poprawiono datę ostatniej obserwacji dla historii godzinowej i opis jednostki niezgodności starszych importów statystyk.
+- Uzupełniono pełną instrukcję. Zmiany prezentacji nie wymagają ponownego importu historii i nie zmieniają prognozy PV.
+
 # 0.7.3
 
 - Pełna instrukcja wszystkich modułów: obliczenia, interpretacja tabel, wpływ na wynik, retencja i diagnostyka. Instrukcja HTML w menu i kontrola aktualności przed wydaniem.
