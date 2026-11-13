@@ -1,0 +1,79 @@
+name: Publish PV Lab version
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'pv_lab/**'
+      - 'custom_components/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - '.github/workflows/release.yml'
+      - 'hacs.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pv-lab-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      PV_REPOSITORY: ${{ github.repository }}
+      PV_COMMIT: ${{ github.sha }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Verify and publish exact uploaded commit
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import io, os, pathlib, re, subprocess, sys, tempfile, time, urllib.request, zipfile
+          repo, commit = os.environ['PV_REPOSITORY'], os.environ['PV_COMMIT']
+          if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repo) or not re.fullmatch(r'[0-9a-f]{40}', commit):
+              raise SystemExit('Invalid repository or commit')
+          # The repository is public (required by HACS). No token is sent to archive redirects.
+          url = f'https://github.com/{repo}/archive/{commit}.zip'
+          for attempt in range(3):
+              try:
+                  with urllib.request.urlopen(url, timeout=60) as response:
+                      archive = response.read(50 * 1024 * 1024 + 1)
+                  break
+              except Exception:
+                  if attempt == 2:
+                      raise
+                  time.sleep(2 ** attempt)
+          if len(archive) > 50 * 1024 * 1024:
+              raise SystemExit('Source archive exceeds 50 MB')
+          with tempfile.TemporaryDirectory(prefix='pv-lab-release-') as directory:
+              dest = pathlib.Path(directory).resolve()
+              with zipfile.ZipFile(io.BytesIO(archive)) as source:
+                  entries = source.infolist()
+                  if len(entries) > 10000 or sum(e.file_size for e in entries) > 50 * 1024 * 1024:
+                      raise SystemExit('Invalid source archive size')
+                  for entry in entries:
+                      if not (dest / entry.filename).resolve().is_relative_to(dest) or entry.filename.startswith('/') or (entry.external_attr >> 16) & 0o170000 == 0o120000:
+                          raise SystemExit('Unsafe source archive entry')
+                  roots = {pathlib.PurePosixPath(e.filename).parts[0] for e in entries}
+                  if len(roots) != 1:
+                      raise SystemExit('Unexpected source archive layout')
+                  source.extractall(dest)
+              root = dest / roots.pop()
+              subprocess.run([sys.executable, 'scripts/release.py'], cwd=root, check=True)
+              # Make the actual published version and verification link visible in Actions.
+              import json
+              version = json.loads((root / 'custom_components/pv_lab/manifest.json').read_text(encoding='utf-8'))['version']
+              summary = os.environ.get('GITHUB_STEP_SUMMARY')
+              if summary:
+                  with open(summary, 'a', encoding='utf-8') as output:
+                      output.write(f'## PV Lab v{version}\n\nPublished release: https://github.com/{repo}/releases/tag/v{version}\n\nRefresh PV Lab in HACS to load release metadata.\n')
+          PY
