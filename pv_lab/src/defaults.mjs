@@ -98,7 +98,8 @@ export function validate(c) {
   if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(c.reports?.freezeTime||''))throw new Error('Godzina zapisania planu: HH:MM.');
   c.historyProfile={...historyDefaults,...c.historyProfile};const hp=c.historyProfile;
   if(typeof hp.enabled!=='boolean'||typeof hp.autoRefresh!=='boolean')throw new Error('Niepoprawny przełącznik profilu historycznego.');
-  for(const [key,min,max] of [['windowDays',7,91],['percentile',.8,.99],['minDays',10,500],['minYears',1,10],['maxReduction',0,.5],['margin',0,.5],['dcFactor',.5,1],['acEfficiency',.8,1]])number(hp[key],min,max,'profil historyczny: '+key);
+  for(const [key,min,max] of [['windowDays',7,91],['percentile',.8,.99],['minDays',10,500],['minYears',1,10],['maxReduction',0,.5],['margin',0,.5],['dcFactor',.5,1],['acEfficiency',.8,1],['minReferenceHours',3,8],['minReferenceCoverage',.25,1],['minReferenceRatio',.4,1],['maxFragmentSpread',0,1]])number(hp[key],min,max,'profil historyczny: '+key);
+  if(!Number.isInteger(hp.minReferenceHours))throw new Error('Liczba godzin fragmentu musi być całkowita.');
   if(!Number.isInteger(hp.windowDays)||hp.windowDays%2!==1||!Number.isInteger(hp.minDays)||!Number.isInteger(hp.minYears))throw new Error('Okno profilu musi mieć nieparzystą liczbę dni, progi dni i lat muszą być całkowite.');
   const date=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(Date.parse(v+'T00:00:00Z'))&&new Date(v+'T00:00:00Z').toISOString().slice(0,10)===v;
   if(hp.validFrom!==''&&!date(hp.validFrom))throw new Error('Początek zgodnego okresu: RRRR-MM-DD.');

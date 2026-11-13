@@ -55,7 +55,7 @@ test('December and January from one winter are not two independent historical se
  const winter={version:1,geometry:geometryKey(c),at:now,channels:{total:{...c.statistics.channels[0],rows,invalid:0}}},p=createHistoricalProfile(winter,c,now),ref=p.hour('total',Date.parse('2026-01-01T11:00:00Z'));
  assert.equal(ref.years.length,2);assert.equal(ref.brightYears,1);assert.equal(ref.eligible,false);
 });
-test('known bad daylight hours exclude bright reference days while zero night standby is allowed',()=>{
+test('known bad daylight hours stay excluded without discarding valid hours of the same day',()=>{
  const night=structuredClone(source);night.channels.total.rows=night.channels.total.rows.map(([at,kWh])=>[at,kWh,kWh<.001?'excluded':'unknown']);assert.equal(createHistoricalProfile(night,c,now).hour('total',target).eligible,true);
- const bad=structuredClone(source);bad.channels.total.rows=bad.channels.total.rows.map(([at,kWh])=>[at,kWh,new Date(at).getUTCHours()===10?'excluded':'unknown']);assert.equal(createHistoricalProfile(bad,c,now).hour('total',target+H).brightDays,0);
+ const bad=structuredClone(source);bad.channels.total.rows=bad.channels.total.rows.map(([at,kWh])=>[at,kWh,new Date(at).getUTCHours()===10?'excluded':'unknown']);const partial=createHistoricalProfile(bad,c,now);assert.equal(partial.hour('total',target).brightDays,0);assert.ok(partial.hour('total',target+H).brightDays>0);
 });

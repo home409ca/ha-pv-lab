@@ -47,3 +47,8 @@ Pierwsze uruchomienie odzyskuje dostępne wcześniejsze prognozy z zachowanych d
 ## Import InfluxDB i archiwów dostawców
 
 Instrukcja: [UPDATE-0.6.0.md](../UPDATE-0.6.0.md). Nowa zakładka „Import historii” pozwala skonfigurować połączenie, sprawdzić encje, importować zakończone dni i obejrzeć jakość kwadransów. Dane zasilają historyczny potencjał, historię i trendy oraz porównania paneli. Dane logowania są oddzielone od eksportu panelu.
+
+
+## Kwalifikacja historii od 0.6.1
+
+Profil wykorzystuje szersze poprawne części dni albo stabilne fragmenty co najmniej 3 godzin. Nie wymaga kompletu 24 godzin. Szczegóły i ograniczenia: [UPDATE-0.6.1.md](../UPDATE-0.6.1.md). Poprawka korzysta z zapisanej historii bez ponownego importu.

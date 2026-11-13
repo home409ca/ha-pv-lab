@@ -1,3 +1,10 @@
+# 0.6.1
+
+- Poprawiono kwalifikację referencji historycznej: pojedyncza zła godzina i brak zapisów nocnych nie wykluczają całego dnia.
+- Stabilne fragmenty co najmniej trzech kolejnych godzin mogą zasilać profil z ograniczoną wagą i wpływem.
+- Dodano liczebność referencji, informacje o fragmentach, czas przeliczenia i edytowalne progi.
+- Istniejąca historia jest wykorzystywana po restarcie bez ponownego importu.
+
 # 0.6.0
 
 - Import wieloletniej produkcji, napięć/statusów jako flag jakości i optymalizatorów z istniejącej bazy InfluxDB.
