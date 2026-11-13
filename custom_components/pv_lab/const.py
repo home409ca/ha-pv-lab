@@ -1,4 +1,4 @@
 DOMAIN = "pv_lab"
-VERSION = "0.6.3"
+VERSION = "0.7.0"
 CONF_URL = "url"
 CONF_TOKEN = "token"

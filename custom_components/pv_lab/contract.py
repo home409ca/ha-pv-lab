@@ -32,6 +32,14 @@ def sensor_specs():
         {"key": "balance_after", "name": "Bilans końca okresu z urządzeniem", "kind": "balance_after"},
         {"key": "balance_source", "name": "Bilans źródło danych", "kind": "balance_source"},
     ])
+    specs.extend([
+        {"key": "optimizer_status", "name": "Optymalizator status", "kind": "optimizer_status"},
+        {"key": "optimizer_total_cost", "name": "Optymalizator koszt wspólnego planu", "kind": "optimizer_total_cost"},
+        {"key": "optimizer_updated", "name": "Optymalizator ostatnie przeliczenie", "kind": "optimizer_updated"},
+    ])
+    for index in range(8):
+        for kind, label in (("optimizer_start", "start"), ("optimizer_cost", "koszt marginalny"), ("optimizer_device_status", "status")):
+            specs.append({"key": f"optimizer_device_{index+1}_{label.replace(' ', '_')}", "name": f"Optymalizator urządzenie {index+1} {label}", "kind": kind, "device_index": index, "enabled": index < 2})
     return specs
 
 
@@ -39,6 +47,19 @@ def read_sensor(payload, spec):
     day = next((d for d in payload.get("days", []) if d.get("offset") == spec.get("offset")), {})
     attrs = {"forecast_date": day.get("date"), "coverage_complete": day.get("complete"), "calculated_at": payload.get("calculatedAt")}
     kind = spec["kind"]
+    if kind.startswith("optimizer_"):
+        optimizer = payload.get("energyOptimizer") or {}
+        from time import time
+        stale = not isinstance(optimizer.get("validUntil"), (int, float)) or optimizer["validUntil"] <= time() * 1000
+        devices = optimizer.get("devices") or []
+        index = spec.get("device_index")
+        device = devices[index] if isinstance(index, int) and index < len(devices) else {}
+        chosen = device.get("scheduled") or {}
+        attrs = {"calculated_at": optimizer.get("calculatedAt"), "valid_until": optimizer.get("validUntil"), "mode": optimizer.get("mode"), "device_id": device.get("id"), "device_name": device.get("name"), "end": chosen.get("end"), "cheapest_alone": device.get("cheapest"), "most_pv_alone": device.get("pvBest"), "warnings": optimizer.get("warnings", []), "errors": optimizer.get("errors", []), "note": "Rekomendacja analityczna; nie uruchamia urządzenia. Koszty marginalne nie muszą sumować się do kosztu wspólnego."}
+        if stale:
+            return ("rekomendacja nieaktualna" if kind in ("optimizer_status", "optimizer_device_status") and (kind == "optimizer_status" or device) else None), attrs
+        mapping = {"optimizer_status": optimizer.get("status"), "optimizer_total_cost": optimizer.get("schedule", {}).get("cost") if optimizer.get("schedule", {}).get("devices") else None, "optimizer_updated": optimizer.get("calculatedAt"), "optimizer_start": chosen.get("start"), "optimizer_cost": chosen.get("cost"), "optimizer_device_status": device.get("status")}
+        return mapping.get(kind), attrs
     if kind.startswith("planner_") or kind.startswith("balance_"):
         planner = payload.get("planner") or {}
         best = planner.get("best") or {}

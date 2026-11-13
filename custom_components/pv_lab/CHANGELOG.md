@@ -1,3 +1,14 @@
+# 0.7.0
+
+- Nowy moduł „Optymalizator zużycia energii” korzystający ze wspólnej prognozy PV Lab, profili urządzeń i bilansowania.
+- Konfigurowalne ceny brutto, składniki dystrybucji, sezonowe strefy G12w, weekendy, polskie święta i wersje cenników.
+- Miesięczna RCEm i prognozy cen z encji lub ręcznie; jawny koszt utraconego eksportu. Bez symulowania salda depozytu.
+- Porównanie wszystkich dostępnych startów co 15 minut: najtaniej, największy udział PV oraz rekomendacja z analizą wrażliwości.
+- Wspólny harmonogram do 8 urządzeń: rezerwacja nadwyżek, priorytety, godziny pracy, terminy i limit importu. Heurystyka bez gwarancji globalnego minimum.
+- Import oczyszczonego profilu domu z HA/InfluxDB oraz jego bieżące uzupełnianie; brakujące urządzenia nie są traktowane jak zerowy pobór.
+- Zapis planu i późniejsze porównanie z pomiarami mocy przy zapisanych stawkach. Weryfikacja wymaga potwierdzenia wykonania; nie odtwarza realnego cyklu z planu.
+- Nowe encje rekomendacji w integracji HA. Tryb wyłącznie analityczny — brak sterowania urządzeniami.
+
 # 0.6.3
 
 - Analiza przestojów z InfluxDB dla wybranego dnia: napięcia, statusy, moc i luki pomiarów.

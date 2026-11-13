@@ -12,6 +12,8 @@ Aplikacja i integracja Home Assistant do korekty prognoz fotowoltaiki, analizy p
 - Wskazuje najlepsze okna produkcji 1/2/3 h, planuje pracę urządzeń według profilu i uwzględnia bilansowanie energii.
 - Udostępnia encje i prognozę w panelu Energia HA. Archiwum prognozy dla Energii nie jest automatycznie kasowane.
 
+- Optymalizuje koszt pracy urządzeń względem G12w, RCEm i wartości utraconego eksportu. Wspólnie planuje do 8 cykli, pokazuje scenariusze i zapisuje rekomendacje do weryfikacji pomiarami.
+
 ## Instalacja i aktualizacja
 
 Dodaj to repozytorium w sklepie dodatków/aplikacji HA, zainstaluj PV Lab i otwórz jego panel. Osobną integrację z katalogu `custom_components/pv_lab` zainstaluj przez HACS, uruchom ponownie HA i sparuj z aplikacją według zakładki „Integracja HA”.
@@ -24,4 +26,4 @@ Od wersji 0.6.0 otwórz „Import historii”, wpisz hasło InfluxDB, zapisz po�
 
 Hasło pozostaje w osobnym pliku `/data/influx-credentials.json`, poza przeglądarką plików i eksportem z panelu. Kopia dodatku HA obejmuje również dane logowania. Dodatek ma dostęp tylko do odczytu katalogu konfiguracji HA do odczytu archiwów prognoz. Parametry początkowe są edytowalne; nie zawierają hasła.
 
-Szczegóły: [instrukcja aplikacji](pv_lab/DOCS.md), [aktualizacja 0.6.2](UPDATE-0.6.2.md).
+Szczegóły: [instrukcja aplikacji](pv_lab/DOCS.md), [aktualizacja 0.7.0](UPDATE-0.7.0.md), [Optymalizator zużycia energii](ENERGY-OPTIMIZER.md).

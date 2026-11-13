@@ -11,9 +11,9 @@ spec.loader.exec_module(contract)
 class ContractTests(unittest.TestCase):
     def test_sensor_count_and_enabled_defaults(self):
         specs = contract.sensor_specs()
-        self.assertEqual(len(specs), 101)
-        self.assertEqual(len({s["key"] for s in specs}), 101)
-        self.assertEqual(sum(s.get("enabled", True) for s in specs), 47)
+        self.assertEqual(len(specs), 128)
+        self.assertEqual(len({s["key"] for s in specs}), 128)
+        self.assertEqual(sum(s.get("enabled", True) for s in specs), 56)
 
     def test_zero_is_valid_and_missing_is_not_zero(self):
         spec = {"kind": "energy", "offset": 0}

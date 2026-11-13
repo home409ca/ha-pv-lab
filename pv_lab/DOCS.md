@@ -57,3 +57,12 @@ Profil wykorzystuje szersze poprawne części dni albo stabilne fragmenty co naj
 ## Statystyczny profil godzinowy od 0.6.2
 
 Widoczność referencji jest oddzielona od aktywności korekty. Poprawne obserwacje mogą zasilać statystyczny wysoki poziom również poniżej progu 60% modelu. Dodatkowe kontrole jakości i powtarzalności chronią korektę; powód blokady jest pokazany w tabeli. Instrukcja: [UPDATE-0.6.2.md](../UPDATE-0.6.2.md). Nie trzeba ponawiać importu.
+
+
+## Optymalizator zużycia energii
+
+Nowa sekcja porównuje koszt terminów z ceną zakupu, dystrybucją i wartością utraconego eksportu. Uzupełnij własne ceny brutto i RCEm; cena z encji ma pierwszeństwo i musi mieć jednostkę PLN/kWh lub PLN/MWh. Bez danych nie pokazujemy darmowej energii.
+
+Możesz użyć istniejących profili, dodać urządzenia, ustawić terminy i priorytety, odczytać oczyszczoną historię bazy domu z HA lub InfluxDB i zaplanować wspólny harmonogram. Samodzielny termin najtańszy i najbardziej słoneczny to porównanie; dla kilku urządzeń kieruj się wspólnym planem.
+
+Zapisany plan można później porównać z pomiarami, po potwierdzeniu wykonania. Moduł nie uruchamia urządzeń. Nie modeluje salda i wygasania depozytu. Pełna instrukcja w repozytorium: UPDATE-0.7.0.md.

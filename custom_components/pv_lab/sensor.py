@@ -22,11 +22,13 @@ class PVLabSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = spec["name"]
         self._attr_entity_registry_enabled_default = spec.get("enabled", True)
         self._attr_device_info = {"identifiers": {(DOMAIN, entry.entry_id)}, "name": "PV Lab", "manufacturer": "PV Lab", "model": "Local PV forecast", "sw_version": VERSION}
-        if spec["kind"] in ("window_start", "revision_time", "calculated_at", "planner_start", "planner_end", "planner_calculated"):
+        if spec["kind"] in ("window_start", "revision_time", "calculated_at", "planner_start", "planner_end", "planner_calculated", "optimizer_start", "optimizer_updated"):
             self._attr_device_class = SensorDeviceClass.TIMESTAMP
+        elif spec["kind"] in ("optimizer_cost", "optimizer_total_cost"):
+            self._attr_native_unit_of_measurement = "PLN"
         elif spec["kind"] == "planner_percent":
             self._attr_native_unit_of_measurement = "%"
-        elif spec["kind"] not in ("revision_direction", "window_status", "planner_status", "balance_source"):
+        elif spec["kind"] not in ("revision_direction", "window_status", "planner_status", "balance_source", "optimizer_status", "optimizer_device_status"):
             self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
             if spec["kind"] != "revision_delta":
                 self._attr_device_class = SensorDeviceClass.ENERGY
@@ -46,7 +48,7 @@ class PVLabSensor(CoordinatorEntity, SensorEntity):
         value, _ = read_sensor(self.coordinator.data or {}, self.spec)
         if value is None:
             return None
-        if self.spec["kind"] in ("window_start", "revision_time", "planner_start", "planner_end", "planner_calculated"):
+        if self.spec["kind"] in ("window_start", "revision_time", "planner_start", "planner_end", "planner_calculated", "optimizer_start", "optimizer_updated"):
             return datetime.fromtimestamp(value / 1000, timezone.utc)
         if self.spec["kind"] == "calculated_at":
             return datetime.fromisoformat(value.replace("Z", "+00:00"))
