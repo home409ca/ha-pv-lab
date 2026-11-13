@@ -30,7 +30,7 @@ export function captureReportForecasts(state,pub,c){
   }
 }
 function actualHour(samples,start,c,statistics,sources={}){
-  const periods=Array.from({length:4},(_,i)=>actualInterval(samples,start+i*SLOT,c)),reasons=[...new Set(periods.flatMap(p=>p.reasons))];
+  const periods=Array.from({length:4},(_,i)=>actualInterval(samples,start+i*SLOT,c)),reasons=[...new Set(periods.flatMap(p=>[...p.reasons,...(p.warnings||[])]))];
   const stat=statistics?.[start];if(Number.isFinite(stat)&&stat>=0&&stat<=c.inverter.limitW/1000*1.25)return {actualKWh:stat,actualSource:sources[start]||'statystyki HA',quality:reasons};
   return {actualKWh:periods.every(p=>p.coverage>=.95)?periods.reduce((s,p)=>s+p.wh,0)/1000:null,actualSource:'całkowanie pomiarów AC',quality:reasons};
 }

@@ -59,9 +59,9 @@ export function analyseInfluxDay(series,c,start,available,settings){
  const value=(id,t,fresh=true)=>{const r=get[id]?.(t);if(!r||fresh&&t-r.at>gap)return null;return r.value;},watts=(id,t)=>{const v=value(id,t);return typeof v==='number'?v*(units[id]==='kW'?1000:1):null;};
  const quarters=[],shading={},home=[],optimizerRows=Object.fromEntries(c.optimizers.map(o=>[o.power,(series[o.power]||[]).map(r=>({...r,value:r.value*(units[o.power]==='kW'?1000:1)}))]));
  for(let t=start;t<end;t+=SLOT){
-  const night=Array.from({length:5},(_,i)=>sunPosition(t+i*SLOT/4,c.location)?.elevation).every(x=>Number.isFinite(x)&&x< -3),reasons=new Set();let ac=0,coverage=0;const strings=Object.fromEntries(c.strings.map(s=>[s.id,{wh:0,coverage:0}]));
+  const night=Array.from({length:5},(_,i)=>sunPosition(t+i*SLOT/4,c.location)?.elevation).every(x=>Number.isFinite(x)&&x< -3),reasons=new Set(),warnings=new Set();let ac=0,coverage=0;const strings=Object.fromEntries(c.strings.map(s=>[s.id,{wh:0,coverage:0}]));
   for(let at=t;at<t+SLOT;at+=30000){const p=watts(c.entities.power,at);if(p===null||p<0){if(!night)reasons.add('brak mocy');continue;}if(p>c.inverter.limitW*1.05){reasons.add('skok mocy');continue;}ac+=p/120;coverage+=30000;if(p>=c.inverter.limitW*.98)reasons.add('limit falownika');
-   if(!night){const status=value(c.entities.status,at,false);if(status===null)reasons.add('brak statusu');else if(!c.quality.normalStatuses.includes(status))reasons.add('status falownika');for(const id of c.entities.voltages){const v=value(id,at,false);if(v===null)reasons.add('brak napięcia');else if(v>=c.quality.voltageWarning)reasons.add('wysokie napięcie');}}
+   if(!night){const status=value(c.entities.status,at,false);if(status===null)reasons.add('brak statusu');else if(!c.quality.normalStatuses.includes(status))reasons.add('status falownika');for(const id of c.entities.voltages){const v=value(id,at);if(v===null)reasons.add('brak napięcia');else if(v>=c.quality.voltageWarning)warnings.add('wysokie napięcie');}}
    const dc=c.strings.map(s=>{const v=value(s.voltage,at),i=value(s.current,at);return typeof v==='number'&&typeof i==='number'&&v>=0&&i>=0?v*i:null;}),sum=dc.every(v=>v!==null)?dc.reduce((a,b)=>a+b,0):null;
    if(p===0||sum>0)for(let i=0;i<c.strings.length;i++){strings[c.strings[i].id].wh+=p===0?0:p*dc[i]/sum/120;strings[c.strings[i].id].coverage+=30000;}
   }
@@ -69,7 +69,7 @@ export function analyseInfluxDay(series,c,start,available,settings){
   const isNight=night&&ac===0;
   const complete=coverage>=SLOT*.95||isNight;if(!complete)reasons.add('niepełny przedział');
   const quality=isNight?'night':!complete||reasons.size?'excluded':'valid';
-  quarters.push({start:t,wh:complete?ac:null,quality,reasons:[...reasons],strings:Object.fromEntries(Object.entries(strings).map(([id,v])=>[id,isNight?0:v.coverage>=SLOT*.95?v.wh:null]))});
+  quarters.push({start:t,wh:complete?ac:null,quality,reasons:[...reasons],warnings:[...warnings],strings:Object.fromEntries(Object.entries(strings).map(([id,v])=>[id,isNight?0:v.coverage>=SLOT*.95?v.wh:null]))});
   if(quality!=='valid')continue;
   const sun=sunPosition(t+SLOT/2,c.location);if(!sun||sun.elevation<5)continue;
   const pos=`${Math.floor(sun.azimuth/20)}:${Math.floor(sun.elevation/10)}`,season=Math.floor((Number(localParts(t,c.timezone).month)-1)/3);
@@ -87,19 +87,19 @@ export function analyseInfluxDay(series,c,start,available,settings){
   for(const str of c.strings)if(parts.every(q=>q.strings[str.id]!==null))hourly[str.id].push([t,parts.reduce((s,q)=>s+q.strings[str.id],0)*scale/1000,quality,'influx_estimated_ac']);
  }
  if(settings.homePower)for(let t=start;t<end;t+=3600000){const rows=(series[settings.homePower]||[]).map(r=>({...r,value:r.value*(units[settings.homePower]==='kW'?1000:1)})),v=energy(rows,t,t+3600000,gap);if(v.coverage>=.95)home.push([t,v.wh]);}
- return {version:1,start,end,hourly,quarters,shading,home,optimizerIds:available.filter(e=>e.optimizer&&series[e.id]?.some(r=>r.at>=start&&r.at<end)).map(e=>e.optimizer),at:Date.now()};
+ return {version:1,qualificationVersion:2,start,end,hourly,quarters,shading,home,optimizerIds:available.filter(e=>e.optimizer&&series[e.id]?.some(r=>r.at>=start&&r.at<end)).map(e=>e.optimizer),at:Date.now()};
 }
 export function mergeInfluxDay(state,day,c){
  const date=new Date(day.start).toISOString().slice(0,10),old=state.days[date];state.geometry=geometryKey(c);
  for(const [key,b] of Object.entries(old?.shading||{})){if(state.shading[key]){state.shading[key].n-=b.n;state.shading[key].ratio-=b.ratio;if(state.shading[key].n<=0)delete state.shading[key];}}
  for(const [key,b] of Object.entries(day.shading)){const x=state.shading[key]??={...b,n:0,ratio:0};x.n+=b.n;x.ratio+=b.ratio;}
  for(const [id,rows] of Object.entries(day.hourly)){const ch=state.channels[id]??={id,statisticId:'influx:'+id,name:id==='total'?'Produkcja AC falownika':'Energia '+id.toUpperCase()+' — szacowany podział AC',basis:'AC',confirmed:true,source:'influx',estimated:id!=='total',rows:[]};const map=new Map(ch.rows.filter(r=>r[0]<day.start||r[0]>=day.end).map(r=>[r[0],r]));for(const row of rows)map.set(row[0],row);ch.rows=[...map.values()].sort((a,b)=>a[0]-b[0]);}
- state.days[date]={at:day.at,shading:day.shading,hours:day.hourly.total.length,excluded:day.quarters.filter(q=>q.quality==='excluded').length,optimizerIds:day.optimizerIds,home:day.home};state.at=day.at;
+ state.days[date]={at:day.at,qualificationVersion:day.qualificationVersion||1,shading:day.shading,hours:day.hourly.total.length,excluded:day.quarters.filter(q=>q.quality==='excluded').length,optimizerIds:day.optimizerIds,home:day.home};state.at=day.at;
 }
 export function mergeHistorySources(ha,influx,c){
  if(!influx?.at||!compatible(influx,c))return ha;
  const result=structuredClone(ha?.geometry===geometryKey(c)?ha:{version:1,geometry:geometryKey(c),channels:{}});result.at=Math.max(result.at||0,influx.at);
- for(const [id,ch] of Object.entries(influx.channels)){const current=result.channels[id],configured=c.statistics.channels.find(x=>x.id===id&&x.confirmed&&x.statisticId===current?.statisticId&&x.basis===current?.basis);if(!current||!configured){result.channels[id]=structuredClone(ch);continue;}const rows=new Map(ch.rows.map(r=>[r[0],r]));for(const row of current.rows){const peer=rows.get(row[0]);const conflict=peer&&Math.abs(peer[1]-row[1])>Math.max(.05,row[1]*.15);rows.set(row[0],[row[0],row[1],conflict?'excluded':peer?.[2]==='excluded'?'excluded':row[2]==='unknown'&&peer?.[2]==='valid'?'valid':row[2],conflict?'ha_influx_conflict':'ha_statistics']);}current.rows=[...rows.values()].sort((a,b)=>a[0]-b[0]);}
+ for(const [id,ch] of Object.entries(influx.channels)){const current=result.channels[id],configured=c.statistics.channels.find(x=>x.id===id&&x.confirmed&&x.statisticId===current?.statisticId&&x.basis===current?.basis);if(!current||!configured){result.channels[id]=structuredClone(ch);continue;}const rows=new Map(ch.rows.map(r=>[r[0],r]));for(const row of current.rows){const peer=rows.get(row[0]);const conflict=peer&&Math.abs(peer[1]-row[1])>Math.max(.05,row[1]*.15);rows.set(row[0],[row[0],row[1],conflict?'excluded':peer?.[2]==='excluded'?'excluded':['unknown','excluded'].includes(row[2])&&peer?.[2]==='valid'?'valid':row[2],conflict?'ha_influx_conflict':'ha_statistics']);}current.rows=[...rows.values()].sort((a,b)=>a[0]-b[0]);}
  return result;
 }
 export function combinedShading(live,history,c,liveFrom=Infinity){const out=structuredClone(live);if(!compatible(history,c))return out;const cutoff=Math.floor(Math.min(liveFrom,history.liveFrom??Infinity)/DAY)*DAY;for(const [date,day] of Object.entries(history.days||{})){if(Date.parse(date+'T00:00:00Z')>=cutoff)continue;for(const [key,b] of Object.entries(day.shading||{})){const x=out[key]??={...b,n:0,ratio:0,historicalN:0};x.n+=b.n;x.ratio+=b.ratio;x.historicalN=(x.historicalN||0)+b.n;}}return out;}

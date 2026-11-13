@@ -10,23 +10,23 @@ export function sampleReasons(s,c){const reasons=[];
   if(s.historyUnverified)reasons.push('historia bez potwierdzenia świeżości');
   if(s.power===null||s.power<0)reasons.push('brak mocy');
   const flag=s.voltageFlag||(s.voltages?.some(v=>v===null)?'missing':s.voltages?.some(v=>v!==null&&v>=c.quality.voltageWarning)?'high':s.voltages?'normal':'missing');
-  if(flag==='missing')reasons.push('brak napięcia');if(flag==='high')reasons.push('wysokie napięcie');
+  if(flag==='missing')reasons.push('brak napięcia');
   if(!c.quality.normalStatuses.includes(s.status))reasons.push('status falownika');
   if(s.power!==null&&s.power>=c.inverter.limitW*.98)reasons.push('limit falownika');
   return reasons;
 }
 export function actualInterval(samples,start,c) {
   const end=start+SLOT, rows=sampleRange(samples,start-c.quality.maxGapSeconds*1000,end+c.quality.maxGapSeconds*1000);
-  let wh=0,coverage=0;const reasons=new Set();
+  let wh=0,coverage=0;const reasons=new Set(),warnings=new Set();
   for(let i=1;i<rows.length;i++){const a=rows[i-1],b=rows[i];const lo=Math.max(start,a.at),hi=Math.min(end,b.at);if(hi<=lo)continue;
     if(b.at-a.at>c.quality.maxGapSeconds*1000){reasons.add('przerwa w danych');continue;}
-    for(const s of [a,b])for(const r of sampleReasons(s,c))reasons.add(r);
+    for(const s of [a,b]){for(const r of sampleReasons(s,c))reasons.add(r);if(s.voltageFlag==='high'||s.voltages?.some(v=>v!==null&&v>=c.quality.voltageWarning))warnings.add('wysokie napięcie');}
     if(a.power===null||b.power===null)continue;
     const x=a.power+(b.power-a.power)*(lo-a.at)/(b.at-a.at), y=a.power+(b.power-a.power)*(hi-a.at)/(b.at-a.at);
     wh+=(x+y)/2*(hi-lo)/3600000;coverage+=hi-lo;
   }
   if(coverage<SLOT*.95)reasons.add('niepełny przedział');
-  return {wh,coverage:coverage/SLOT,reasons:[...reasons]};
+  return {wh,coverage:coverage/SLOT,reasons:[...reasons],warnings:[...warnings]};
 }
 function sampleRange(samples,start,end){let lo=0,hi=samples.length;while(lo<hi){const mid=(lo+hi)>>>1;if(samples[mid].at<start)lo=mid+1;else hi=mid;}const rows=[];for(let i=lo;i<samples.length&&samples[i].at<=end;i++)rows.push(samples[i]);return rows;}
 export function train(model,samples,snapshots,c,now=Date.now()) {

@@ -66,3 +66,10 @@ Nowa sekcja porównuje koszt terminów z ceną zakupu, dystrybucją i wartości�
 Możesz użyć istniejących profili, dodać urządzenia, ustawić terminy i priorytety, odczytać oczyszczoną historię bazy domu z HA lub InfluxDB i zaplanować wspólny harmonogram. Samodzielny termin najtańszy i najbardziej słoneczny to porównanie; dla kilku urządzeń kieruj się wspólnym planem.
 
 Zapisany plan można później porównać z pomiarami, po potwierdzeniu wykonania. Moduł nie uruchamia urządzeń. Nie modeluje salda i wygasania depozytu. Pełna instrukcja w repozytorium: UPDATE-0.7.0.md.
+
+
+## Ryzyko sieci i ceny od 0.7.1
+
+W „Napięcia i przestoje” zobaczysz postęp przekwalifikowania historii i empiryczny wpływ sieci na jedną końcową prognozę. Samo wysokie napięcie przy normalnej produkcji nie odrzuca danych. Wyłączenia, luki i nieprawidłowy status nadal nie uczą potencjału. Korekta ryzyka wymaga powtarzalnych zdarzeń i jest widoczna osobno przed wynikiem końcowym.
+
+Depozyt jest domyślnie wyłączony. Po jego włączeniu widoczne są parametry RCEm i wybór PLN/MWh lub PLN/kWh. Zmieniona jednostka przelicza liczbę; można wpisywać przecinek. Ustawione stawki użytkownika wynoszą 1,30 i 0,68 PLN/kWh, pozostałe opłaty zero, RCEm 439,78 PLN/MWh. Pełna instrukcja: UPDATE-0.7.1.md w repozytorium.

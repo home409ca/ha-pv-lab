@@ -26,4 +26,6 @@ Od wersji 0.6.0 otwórz „Import historii”, wpisz hasło InfluxDB, zapisz po�
 
 Hasło pozostaje w osobnym pliku `/data/influx-credentials.json`, poza przeglądarką plików i eksportem z panelu. Kopia dodatku HA obejmuje również dane logowania. Dodatek ma dostęp tylko do odczytu katalogu konfiguracji HA do odczytu archiwów prognoz. Parametry początkowe są edytowalne; nie zawierają hasła.
 
-Szczegóły: [instrukcja aplikacji](pv_lab/DOCS.md), [aktualizacja 0.7.0](UPDATE-0.7.0.md), [Optymalizator zużycia energii](ENERGY-OPTIMIZER.md).
+Szczegóły: [instrukcja aplikacji](pv_lab/DOCS.md), [aktualizacja 0.7.1](UPDATE-0.7.1.md), [Optymalizator zużycia energii](ENERGY-OPTIMIZER.md).
+
+Od 0.7.1 wysokie napięcie przy normalnej pracy jest ostrzeżeniem. Końcowa prognoza uwzględnia osobno empiryczne ryzyko przestojów; jego wpływ jest widoczny w panelu. Depozyt jest domyślnie wyłączony, a ręczna RCEm ma wybór PLN/MWh lub PLN/kWh.

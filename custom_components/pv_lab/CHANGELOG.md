@@ -1,3 +1,13 @@
+# 0.7.1
+
+- Kwalifikowanie historii: wysokie napięcie przy poprawnej produkcji i statusie jest ostrzeżeniem, a nie powodem odrzucenia. Błędy statusu, przestoje, luki i skoki nadal wyłączają uczenie potencjału.
+- Automatyczne przekwalifikowanie zapisanych kwadransów i godzin z InfluxDB; zachowano pomiary oraz dawne raporty prognoz.
+- Końcowa prognoza PV uwzględnia empiryczne ryzyko przestojów według mocy, pory dnia, sezonu i rodzaju dnia. Bez powtarzalnych przesłanek przestoju nie ma potrącenia za sam próg 253 V.
+- Jedna prognoza po korekcie trafia do encji HA, Energii i optymalizatora. Panel pokazuje energię przed ryzykiem, wynik końcowy i redukcję; pary ocen zapisane przed produkcją pozwalają sprawdzić skuteczność.
+- Domyślne ceny użytkownika: 1,30 / 0,68 PLN/kWh i pozostałe opłaty zero. RCEm 439,78 PLN/MWh (0,43978 PLN/kWh).
+- Obsługa liczb z przecinkiem, dokładniejsze komunikaty błędów, wybór jednostki ręcznej RCEm PLN/MWh lub PLN/kWh z przeliczeniem.
+- Depozyt domyślnie wyłączony. Parametry RCEm i współczynnika pojawiają się po włączeniu wartości eksportu.
+
 # 0.7.0
 
 - Nowy moduł „Optymalizator zużycia energii” korzystający ze wspólnej prognozy PV Lab, profili urządzeń i bilansowania.

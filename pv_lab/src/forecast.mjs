@@ -1,3 +1,4 @@
+import {applyGridRisk} from './grid-risk.mjs';
 import {applyHistoricalProfile} from './historical-profile.mjs';
 import {SLOT,DAY,floorSlot,localParts,horizon,sunPosition} from './time.mjs';
 import {correctionInfo,sampleReasons} from './engine.mjs';
@@ -11,7 +12,7 @@ export function bestWindows(rows,date,hours,zone,now,limit=5){const count=hours*
     if(valid&&wh>0)found.push({start:r.start,end:r.start+hours*3600000,hours,kWh:wh/1000,averageW:wh/hours,peakW});}
   return found.sort((a,b)=>b.kWh-a.kWh||a.start-b.start).slice(0,limit);}
 export function bestWindow(rows,date,hours,zone,now){return bestWindows(rows,date,hours,zone,now,1)[0]||null;}
-export function forecast(model,snapshots,samples,c,now=Date.now(),historicalProfile=null){
+export function forecast(model,snapshots,samples,c,now=Date.now(),historicalProfile=null,gridModel=null){
   const today=localParts(now,c.timezone).date,latest=new Map();
   for(const s of snapshots)if(s.at>=(c.calibrationFrom||0)&&s.at<=now&&now-s.at<36*3600000&&c.providers.some(p=>p.id===s.provider&&p.enabled))if(!latest.has(s.provider)||latest.get(s.provider).at<s.at)latest.set(s.provider,s);
   const points=new Map(),details=[];
@@ -26,6 +27,7 @@ export function forecast(model,snapshots,samples,c,now=Date.now(),historicalProf
   if(current&&current.staticWh>20&&recent.length>=3&&recent.at(-1).at>=now-c.quality.maxGapSeconds*1000)nowFactor=clamp((recent.reduce((s,r)=>s+r.power,0)/recent.length)/(current.staticWh*4),.3,1.5);
   for(const r of fullRows){r.nowFactor=r.start+SLOT>now?1+(nowFactor-1)*Math.exp(-Math.max(0,r.start-now)/3600000):1;r.wh=Math.min(c.inverter.limitW/4,r.staticWh*r.nowFactor);}
   applyHistoricalProfile(fullRows,historicalProfile,c);
+  applyGridRisk(fullRows,gridModel,now);
   const rows=fullRows.filter(r=>r.start+SLOT>now),days={},providerDays=[];
   for(const r of fullRows){const d=localParts(r.start,c.timezone).date,obj=days[d]??={date:d,remainingWh:0,curveWh:0,periods:0};obj.curveWh+=r.wh;if(r.start+SLOT>now){obj.remainingWh+=r.wh*Math.max(0,Math.min(1,(r.start+SLOT-now)/SLOT));obj.periods++;}}
   const last=samples.filter(s=>!s.imported).at(-1),actualToday=last&&localParts(last.at,c.timezone).date===today&&now-last.at<=c.quality.maxGapSeconds*1000?last.dailyEnergy:null;

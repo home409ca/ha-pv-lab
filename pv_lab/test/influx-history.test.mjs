@@ -19,7 +19,7 @@ test('Influx integrates actual AC and DC string shares; imports are idempotent a
  const combined=combinedShading({},state,c,start+86400000);assert.equal(Object.values(combined).reduce((s,b)=>s+b.n,0),n);assert.deepEqual(combinedShading({},state,c,start),{});
 });
 test('High voltage and missing daytime input never teach shade or invent zero production',()=>{
- const {c,start,series,available}=fixture();series[c.entities.voltages[0]]=series[c.entities.voltages[0]].map(r=>({...r,value:260}));const high=analyseInfluxDay(series,c,start,available,influxDefaults);assert.equal(Object.keys(high.shading).length,0);assert.equal(high.hourly.total.find(r=>r[0]===start+12*3600000)[2],'excluded');
+ const {c,start,series,available}=fixture();series[c.entities.voltages[0]]=series[c.entities.voltages[0]].map(r=>({...r,value:260}));const high=analyseInfluxDay(series,c,start,available,influxDefaults);assert.ok(Object.keys(high.shading).length>0);assert.equal(high.hourly.total.find(r=>r[0]===start+12*3600000)[2],'valid');assert.ok(high.quarters.some(q=>q.warnings.includes('wysokie napięcie')));
  delete series[c.entities.power];const missing=analyseInfluxDay(series,c,start,available,influxDefaults);assert.equal(missing.quarters.find(q=>q.start===start+12*3600000).wh,null);assert.ok(!missing.hourly.total.some(r=>r[0]===start+12*3600000));
 });
 test('Five-minute optimizer records are usable but a longer outage is not carried through a quarter',()=>{
