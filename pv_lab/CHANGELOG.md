@@ -1,3 +1,8 @@
+# 0.7.2
+
+- Usunięto limit ośmiu kwadransów w „Skąd bierze się wynik”. Rozbicie obejmuje wszystkie dostępne przyszłe przedziały wybranego dnia, w tym południe i popołudnie.
+- Doprecyzowano nazwę i opis widoku. Obliczenia prognozy i ryzyka pozostają zgodne z 0.7.1.
+
 # 0.7.1
 
 - Kwalifikowanie historii: wysokie napięcie przy poprawnej produkcji i statusie jest ostrzeżeniem, a nie powodem odrzucenia. Błędy statusu, przestoje, luki i skoki nadal wyłączają uczenie potencjału.
