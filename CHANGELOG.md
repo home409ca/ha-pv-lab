@@ -1,3 +1,11 @@
+# 0.7.3
+
+- Pełna instrukcja wszystkich modułów: obliczenia, interpretacja tabel, wpływ na wynik, retencja i diagnostyka. Instrukcja HTML w menu i kontrola aktualności przed wydaniem.
+- Przeliczenie optymalizatora ponawia odczyt HA; panel pokazuje przyczynę braków oraz źródło bieżącej mocy.
+- Moc domu może być odtworzona z PV i mocy sieci z prawidłowym znakiem importu/eksportu.
+- Import bazy pokazuje postęp, puste dni, brakujące encje i rzeczywiste wykorzystanie historii w kwadransach.
+- Dodano wieloletnią rekonstrukcję godzinowej bazy ze statystyk energii HA; brak energii odejmowanych urządzeń nie jest traktowany jako zero.
+
 # 0.7.2
 
 - Usunięto limit ośmiu kwadransów w „Skąd bierze się wynik”. Rozbicie obejmuje wszystkie dostępne przyszłe przedziały wybranego dnia, w tym południe i popołudnie.

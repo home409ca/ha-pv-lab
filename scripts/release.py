@@ -1,5 +1,6 @@
 """Publish a checked immutable release using stdlib and GITHUB_TOKEN; no external Actions."""
 import argparse
+import importlib.util
 import ast
 import json
 import os
@@ -43,6 +44,10 @@ def validate_versions(root):
     for path in ('hacs.json', 'repository.yaml', 'pv_lab/src/appliances.mjs', 'custom_components/pv_lab/select.py'):
         if not (root / path).is_file():
             raise ValueError('Missing required release file: ' + path)
+    spec = importlib.util.spec_from_file_location('manual_release_check', root / 'scripts/build_manual.py')
+    manual = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(manual)
+    manual.validate_manual(root, version)
     return version
 
 

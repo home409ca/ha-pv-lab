@@ -29,3 +29,7 @@ Hasło pozostaje w osobnym pliku `/data/influx-credentials.json`, poza przegląd
 Szczegóły: [instrukcja aplikacji](pv_lab/DOCS.md), [aktualizacja 0.7.1](UPDATE-0.7.1.md), [Optymalizator zużycia energii](ENERGY-OPTIMIZER.md).
 
 Od 0.7.1 wysokie napięcie przy normalnej pracy jest ostrzeżeniem. Końcowa prognoza uwzględnia osobno empiryczne ryzyko przestojów; jego wpływ jest widoczny w panelu. Depozyt jest domyślnie wyłączony, a ręczna RCEm ma wybór PLN/MWh lub PLN/kWh.
+
+## Pełna instrukcja
+
+[Instrukcja wszystkich modułów](pv_lab/DOCS.md) · [wersja HTML do czytania i wydruku](pv_lab/public/manual.html). W aplikacji wybierz „Instrukcja PV Lab”. Instrukcja jest sprawdzana przed publikacją każdego wydania.

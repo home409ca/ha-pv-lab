@@ -1,7 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {DAY} from './time.mjs';
 import {compactOptimizer,deviceCurve} from './optimizer.mjs';
-import {powerHistory} from './optimizer-load.mjs';
+import {powerHistory,signedPowerHistory,reconstructHouseHistory} from './optimizer-load.mjs';
 import {pricesAt} from './optimizer-tariff.mjs';
 const STEP=300000;
 export function optimizerRecord(result,s,library,c,now=Date.now()){
@@ -17,9 +17,10 @@ export async function verifyOptimizerRecord(record,ha,now=Date.now()){
  if(record.cycles.some(c=>!c.powerEntity))throw new Error('Brak encji mocy co najmniej jednego urządzenia. Nie odtwarzamy rzeczywistego cyklu z planu.');
  const size=record.settings.balanceMode==='hourly'?3600000:record.settings.balanceMode==='quarterly'?900000:STEP,from=Math.floor(Math.min(...record.cycles.map(c=>c.start))/size)*size,to=Math.ceil(Math.max(...record.cycles.map(c=>c.end))/size)*size;
  if(to>now)throw new Error('Poczekaj na zamknięcie ostatniego okresu rozliczeniowego.');
- const ids=[...new Set([record.pvPowerEntity,record.housePowerEntity,...record.cycles.map(c=>c.powerEntity)])],series=Object.fromEntries(ids.map(id=>[id,[]]));
- for(let t=from;t<to;t+=DAY){const end=Math.min(t+DAY,to),data=await ha.request(`/history/period/${new Date(t).toISOString()}?end_time=${encodeURIComponent(new Date(end).toISOString())}&filter_entity_id=${encodeURIComponent(ids.join(','))}&significant_changes_only=0`);if(!Array.isArray(data))throw new Error('Brak rzeczywistej historii mocy.');for(const rows of data)if(rows?.length&&series[rows[0].entity_id]){if(rows.length>250000)throw new Error('Zbyt duża historia do weryfikacji.');series[rows[0].entity_id].push(...powerHistory(rows));}}
+ const ids=[...new Set([record.pvPowerEntity,record.housePowerEntity,...(record.settings.measurements?.netPower?[record.settings.measurements.netPower]:[]),...record.cycles.map(c=>c.powerEntity)])],series=Object.fromEntries(ids.map(id=>[id,[]]));
+ for(let t=from;t<to;t+=DAY){const end=Math.min(t+DAY,to),data=await ha.request(`/history/period/${new Date(t).toISOString()}?end_time=${encodeURIComponent(new Date(end).toISOString())}&filter_entity_id=${encodeURIComponent(ids.join(','))}&significant_changes_only=0`);if(!Array.isArray(data))throw new Error('Brak rzeczywistej historii mocy.');for(const rows of data)if(rows?.length&&series[rows[0].entity_id]){if(rows.length>250000)throw new Error('Zbyt duża historia do weryfikacji.');series[rows[0].entity_id].push(...(rows[0].entity_id===record.settings.measurements?.netPower?signedPowerHistory(rows):powerHistory(rows)));}}
  for(const id of ids)series[id]=[...new Map(series[id].map(r=>[r.at,r])).values()].sort((a,b)=>a.at-b.at);
+ if(record.settings.measurements?.netPower)series[record.housePowerEntity]=reconstructHouseHistory(series,record.housePowerEntity,record.pvPowerEntity,record.settings.measurements.netPower,record.settings.measurements.netPositiveExport);
  const groups=new Map(),energies=Object.fromEntries(record.cycles.map(c=>[c.id,0]));let gaps=0;
  for(let t=from;t<to;t+=30000){const active=record.cycles.filter(c=>t>=c.start&&t<c.end),touch=record.cycles.some(c=>groupTouches(c,t,size));if(!touch)continue;const house=find(series[record.housePowerEntity],t),pv=find(series[record.pvPowerEntity],t),powers=active.map(c=>find(series[c.powerEntity],t)),price=pricesAt(t,record.settings,{timezone:record.timezone},record.prices),key=Math.floor(t/size)*size+'|'+JSON.stringify([price.buy,price.sell]),g=groups.get(key)||{before:0,after:0,price,valid:true};groups.set(key,g);
   if(house===null||pv===null||powers.some(v=>v===null)||price.errors.length){g.valid=false;gaps++;continue;}const device=powers.reduce((a,b)=>a+b,0);if(device>house+Math.max(20,house*.05)){g.valid=false;gaps++;continue;}active.forEach((c,i)=>energies[c.id]+=powers[i]/120000);g.after+=(house-pv)/120000;g.before+=(house-pv-device)/120000;
