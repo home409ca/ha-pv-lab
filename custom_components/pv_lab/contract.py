@@ -81,6 +81,22 @@ def read_sensor(payload, spec):
 
 
 def hourly_forecast(payload):
+    # New apps provide the permanent history together with the live forecast.
+    # Older apps keep using the complete-quarter mapping below.
+    if isinstance(payload.get("energyWhHours"), dict):
+        import math
+        hours = {}
+        for start, wh in payload["energyWhHours"].items():
+            try:
+                dt = datetime.fromisoformat(start.replace("Z", "+00:00"))
+                if dt.tzinfo is None or dt.minute or dt.second or dt.microsecond:
+                    continue
+                if isinstance(wh, bool) or not isinstance(wh, (int, float)) or not math.isfinite(wh) or wh < 0:
+                    continue
+                hours[dt.astimezone(timezone.utc).isoformat()] = wh
+            except (ValueError, TypeError, AttributeError):
+                continue
+        return hours
     periods = {}
     for row in payload.get("periods", []):
         dt = datetime.fromisoformat(row["start"].replace("Z", "+00:00")).astimezone(timezone.utc)

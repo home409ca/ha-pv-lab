@@ -33,3 +33,12 @@ Aktualizuj zarówno aplikację, jak i integrację. Pełna paczka `pv-lab-update`
 ## Widoczny efekt korekt
 
 W Prognozach i korektach karta **Wpływ historii na prognozę** pokazuje wynik przed i po profilu oraz różnicę. W **Prognoza a produkcja → Czy historia poprawiła prognozę?** sprawdzisz rzeczywiste błędy obu wariantów na wspólnych zakończonych godzinach. Sama zmiana prognozy nie dowodzi poprawy trafności. Nocne zerowe okresy są pomijane, a bieżąca godzina w tabeli prognozy jest wyróżniona na zielono. Napięcia mają skalę dopasowaną do odczytów, a lista próbek wymagających uwagi obejmuje godziny dzienne.
+
+
+### Trwałe prognozy w panelu Energia
+
+Od wersji 0.5.4 plik `/data/energy-forecast-archive.json` przechowuje godzinowe prognozy PV Lab dla panelu Energia. Aplikacja nigdy nie usuwa ich automatycznie: retencja dzienników, import statystyk i zmiana ustawień nie kasują tego archiwum. Plik jest widoczny w przeglądarce plików aplikacji oraz w eksporcie kopii danych. Zabezpiecz katalog danych kopią zapasową HA — usunięcie danych dodatku usuwa też archiwum.
+
+Dla zakończonej godziny zachowujemy ostatnią kompletną prognozę zapisaną przed jej początkiem. Nie zastępujemy jej produkcją rzeczywistą ani wynikiem późniejszego modelu. Godziny bieżące i przyszłe są aktualizowane. Czasy zapisujemy w UTC, więc zmiana czasu nie łączy dwóch różnych godzin.
+
+Pierwsze uruchomienie odzyskuje dostępne wcześniejsze prognozy z zachowanych dzienników `published` (domyślnie 14 dni). Brakujących, wcześniej niezapisanych prognoz nie odtwarzamy. Trwała historia jest przekazywana osobnej integracji PV Lab — zaktualizuj również ją w HACS i uruchom ponownie HA. Nie wymaga nowej bazy danych.

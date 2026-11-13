@@ -21,3 +21,12 @@ Wymagana jest szczegółowa historia mocy w Recorder. Same dobowe kWh nie odtwor
 ## Dane
 
 Dane pozostają w /data: ustawienia, model, raporty i pochodne profile. Surowa historia urządzeń jest odczytywana z HA tylko na czas analizy. Dane i kalibracja nie są kasowane. Nie publikuj katalogu /data, klucza parowania ani eksportu w GitHub.
+
+
+### Trwałe prognozy w panelu Energia
+
+Od wersji 0.5.4 plik `/data/energy-forecast-archive.json` przechowuje godzinowe prognozy PV Lab dla panelu Energia. Aplikacja nigdy nie usuwa ich automatycznie: retencja dzienników, import statystyk i zmiana ustawień nie kasują tego archiwum. Plik jest widoczny w przeglądarce plików aplikacji oraz w eksporcie kopii danych. Zabezpiecz katalog danych kopią zapasową HA — usunięcie danych dodatku usuwa też archiwum.
+
+Dla zakończonej godziny zachowujemy ostatnią kompletną prognozę zapisaną przed jej początkiem. Nie zastępujemy jej produkcją rzeczywistą ani wynikiem późniejszego modelu. Godziny bieżące i przyszłe są aktualizowane. Czasy zapisujemy w UTC, więc zmiana czasu nie łączy dwóch różnych godzin.
+
+Pierwsze uruchomienie odzyskuje dostępne wcześniejsze prognozy z zachowanych dzienników `published` (domyślnie 14 dni). Brakujących, wcześniej niezapisanych prognoz nie odtwarzamy. Trwała historia jest przekazywana osobnej integracji PV Lab — zaktualizuj również ją w HACS i uruchom ponownie HA. Nie wymaga nowej bazy danych.

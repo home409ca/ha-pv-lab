@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import {spawn} from 'node:child_process';
-import {mkdtemp,rm,readFile} from 'node:fs/promises';
+import {mkdtemp,rm,readFile,writeFile} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -40,6 +40,10 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
   });
   const haPort=await listen(mock),portServer=http.createServer(),appPort=await listen(portServer);await new Promise(r=>portServer.close(r));
   const env={...process.env,HA_URL:`http://127.0.0.1:${haPort}`,HA_TOKEN:'TEST_PRIVATE_TOKEN',DATA_DIR:dir,PORT:String(appPort)};delete env.SUPERVISOR_TOKEN;
+  const permanentStart='2020-01-01T10:00:00.000Z';
+  await writeFile(path.join(dir,'energy-forecast-archive.json'),JSON.stringify({version:1,hours:{[permanentStart]:{wh:1234,issuedAt:Date.parse(permanentStart)-1000}}}));
+  const recoveryHour=hour-86400000,recoveryKey=new Date(recoveryHour).toISOString(),issued=recoveryHour-3600000;
+  await writeFile(path.join(dir,'published-'+new Date(issued).toISOString().slice(0,10)+'.jsonl'),JSON.stringify({at:issued,providers:[],rows:Array.from({length:4},(_,i)=>({start:recoveryHour+i*900000,wh:100,sources:[]}))})+'\n');
   const child=spawn(process.execPath,[fileURLToPath(new URL('../src/server.mjs',import.meta.url))],{env,stdio:'pipe'});let output='';child.stdout.on('data',x=>output+=x);child.stderr.on('data',x=>output+=x);
   const base=`http://127.0.0.1:${appPort}`,get=p=>fetch(base+p).then(r=>r.json()),post=(p,b,h={})=>fetch(base+p,{method:'POST',headers:{'Content-Type':'application/json','X-PV-Lab':'1',...h},body:JSON.stringify(b)});
   try{
@@ -52,7 +56,7 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
     const html=await fetch(base+'/');assert.equal(html.status,200);assert.ok((await html.text()).includes('PV Lab'));assert.equal((await fetch(base+'/app.js')).status,200);
     assert.equal((await fetch(base+'/insights.js')).status,200);
     assert.equal((await fetch(base+'/api/integration')).status,401);
-    const pairingKey=v.integrationSetup.token,paired=await fetch(base+'/api/integration',{headers:{Authorization:'Bearer '+pairingKey}});assert.equal(paired.status,200);const contract=await paired.json();assert.equal(contract.schema,1);assert.equal(contract.days.length,8);assert.ok(!JSON.stringify(contract).includes(pairingKey));
+    const pairingKey=v.integrationSetup.token,paired=await fetch(base+'/api/integration',{headers:{Authorization:'Bearer '+pairingKey}});assert.equal(paired.status,200);const contract=await paired.json();assert.equal(contract.schema,1);assert.equal(contract.days.length,8);assert.equal(contract.energyWhHours[permanentStart],1234);assert.equal(contract.energyWhHours[recoveryKey],400);assert.ok(!JSON.stringify(contract).includes(pairingKey));
     assert.equal((await post('/api/integration',{}, {Authorization:'Bearer '+pairingKey})).status,405);
     const files=await get('/api/files');assert.ok(!files.files.some(f=>f.name==='integration-key.json'));assert.equal((await fetch(base+'/api/file?name=integration-key.json')).status,404);
     const sampleName=files.files.find(f=>f.name.startsWith('sample-')).name,preview=await get('/api/file?name='+sampleName);assert.ok(!preview.text.includes('voltages'));assert.ok(preview.text.includes('voltageFlag'));
@@ -64,9 +68,9 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
     assert.equal((await post('/api/plan',{energyKWh:0},{Authorization:'Bearer '+pairingKey})).status,400);assert.equal((await post('/api/plan',{entities:{}},{Authorization:'Bearer '+pairingKey})).status,400);assert.equal((await post('/api/plan',{energyKWh:4},{Authorization:'Bearer wrong'})).status,401);
     assert.ok((await get('/api/view')).reports);assert.ok((await get('/api/view')).planner);assert.equal((await fetch(base+'/planning.js')).status,200);
     assert.equal((await fetch(base+'/appliances.js')).status,200);
-    const htmlResponse=await fetch(base+'/');assert.equal(htmlResponse.headers.get('cache-control'),'no-store');assert.ok((await htmlResponse.text()).includes('./ui/0.5.3/app.js'));
-    const uiResponse=await fetch(base+'/ui/0.5.3/app.js');assert.equal(uiResponse.status,200);assert.ok(uiResponse.headers.get('cache-control').includes('immutable'));
-    assert.equal((await fetch(base+'/ui/0.5.3/historical.js')).status,200);assert.equal((await fetch(base+'/ui/0.5.3/view-state.js')).status,200);assert.equal((await fetch(base+'/ui/0.4.2/app.js')).status,410);
+    const htmlResponse=await fetch(base+'/');assert.equal(htmlResponse.headers.get('cache-control'),'no-store');assert.ok((await htmlResponse.text()).includes('./ui/0.5.4/app.js'));
+    const uiResponse=await fetch(base+'/ui/0.5.4/app.js');assert.equal(uiResponse.status,200);assert.ok(uiResponse.headers.get('cache-control').includes('immutable'));
+    assert.equal((await fetch(base+'/ui/0.5.4/historical.js')).status,200);assert.equal((await fetch(base+'/ui/0.5.4/view-state.js')).status,200);assert.equal((await fetch(base+'/ui/0.4.2/app.js')).status,410);
     assert.ok((await get('/api/historical-profile?date=2026-06-10')).rows);
 
     assert.equal((await post('/api/profiles/analyze',{deviceId:'pralka',days:1})).status,200);
@@ -80,11 +84,11 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
     await post('/api/plan',{profileId:profile.id,profileVariant:'typical'});assert.equal((await post('/api/profiles/delete',{id:profile.id})).status,200);assert.equal((await get('/api/view')).planner.settings.profileId,null);
     const discovered=await get('/api/statistics/metadata');assert.equal(discovered.items.length,3);assert.equal(discovered.items[0].unit_of_measurement,'kWh');assert.equal(discovered.items[2].unit_of_measurement,'Wh');
     assert.equal((await post('/api/statistics/import',{days:35})).status,200);await until(async()=>{const x=await get('/api/view');return x.job?.type==='statistics'&&!x.job.running;});const statisticsView=await get('/api/view');assert.equal(statisticsView.job.error,null);assert.equal(statisticsView.job.done,35);assert.ok(statisticsView.statistics.days.length>0);assert.equal(statsSocket.commands.filter(m=>m.type==='recorder/statistics_during_period').length,3);
-    const exported=JSON.stringify(await get('/api/export'));assert.ok(!exported.includes('TEST_PRIVATE_TOKEN'));assert.ok(!exported.includes(pairingKey));assert.ok(!output.includes('TEST_PRIVATE_TOKEN'));
+    const backup=await get('/api/export');assert.equal(backup.energyArchive.hours[permanentStart].wh,1234);const exported=JSON.stringify(backup);assert.ok(!exported.includes('TEST_PRIVATE_TOKEN'));assert.ok(!exported.includes(pairingKey));assert.ok(!output.includes('TEST_PRIVATE_TOKEN'));
     assert.equal((await post('/api/history',{days:1})).status,200);await until(async()=>{const x=await get('/api/view');return x.job&&!x.job.running;});
     const imported=await get('/api/view');assert.equal(imported.latest.power,1000);assert.ok(imported.storage.samples>1000);assert.equal(imported.analysis.evaluated,0);
     const retentionOnly=structuredClone(v.config);retentionOnly.retention.samplesDays=10;const retentionResponse=await (await post('/api/settings',retentionOnly)).json();assert.equal(retentionResponse.reset,false);
     const changed=structuredClone(retentionOnly);changed.inverter.limitW=5000;const changedResponse=await post('/api/settings',changed);assert.equal(changedResponse.status,200);assert.equal((await changedResponse.json()).reset,true);assert.equal((await get('/api/settings')).inverter.limitW,5000);
-    assert.equal(JSON.parse(await readFile(path.join(dir,'settings.json'),'utf8')).inverter.limitW,5000);assert.equal(badCall,false);
+    assert.equal(JSON.parse(await readFile(path.join(dir,'settings.json'),'utf8')).inverter.limitW,5000);assert.equal(JSON.parse(await readFile(path.join(dir,'energy-forecast-archive.json'),'utf8')).hours[permanentStart].wh,1234);assert.equal(badCall,false);
   }finally{child.kill();await new Promise(r=>child.once('exit',r));statsSocket.close();await new Promise(r=>mock.close(r));await rm(dir,{recursive:true,force:true});}
 });
