@@ -29,8 +29,8 @@ export class InfluxClient{
   if(data.error||data.results?.some(r=>r.error))throw new Error('InfluxDB odrzucił zapytanie. Sprawdź bazę, retencję i uprawnienia.');
   return (data.results||[]).flatMap(r=>r.series||[]);
  }
- async inspect(c){
-  const requested=historyEntities(c,this.settings),ids=requested.map(x=>x.id.replace(/^sensor\./,'')),regex='^('+ids.join('|')+')$';
+ async inspect(c,requested=historyEntities(c,this.settings)){
+  const ids=requested.map(x=>x.id.replace(/^sensor\./,'')),regex='^('+ids.join('|')+')$';
   const series=await this.query(`SHOW TAG VALUES FROM /.*/ WITH KEY = "entity_id" WHERE "entity_id" =~ /${regex}/ LIMIT 1000`);
   const found=series.flatMap(s=>(s.values||[]).map(v=>({measurement:s.name,entity:'sensor.'+v[1]})));
   return requested.map(r=>({...r,measurement:found.find(f=>f.entity===r.id&&r.units.includes(f.measurement))?.measurement||null}));

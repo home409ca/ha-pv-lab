@@ -1,3 +1,9 @@
+# 0.6.3
+
+- Analiza przestojów z InfluxDB dla wybranego dnia: napięcia, statusy, moc i luki pomiarów.
+- Osobne oznaczenia ostrzeżeń napięciowych i prawdopodobnych przestojów; wysokie napięcie samo nie oznacza wyłączenia.
+- Trwały raport do pobrania bez zapisu surowej historii napięć. Analiza diagnostyczna nie zmienia jeszcze prognozy.
+
 # 0.6.2
 
 - Rozdzielono widoczną referencję historyczną od zgody na korygowanie prognozy.
