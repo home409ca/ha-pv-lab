@@ -6,6 +6,7 @@ import tempfile
 import textwrap
 import unittest
 import zipfile
+from unittest.mock import patch
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('release_tested', ROOT / 'scripts/release.py')
@@ -38,8 +39,25 @@ class FakeGitHub:
 
 
 class ReleaseTests(unittest.TestCase):
+    def test_stale_app_changelog_blocks_publication(self):
+        original = pathlib.Path.read_text
+        def read(file, *args, **kwargs):
+            if file == ROOT / 'pv_lab/CHANGELOG.md':
+                return '# 0.5.3\nStare informacje\n'
+            return original(file, *args, **kwargs)
+        with patch.object(pathlib.Path, 'read_text', read):
+            with self.assertRaisesRegex(ValueError, 'Release notes must match'):
+                release.validate_versions(ROOT)
+
+    def test_release_body_includes_current_changes_only(self):
+        notes = release.release_notes('0.6.2')
+        self.assertIn('Statystyczny profil', notes)
+        self.assertNotIn('# 0.6.1', notes)
+        with self.assertRaises(ValueError):
+            release.release_notes('0.0.0')
+
     def test_versions_match_and_workflow_has_no_external_actions(self):
-        self.assertEqual(release.validate_versions(ROOT), '0.6.1')
+        self.assertEqual(release.validate_versions(ROOT), '0.6.2')
         workflow = (ROOT / '.github/workflows/release.yml').read_text(encoding='utf-8')
         self.assertNotIn('uses:', workflow)
         self.assertIn('contents: write', workflow)
@@ -50,28 +68,28 @@ class ReleaseTests(unittest.TestCase):
 
     def test_publish_creates_checked_commit_draft_uploads_then_patches_to_public(self):
         api = FakeGitHub()
-        release.publish(api, '0.6.1', SHA, pathlib.Path('pv-lab-update-0.6.1.zip'))
+        release.publish(api, '0.6.2', SHA, pathlib.Path('pv-lab-update-0.6.2.zip'))
         post = next(payload for path, payload, method in api.calls if path == '/releases')
         self.assertEqual(post['target_commitish'], SHA)
         self.assertTrue(post['draft'])
         self.assertEqual(api.calls[-1], ('/releases/1', {'draft': False, 'make_latest': 'true'}, 'PATCH'))
 
     def test_published_version_never_overwritten_and_older_not_latest(self):
-        api = FakeGitHub(existing={'draft': False, 'tag_name': 'v0.6.1'})
-        release.publish(api, '0.6.1', SHA, pathlib.Path('x.zip'))
+        api = FakeGitHub(existing={'draft': False, 'tag_name': 'v0.6.2'})
+        release.publish(api, '0.6.2', SHA, pathlib.Path('x.zip'))
         self.assertEqual(len(api.calls), 1)
-        api = FakeGitHub(latest={'tag_name': 'v0.6.1'})
-        release.publish(api, '0.6.1', SHA, pathlib.Path('x.zip'))
+        api = FakeGitHub(latest={'tag_name': 'v0.6.2'})
+        release.publish(api, '0.6.2', SHA, pathlib.Path('x.zip'))
         self.assertFalse(any(payload is not None for path, payload, method in api.calls))
 
     def test_retry_resumes_draft_and_rejects_mismatched_tag(self):
         api = FakeGitHub(existing={'id': 1, 'draft': True, 'target_commitish': SHA, 'assets': [{'name': 'x.zip'}]})
-        release.publish(api, '0.6.1', SHA, pathlib.Path('x.zip'))
+        release.publish(api, '0.6.2', SHA, pathlib.Path('x.zip'))
         self.assertFalse(any(path == 'upload' for path, payload, method in api.calls))
         self.assertEqual(api.calls[-1][2], 'PATCH')
         api = FakeGitHub(ref={'object': {'type': 'commit', 'sha': 'b' * 40}})
         with self.assertRaises(ValueError):
-            release.publish(api, '0.6.1', SHA, pathlib.Path('x.zip'))
+            release.publish(api, '0.6.2', SHA, pathlib.Path('x.zip'))
 
     def test_archive_includes_workflow_and_excludes_runtime_data(self):
         with tempfile.TemporaryDirectory() as directory:

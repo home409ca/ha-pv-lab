@@ -35,6 +35,9 @@ def validate_versions(root):
     native = next(node.value.value for node in constants.body if isinstance(node, ast.Assign) and getattr(node.targets[0], 'id', '') == 'VERSION')
     if package['version'] != version or native != version or not re.search(r'^version:\s*["\x27]?' + re.escape(version) + r'["\x27]?\s*$', config, re.M) or not re.search(r"APP_VERSION\s*=\s*['\"]" + re.escape(version) + r"['\"]", app):
         raise ValueError('App and integration versions must match before release')
+    notes = [(root / path).read_text(encoding='utf-8') for path in ('CHANGELOG.md', 'pv_lab/CHANGELOG.md', 'custom_components/pv_lab/CHANGELOG.md')]
+    if len(set(notes)) != 1 or not notes[0].startswith('# ' + version + '\n'):
+        raise ValueError('Release notes must match across app, integration and repository, and include the current version')
     if manifest.get('integration_type') != 'service':
         raise ValueError('Energy forecast integration must be a service')
     for path in ('hacs.json', 'repository.yaml', 'pv_lab/src/appliances.mjs', 'custom_components/pv_lab/select.py'):
@@ -97,6 +100,14 @@ class GitHub:
             return json.load(response)
 
 
+def release_notes(version, root=ROOT):
+    text = (root / 'CHANGELOG.md').read_text(encoding='utf-8')
+    prefix = '# ' + version + '\n'
+    if not text.startswith(prefix):
+        raise ValueError('Current release notes are missing')
+    return text[len(prefix):].split('\n# ', 1)[0].strip()
+
+
 def publish(api, version, commit, archive):
     if not re.fullmatch(r'[0-9a-f]{40}', commit):
         raise ValueError('Release must target an immutable commit SHA')
@@ -122,7 +133,8 @@ def publish(api, version, commit, archive):
             raise ValueError('Tag already points to another commit; use a new version')
     if existing and existing.get('target_commitish') != commit:
         raise ValueError('Draft release targets another commit; use a new version')
-    release = existing or api.request('/releases', {'tag_name': tag, 'target_commitish': commit, 'name': 'PV Lab ' + version, 'body': 'Aplikacja i integracja PV Lab ' + version + '. Instrukcja: README.md oraz CHANGELOG.md w repozytorium. Zaktualizuj aplikację oraz integrację, następnie uruchom ponownie Home Assistant.', 'draft': True, 'prerelease': False})
+    body = release_notes(version) + '\n\nZaktualizuj aplikację oraz integrację PV Lab, następnie uruchom ponownie Home Assistant. Instrukcja: UPDATE-' + version + '.md w repozytorium.'
+    release = existing or api.request('/releases', {'tag_name': tag, 'target_commitish': commit, 'name': 'PV Lab ' + version, 'body': body, 'draft': True, 'prerelease': False})
     if archive.name not in {a['name'] for a in release.get('assets', [])}:
         api.upload(release, archive)
     release = api.request('/releases/' + str(release['id']), {'draft': False, 'make_latest': 'true'}, method='PATCH')

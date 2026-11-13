@@ -1,82 +1,38 @@
-# 0.5.3
+# 0.6.2
 
-- Rozwinięte szczegóły i objaśnienia pozostają otwarte podczas automatycznego odświeżania widoku.
-- Czytelny opis brakującego wariantu przed historią oraz osobne informacje o źródle energii i jakości próbek.
-- Wyjaśnione wykorzystanie i automatyczne uzupełnianie danych w Historii i trendach.
+- Rozdzielono widoczną referencję historyczną od zgody na korygowanie prognozy.
+- Statystyczny profil poprawnych godzin może odtworzyć powtarzalne niedobory poniżej 60% modelu, bez uznawania ich za potwierdzoną pogodę.
+- Korekta statystyczna wymaga liczebności, powtarzalności między sezonami i wystarczającego udziału poprawnych obserwacji; jej wpływ jest dodatkowo ograniczony.
+- Tabela pokazuje metodę, liczbę potwierdzeń, udział poprawnych dni i konkretne powody blokady korekty.
+- Zsynchronizowano historię zmian aplikacji, integracji i repozytorium. Publikacja sprawdza ich zgodność i umieszcza bieżące zmiany w opisie wydania.
+- Nie trzeba ponownie importować danych. Nie zmieniono historycznych pomiarów, ustawień jakości, raportów ani trwałego archiwum Energii.
 
-# 0.5.2
+# 0.6.1
 
-- Zakres godzin produkcyjnych w prognozach i raportach, bez zapisywania nocnych zer.
-- Podświetlenie bieżącej godziny.
-- Widoczny wpływ korekty historycznej oraz porównanie błędów przed i po korekcie.
-- Automatyczna skala napięć i dzienne próbki wymagające uwagi.
+- Poprawiono kwalifikację referencji historycznej: pojedyncza zła godzina i brak zapisów nocnych nie wykluczają całego dnia.
+- Stabilne fragmenty co najmniej trzech kolejnych godzin mogą zasilać profil z ograniczoną wagą i wpływem.
+- Dodano liczebność referencji, informacje o fragmentach, czas przeliczenia i edytowalne progi.
+- Istniejąca historia jest wykorzystywana po restarcie bez ponownego importu.
+
+# 0.6.0
+
+- Import wieloletniej produkcji, napięć/statusów jako flag jakości i optymalizatorów z istniejącej bazy InfluxDB.
+- Profile godzinowe i sezonowe oraz historyczne porównania paneli bez duplikowania godzin HA.
+- Nowy panel importu, postęp, zatrzymywanie, ponowne odczyty i automatyczne uzupełnianie po zakończonym imporcie.
+- Odczyt archiwów Solcast/Open-Meteo do porównań opisowych, bez udawania znanego czasu wydania prognozy.
+- Opis HACS z README.md; aktualna dokumentacja i zachowane trwałe archiwum Energii.
+
+# 0.5.4
+
+- Trwałe archiwum godzinowych prognoz dla panelu Energia, bez automatycznego kasowania.
+- Odzyskanie dostępnych prognoz z dzienników oraz przekazywanie historii przez integrację.
+- Historia pozostaje dostępna przy braku bieżącej prognozy.
 
 # 0.5.1
 
-- Stopniowe wykorzystanie profilu historycznego, statusy nocne i zachowanie pomiarów wykluczonych z uczenia w widoku produkcji rzeczywistej.
-- Poprawiona wielkość pozycji menu Historyczny potencjał.
-- Uaktualniona dokumentacja dodatku bez starego numeru 0.2 w tytule.
+- Automatyczne numerowane wydania dla HACS bez zewnętrznych Actions.
+- Profile z historii urządzeń: potwierdzanie cykli, trzy warianty i korekta ręczna.
+- Planowanie według faz pracy i dwa wybory profilu w HA.
+- Zachowanie funkcji i danych 0.3.0.
 
-# 0.5.1
-
-- Profile z historii mocy, wybór cykli i edytor przebiegu.
-- Planowanie według faz pracy co 5 minut.
-- Encje pralki i zmywarki oraz edytowalne progi.
-- Automatyczne wydania HACS.
-
-# 0.3.0
-
-- Raporty godzinowe/dobowe/miesięczne/roczne, plan na jutro i ocena bieżąca.
-- Ciągłe okna 1/2/3 h oraz stany po zakończeniu produkcji.
-- Planowanie zapotrzebowania, rezerwa domu i trzy tryby bilansowania.
-- Saldo bieżącej godziny z potwierdzonej encji użytkownika.
-- Integracja HA z nowymi sensorami i wejściami number/select/datetime.
-
-# 0.2.5
-
-- Odczyt bieżącego stanu i czasu ostatniego zgłoszenia statusu przez API szablonów HA; usuwa fałszywe odrzucanie niezmiennego On-grid.
-- Kontrola rzeczywistej świeżości, awarii i jakości pomiarów pozostaje aktywna.
-- Bez resetowania kalibracji i zmiany integracji HACS.
-
-# 0.2.4
-
-- Osobne krzywe Forecast.Solar, Open-Meteo, Solcast i PV Lab ze wspólną osią czasu i mocy.
-- Niezależne przełączniki serii, pomiar i opcjonalna prognoza połączona bez korekt.
-- Wybór oryginalnych prognoz lub wartości po limicie; brakujące źródła oznaczone bez sztucznych zer.
-- Zmiany dotyczą prezentacji; ustawienia, kalibracja i integracja pozostają bez zmian.
-
-# 0.2.3
-
-- Osobne przełączniki krzywych, widoczne identyczne przebiegi, oś całej doby.
-- Tabela prognozy godzina po godzinie z dostawcami, korektą, pozostałą energią i lukami.
-- Diagnostyka kalibracji, pokrycia pomiarami i wcześniejszych prognoz; edytowalne encje i statusy.
-- Wybrany dzień napięć: odczyt Recorder HA na żądanie, bez zapisu w PV Lab.
-- Instrukcja i diagnostyka podłączenia natywnej prognozy do panelu Energia.
-- Bez zmiany schematu modelu i ustawień; integracja HACS nadal 0.2.1.
-
-# 0.1.0
-
-- Pierwsza aplikacja lokalna z polskim panelem WWW przez Ingress.
-- Edytowalne parametry dwóch połaci, 18 optymalizatorów i limit 5500 W.
-- Odczyt istniejących integracji Huawei Solar, Forecast.Solar, Open-Meteo Solar i Solcast.
-- Zapisywanie prognoz i pomiarów w JSON/JSONL, kalibracja według dostawcy, horyzontu i sezonu.
-- Analiza napięć, jakości pomiarów i względnej produkcji paneli.
-- Oddzielny tryb demonstracyjny i import historii do inspekcji.
-# 0.2.0
-
-- Integracja HA z encjami prognoz, pozostałej energii, zmian i najlepszych okien 2/3 h; platforma prognozy dla Energii.
-- Widoczne prognozy źródłowe, mnożniki, wagi, rozpisane kwadranse i historia rewizji.
-- Ranking wspólnych okresów oraz walidacja zapisanych wariantów przed zdarzeniem, MAE/RMSE/WAPE.
-- Poprawiona kolejność: korekta produkcji przed limitem 5500 W; nowy model z archiwizacją checkpointu 0.1.
-- Napięcia domyślnie tylko w buforze pamięci, na dysku flagi jakości; edytowalna retencja i przeglądarka plików.
-- Import statystyk energii HA partiami po 30 dni, raporty dobowe, miesięczne i godzinowe, z potwierdzaniem liczników.
-- Retencja i kanały statystyk nie zerują kalibracji.
-
-# 0.2.2
-
-- Poprawiono rozpoznawanie jednostki w metadanych Recorder: `statistics_unit_of_measurement` w nowym HA i `unit_of_measurement` w starszym formacie.
-- Ta sama normalizacja działa w imporcie i wyszukiwarce liczników.
-- Dodano komunikaty per identyfikator: brak statystyki, brak sumy, nieobsługiwana jednostka oraz pusty zakres historii.
-- Dodano regresję prawdziwego schematu publicznej odpowiedzi HA i pełnego przepływu HTTP/WebSocket z symulowaną historią.
-- Wersja aplikacji jest publikowana spójnie w API i panelu. Integracja HACS pozostaje w wersji 0.2.1, bez zmiany protokołu.
-
+[Instrukcja](UPDATE-0.5.1.md).

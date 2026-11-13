@@ -20,9 +20,9 @@ test('three good consecutive sunny hours can supply a conservative fragment refe
  assert.equal(ref.eligible,true);assert.equal(ref.fragmentDays,ref.brightDays);assert.ok(ref.brightDays>=10);assert.equal(ref.brightYears,2);assert.ok(ref.confidence>0);assert.ok(profile.summary.channels[0].referenceDiagnostics.fragmentReferences>0);
  const full=createHistoricalProfile(archive(),c,now).hour('total',target);assert.ok(ref.confidence<full.confidence);assert.ok(Math.abs(ref.attainableKWh-ref.clearKWh*.8)<1e-8);
 });
-test('isolated points, cloudy fragments and a gap between otherwise good hours cannot create a reference',()=>{
+test('partial days cannot create a bright reference but repeated valid hours may build a statistical profile',()=>{
  for(const input of [{hours:[9,10]},{hours:[9,11,13]},{hours:[9,10,11],ratio:.2},{hours:[9,10,11],badHour:10}]){
-  const p=createHistoricalProfile(archive(input),c,now),ref=p.hour('total',target);assert.equal(ref.eligible,false,JSON.stringify(input));assert.equal(ref.brightDays,0,JSON.stringify(input));
+  const p=createHistoricalProfile(archive(input),c,now),ref=p.hour('total',target);assert.equal(ref.brightDays,0,JSON.stringify(input));if(input.hours.includes(10)&&input.badHour!==10){assert.equal(ref.referenceMethod,'statistical');assert.equal(ref.eligible,true);assert.ok(ref.confidence<=.4);}else assert.equal(ref.eligible,false,JSON.stringify(input));
  }
 });
 test('unstable high production inside an otherwise sparse fragment is not interpreted as a sunny reference',()=>{

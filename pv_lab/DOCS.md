@@ -52,3 +52,8 @@ Instrukcja: [UPDATE-0.6.0.md](../UPDATE-0.6.0.md). Nowa zakładka „Import hist
 ## Kwalifikacja historii od 0.6.1
 
 Profil wykorzystuje szersze poprawne części dni albo stabilne fragmenty co najmniej 3 godzin. Nie wymaga kompletu 24 godzin. Szczegóły i ograniczenia: [UPDATE-0.6.1.md](../UPDATE-0.6.1.md). Poprawka korzysta z zapisanej historii bez ponownego importu.
+
+
+## Statystyczny profil godzinowy od 0.6.2
+
+Widoczność referencji jest oddzielona od aktywności korekty. Poprawne obserwacje mogą zasilać statystyczny wysoki poziom również poniżej progu 60% modelu. Dodatkowe kontrole jakości i powtarzalności chronią korektę; powód blokady jest pokazany w tabeli. Instrukcja: [UPDATE-0.6.2.md](../UPDATE-0.6.2.md). Nie trzeba ponawiać importu.
