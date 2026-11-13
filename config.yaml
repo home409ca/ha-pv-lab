@@ -1,0 +1,23 @@
+name: PV Lab
+version: "0.6.2"
+slug: pv_lab
+description: Lokalna analiza produkcji PV, napięć i kalibracja prognoz bez AI i bazy danych.
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: true
+stage: experimental
+homeassistant_api: true
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:solar-power-variant
+panel_title: PV Lab
+panel_admin: true
+map:
+  - type: homeassistant_config
+    read_only: true
+    path: /homeassistant
+options: {}
+schema: {}

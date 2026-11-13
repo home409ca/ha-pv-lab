@@ -24,4 +24,4 @@ Od wersji 0.6.0 otwórz „Import historii”, wpisz hasło InfluxDB, zapisz po�
 
 Hasło pozostaje w osobnym pliku `/data/influx-credentials.json`, poza przeglądarką plików i eksportem z panelu. Kopia dodatku HA obejmuje również dane logowania. Dodatek ma dostęp tylko do odczytu katalogu konfiguracji HA do odczytu archiwów prognoz. Parametry początkowe są edytowalne; nie zawierają hasła.
 
-Szczegóły: [instrukcja aplikacji](pv_lab/DOCS.md), [aktualizacja 0.6.1](UPDATE-0.6.1.md).
+Szczegóły: [instrukcja aplikacji](pv_lab/DOCS.md), [aktualizacja 0.6.2](UPDATE-0.6.2.md).
