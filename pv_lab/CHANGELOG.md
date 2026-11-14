@@ -1,3 +1,10 @@
+# 0.7.6
+
+- Naprawiono pusty wykres porównania z Energią: godzinne odstępy nie są już traktowane jak luki i punkty są łączone.
+- Usunięto przycisk ręcznego odczytu. Kontrola odbioru przez HA działa automatycznie najwyżej raz na minutę, w tle, bez blokowania podglądu eksportu.
+- Podgląd nadal używa dokładnie tych samych wartości co integracja HACS. Nie zmieniono prognozy ani archiwum; ponowny import nie jest potrzebny.
+- Uaktualniono pełną instrukcję.
+
 # 0.7.5
 
 - Dodano „PV Lab a panel Energia”: wykres i tabelę tych samych pełnych godzin w kWh, z różnicą, wersją, momentem zapisu i przyczyną.

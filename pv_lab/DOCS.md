@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.7.5 -->
+<!-- pv-lab-manual-version: 0.7.6 -->
 
-**Wersja aplikacji i instrukcji: 0.7.5.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.7.6.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -75,11 +75,11 @@ Sumuje kwadranse; aktualna godzina jest wyróżniona, nocne godziny ograniczane.
 
 ### PV Lab a panel Energia
 
-Nowa karta obok aktualnej tabeli godzinowej porównuje dwie wersje w tych samych pełnych godzinach i w kWh. Zielona linia to aktualna prognoza PV Lab, niebieska przerywana — wartości dokładnie z funkcji przekazującej prognozę integracji. Linie zgodne nakładają się. Nocne godziny bez znaczenia produkcyjnego są ograniczone.
+Nowa karta obok aktualnej tabeli godzinowej porównuje dwie wersje w tych samych pełnych godzinach i w kWh. Zielona linia to aktualna prognoza PV Lab, niebieska przerywana — wartości dokładnie z funkcji przekazującej prognozę integracji. Linie zgodne nakładają się. Rysowanie dopuszcza godzinny odstęp między punktami; godziny nie są traktowane jak luki w pomiarze kwadransowym. Nocne godziny bez znaczenia produkcyjnego są ograniczone.
 
 Tabela pokazuje pełny zakres z przesunięciem strefy i znacznik UTC, aktualną energię, eksportowaną energię, różnicę (eksport minus aktualna), rodzaj wersji, moment jej zapisu i przyczynę. Zakończone godziny zachowują prognozę znaną przed ich początkiem; przyszłe mają aktualną sumę czterech kwadransów. Brak zapisu, brak pełnej godziny lub nieświeże połączenie są opisane, a brak nie staje się zerem. Archiwum nie jest zmieniane przez podgląd.
 
-Przycisk „Odczytaj prognozę z Home Assistant” pobiera dane platformy Energia z HA. Osobne kolumny pokazują wartości odebrane przez HA i zgodność z bieżącym eksportem. Odczyt jest migawką z podaną datą; nie potwierdza odświeżenia karty Energia w innej karcie przeglądarki. W razie różnicy ponów odczyt; przyczyną może być starsza odpowiedź integracji. Ostrzeżenia informują także o innych wybranych źródłach i wielokrotnym przypisaniu PV Lab, które może sumować prognozy. Przy kilku instancjach bez jednoznacznego wyboru nie zgadujemy, którą porównywać.
+Kontrola odbioru prognozy przez Home Assistant działa automatycznie podczas korzystania z panelu, najwyżej raz na minutę. Nie wymaga przycisku. Podstawowy wykres i porównanie korzystają bezpośrednio z wyniku eksportera integracji i są dostępne niezależnie od tej kontroli. Osobne kolumny pokazują wartości odebrane przez HA i zgodność z bieżącym eksportem. Odczyt jest migawką z podaną datą; nie potwierdza odświeżenia karty Energia w innej karcie przeglądarki. W razie różnicy sprawdź czas odczytu; kontrola ponowi się automatycznie, a przyczyną może być starsza odpowiedź integracji. Awaria kontroli nie blokuje wyświetlenia lokalnej prognozy; ostatni udany odczyt pozostaje oznaczony swoją datą. Ostrzeżenia informują także o innych wybranych źródłach i wielokrotnym przypisaniu PV Lab, które może sumować prognozy. Przy kilku instancjach bez jednoznacznego wyboru nie zgadujemy, którą porównywać.
 
 Wykres kwadransowej mocy i wykres godzinowej energii nie muszą mieć identycznego kształtu: sumowanie godzin wygładza różnice wewnątrz godziny. Sama zmiana jednostki tylko skaluje wartości. HA dodatkowo sam pozycjonuje punkty i formatuje dymki, zależnie od wersji interfejsu. Dymek „11:30–12:30” nie jest dowodem, że źródło policzyło taki przedział. Znacznik eksportu jest początkiem pełnej godziny; podgląd pokazuje tę semantykę bez zmiany czasu danych. Ta sama godzina, wersja i jednostka powinny mieć te same wartości — temu służy nowa karta.
 
