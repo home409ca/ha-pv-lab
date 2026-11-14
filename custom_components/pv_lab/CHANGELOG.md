@@ -1,3 +1,9 @@
+# 0.7.8
+
+- Dodano opcjonalne, domyślnie wyłączone linie bazy zużycia domu i nadwyżki godzinowej w kWh. Model bazy jest wspólny z Optymalizatorem, a nadwyżka to aktualne PV minus baza domu.
+- Skala wykresu produkcji dopasowuje się do widocznych danych. Limit 5500 W / 5,5 kWh w godzinie jest pokazywany dopiero od około 5000 W / 5 kWh.
+- Wyjaśniono pełną bieżącą godzinę, bilansowanie i różnicę między nadwyżką a wspólnym planem urządzeń. Instrukcja jest uaktualniona.
+
 # 0.7.7
 
 - W „Porównaniu prognoz i produkcji” dodano przełącznik mocy W i energii godzinowej kWh. Domyślny widok energii jest zapamiętywany w przeglądarce.
