@@ -22,7 +22,7 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
   let badCall=false;const mock=http.createServer(async(req,res)=>{if(req.headers.authorization!=='Bearer TEST_PRIVATE_TOKEN'){badCall=true;res.writeHead(401);res.end();return;}
     let payload='';for await(const chunk of req)payload+=chunk;
     res.setHeader('Content-Type','application/json');if(req.url==='/api/states')return res.end(JSON.stringify(states));
-    if(req.url==='/api/config/config_entries/entry?domain=pv_lab')return res.end(JSON.stringify([{domain:'pv_lab',entry_id:'pv-lab-test',title:'PV Lab',state:'loaded'}]));
+    if(req.url==='/api/config/config_entries/entry?domain=pv_lab'||req.url==='/api/config/config_entries/entry')return res.end(JSON.stringify([{domain:'pv_lab',entry_id:'pv-lab-test',title:'PV Lab',state:'loaded'}]));
     if(req.url==='/api/config')return res.end(JSON.stringify({latitude:52,longitude:21}));
     if(req.url==='/api/template'&&payload.includes('as_timestamp')){const id=JSON.parse(payload).template.match(/'entity_id': '([^']+)'/)[1];return res.end(JSON.stringify({entity_id:id,state:id===defaults.entities.status?'On-grid':'unavailable',reported:id===defaults.entities.status?now/1000:null}));}
     if(req.url==='/api/template')return res.end(JSON.stringify(payload.includes('today_2')?'pv2-entry':'pv1-entry'));
@@ -68,9 +68,9 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
     assert.equal((await post('/api/plan',{energyKWh:0},{Authorization:'Bearer '+pairingKey})).status,400);assert.equal((await post('/api/plan',{entities:{}},{Authorization:'Bearer '+pairingKey})).status,400);assert.equal((await post('/api/plan',{energyKWh:4},{Authorization:'Bearer wrong'})).status,401);
     assert.ok((await get('/api/view')).reports);assert.ok((await get('/api/view')).planner);assert.equal((await fetch(base+'/planning.js')).status,200);
     assert.equal((await fetch(base+'/appliances.js')).status,200);
-    const htmlResponse=await fetch(base+'/');assert.equal(htmlResponse.headers.get('cache-control'),'no-store');assert.ok((await htmlResponse.text()).includes('./ui/0.7.6/app.js'));
-    const uiResponse=await fetch(base+'/ui/0.7.6/app.js');assert.equal(uiResponse.status,200);assert.ok(uiResponse.headers.get('cache-control').includes('immutable'));
-    assert.equal((await fetch(base+'/ui/0.7.6/historical.js')).status,200);assert.equal((await fetch(base+'/ui/0.7.6/view-state.js')).status,200);assert.equal((await fetch(base+'/ui/0.4.2/app.js')).status,410);
+    const htmlResponse=await fetch(base+'/');assert.equal(htmlResponse.headers.get('cache-control'),'no-store');assert.ok((await htmlResponse.text()).includes('./ui/0.7.7/app.js'));
+    const uiResponse=await fetch(base+'/ui/0.7.7/app.js');assert.equal(uiResponse.status,200);assert.ok(uiResponse.headers.get('cache-control').includes('immutable'));
+    assert.equal((await fetch(base+'/ui/0.7.7/historical.js')).status,200);assert.equal((await fetch(base+'/ui/0.7.7/view-state.js')).status,200);assert.equal((await fetch(base+'/ui/0.4.2/app.js')).status,410);
     assert.ok((await get('/api/historical-profile?date=2026-06-10')).rows);
 
     assert.equal((await post('/api/profiles/analyze',{deviceId:'pralka',days:1})).status,200);

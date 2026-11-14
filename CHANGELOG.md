@@ -1,3 +1,10 @@
+# 0.7.7
+
+- W „Porównaniu prognoz i produkcji” dodano przełącznik mocy W i energii godzinowej kWh. Domyślny widok energii jest zapamiętywany w przeglądarce.
+- Zachowano wybór dnia, dostawców i widoczności linii. Sumy godzin wymagają czterech kwadransów, pomiary pochodzą z zakończonych godzin raportów.
+- Ograniczono ostrzeżenie o innych prognozach do potwierdzonego przypisania konkretnej działającej integracji do tego samego licznika PV. Sama dostępność nie wywołuje ostrzeżenia.
+- Wyjaśniono różnicę między energią produkcji a wolną nadwyżką i uaktualniono instrukcję.
+
 # 0.7.6
 
 - Naprawiono pusty wykres porównania z Energią: godzinne odstępy nie są już traktowane jak luki i punkty są łączone.

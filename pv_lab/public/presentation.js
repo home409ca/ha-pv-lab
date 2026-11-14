@@ -28,3 +28,9 @@ export function parseLocalInput(value,zone){if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$
 
 export function shortTime(at,zone){return new Intl.DateTimeFormat('pl-PL',{timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(at);}
 export function shortRange(start,end,zone,includeOffset=false){const options={timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23',...(includeOffset?{timeZoneName:'shortOffset'}:{})},fmt=new Intl.DateTimeFormat('pl-PL',options);return fmt.format(start)+'–'+fmt.format(end);}
+
+export function hourlyForecastSeries(rows,day,zone,visibility,definitions,actualHours=[],now=Date.now()){
+ const [begin,end]=dayBounds(day,zone),base=forecastSeries(rows,[],{...visibility,measured:false},definitions),result=base.map(series=>{const quarters=new Map(series.points.map(p=>[p.x-SLOT/2,p.y])),points=[];for(let start=begin;start<end;start+=HOUR){const values=Array.from({length:4},(_,i)=>quarters.get(start+i*SLOT)),y=values.every(Number.isFinite)?values.reduce((a,b)=>a+b,0)/4000:null;points.push({x:start+HOUR/2,start,end:start+HOUR,y,tooltip:shortRange(start,start+HOUR,zone)+' · pełna godzina'});}return {...series,points,interval:true,maxGapMs:HOUR};});
+ if(visibility.measured){const measured=new Map(actualHours.filter(r=>Number.isFinite(r.actualKWh)&&r.actualKWh>=0&&r.start+HOUR<=now).map(r=>[r.start,r.actualKWh])),points=[];for(let start=begin;start<end;start+=HOUR)points.push({x:start+HOUR/2,start,end:start+HOUR,y:measured.get(start)??null,tooltip:shortRange(start,start+HOUR,zone)+' · pomiar zakończonej godziny'});result.push({label:'Pomiar — zakończone godziny',color:'#72b8ff',width:2,points,interval:true,maxGapMs:HOUR});}
+ return result;
+}
