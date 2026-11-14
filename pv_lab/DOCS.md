@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.7.8 -->
+<!-- pv-lab-manual-version: 0.7.9 -->
 
-**Wersja aplikacji i instrukcji: 0.7.8.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.7.9.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -58,7 +58,7 @@ W trybie kWh punkt oznacza sumę czterech kwadransów pełnej godziny, jest ryso
 
 To energia produkcji PV, a nie nadwyżka dla pralki. Przy bilansowaniu godzinowym wcześniejszy eksport w tej samej godzinie może pomóc, ale trzeba uwzględnić też inne odbiorniki. Przykład: 2 kWh produkcji minus 0,4 kWh zużycia reszty domu daje około 1,6 kWh na dodatkowy cykl w tej godzinie. To oszacowanie, nie gwarancja. Bieżącą pozostałą prognozę pokazuje tabela; wybór terminu z profilem urządzenia i domem obsługują Planowanie i Optymalizator. Przełącznik zmienia prezentację, nie model ani wyniki.
 
-**Opcjonalne zużycie domu i nadwyżka:** w trybie kWh można osobno zaznaczyć „Zużycie domu — baza” i „Nadwyżka PV po odjęciu domu”. Obie linie są domyślnie wyłączone przy otwarciu aplikacji. W trybie W są niedostępne. Korzystają z tego samego modelu bazy domu co Optymalizator: historii lub jawnej rezerwy, po odjęciu wskazanych urządzeń planowanych osobno. Dymek pokazuje pełną godzinę i źródło profilu. Brak pełnego pokrycia pozostaje przerwą, nie zerem; starszych godzin nie odtwarzamy dzisiejszym profilem.
+**Opcjonalne zużycie domu i nadwyżka:** w trybie kWh można osobno zaznaczyć „Zużycie domu — baza” i „Nadwyżka PV po odjęciu domu”. Obie linie są domyślnie wyłączone przy otwarciu aplikacji. Włączenie ich w trybie W automatycznie przełącza wykres na kWh. Korzystają z tego samego modelu bazy domu co Optymalizator: historii lub jawnej rezerwy, po odjęciu wskazanych urządzeń planowanych osobno. Dymek pokazuje pełną godzinę i źródło profilu. Brak pełnego pokrycia pozostaje przerwą, nie zerem; starszych godzin nie odtwarzamy dzisiejszym profilem.
 
 Nadwyżka godzinowa = max(suma PV w godzinie − suma bazy domu w godzinie, 0). Przykład: PV 2 kWh i baza domu 0,4 kWh dają 1,6 kWh. To szacunek dla bilansowania godzinowego przed rezerwacją energii dla innych dodatkowych cykli, nie gwarancja wolnej energii w każdej minucie. Dla bilansowania 15-minutowego/bez kompensacji oraz wspólnego planu użyj modułów planowania. Bieżąca godzina jest pokazana w całości, choć część czasu już upłynęła; energia dostępna od teraz wymaga uwzględnienia bieżącego salda. Baza jest odświeżana wraz z symulacją, a odejmowana produkcja pochodzi z aktualnej prognozy wykresu. Te linie nie zmieniają modelu PV ani harmonogramu.
 
@@ -477,3 +477,6 @@ Każde wydanie wymaga przeglądu zmienionych ekranów, obliczeń, ustawień, ret
 Kontrola techniczna nie dowodzi merytorycznej kompletności. Zasady repozytorium wymagają przeczytania i poprawienia opisu przy każdej zmianie — samo podmienienie numeru nie wystarcza.
 
 HTML działa bez internetu; można go wydrukować lub zapisać do PDF z przeglądarki. W razie różnic najpierw porównaj numer instrukcji i aplikacji.
+
+
+Włączenie „Zużycie domu — baza” lub „Nadwyżka PV po odjęciu domu” działa również z widoku W: aplikacja automatycznie przełącza wykres na energię godzinową kWh i zapamiętuje tę jednostkę. Pola nie są blokowane w widoku mocy. Obie dodatkowe linie pozostają domyślnie wyłączone.

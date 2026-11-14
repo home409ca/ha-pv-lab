@@ -1,7 +1,7 @@
 {
   "domain": "pv_lab",
   "name": "PV Lab",
-  "version": "0.7.8",
+  "version": "0.7.9",
   "documentation": "https://github.com/home409ca/ha-pv-lab",
   "issue_tracker": "https://github.com/home409ca/ha-pv-lab/issues",
   "config_flow": true,

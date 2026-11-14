@@ -1,3 +1,8 @@
+# 0.7.9
+
+- Naprawiono włączanie linii zużycia domu i nadwyżki: kliknięcie w widoku W automatycznie przełącza na kWh. Pola nie są już zablokowane.
+- Linie pozostają domyślnie wyłączone. Zaktualizowano instrukcję; algorytm prognozy pozostaje bez zmian.
+
 # 0.7.8
 
 - Dodano opcjonalne, domyślnie wyłączone linie bazy zużycia domu i nadwyżki godzinowej w kWh. Model bazy jest wspólny z Optymalizatorem, a nadwyżka to aktualne PV minus baza domu.
