@@ -68,9 +68,9 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
     assert.equal((await post('/api/plan',{energyKWh:0},{Authorization:'Bearer '+pairingKey})).status,400);assert.equal((await post('/api/plan',{entities:{}},{Authorization:'Bearer '+pairingKey})).status,400);assert.equal((await post('/api/plan',{energyKWh:4},{Authorization:'Bearer wrong'})).status,401);
     assert.ok((await get('/api/view')).reports);assert.ok((await get('/api/view')).planner);assert.equal((await fetch(base+'/planning.js')).status,200);
     assert.equal((await fetch(base+'/appliances.js')).status,200);
-    const htmlResponse=await fetch(base+'/');assert.equal(htmlResponse.headers.get('cache-control'),'no-store');assert.ok((await htmlResponse.text()).includes('./ui/0.7.9/app.js'));
-    const uiResponse=await fetch(base+'/ui/0.7.9/app.js');assert.equal(uiResponse.status,200);assert.ok(uiResponse.headers.get('cache-control').includes('immutable'));
-    assert.equal((await fetch(base+'/ui/0.7.9/historical.js')).status,200);assert.equal((await fetch(base+'/ui/0.7.9/view-state.js')).status,200);assert.equal((await fetch(base+'/ui/0.4.2/app.js')).status,410);
+    const htmlResponse=await fetch(base+'/');assert.equal(htmlResponse.headers.get('cache-control'),'no-store');assert.ok((await htmlResponse.text()).includes('./ui/0.8.0/app.js'));
+    const uiResponse=await fetch(base+'/ui/0.8.0/app.js');assert.equal(uiResponse.status,200);assert.ok(uiResponse.headers.get('cache-control').includes('immutable'));
+    assert.equal((await fetch(base+'/ui/0.8.0/historical.js')).status,200);assert.equal((await fetch(base+'/ui/0.8.0/view-state.js')).status,200);assert.equal((await fetch(base+'/ui/0.4.2/app.js')).status,410);
     assert.ok((await get('/api/historical-profile?date=2026-06-10')).rows);
 
     assert.equal((await post('/api/profiles/analyze',{deviceId:'pralka',days:1})).status,200);

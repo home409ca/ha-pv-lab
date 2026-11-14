@@ -1,5 +1,5 @@
 import {SLOT, floorSlot} from './time.mjs';
-export function numeric(v) {if(v===null||v===undefined||v===''||typeof v==='boolean')return null;const n=Number(v);return Number.isFinite(n)?n:null;}
+export function numeric(v) {if(v===null||v===undefined||typeof v==='string'&&v.trim()===''||typeof v==='boolean')return null;const n=Number(v);return Number.isFinite(n)?n:null;}
 export function seriesFromMap(map, minutes) {
   if(!map||typeof map!=='object'||Array.isArray(map))return [];
   const rows=Object.entries(map).map(([time,v])=>({start:Date.parse(time),wh:numeric(v),duration:minutes*60000}));
@@ -20,7 +20,7 @@ export function groupSeries(provider,group,states) {
   for(const id of group.entities){const a=states.get(id)?.attributes||{};let rows=[];
     if(provider.kind==='solcast')rows=Array.isArray(a.detailedForecast)&&a.detailedForecast.length?normalizeSolcast(a.detailedForecast):normalizeSolcast(a.detailedHourly,60);
     else if(a.wh_period_15m)rows=seriesFromMap(a.wh_period_15m,15);
-    else if(a.wh_period)rows=seriesFromMap(a.wh_period,provider.kind==='open_meteo'?60:60);
+    else if(a.wh_period)rows=seriesFromMap(a.wh_period,60);
     for(const r of rows)dedup.set(r.start,r);
   }
   return quarterHours([...dedup.values()]);

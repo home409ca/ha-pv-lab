@@ -8,7 +8,7 @@ export class HA {
     if(!res.ok)throw new Error(`Home Assistant: HTTP ${res.status} (${path.split('?')[0]}).`);
     const txt=await res.text();try{return JSON.parse(txt);}catch{return txt;}}
   async states(c){
-    const states=new Map((await this.request('/states')).map(s=>[s.entity_id,s]));
+    const result=await this.request('/states');if(!Array.isArray(result)||result.some(s=>!s||typeof s.entity_id!=='string'))throw new Error('Home Assistant nie zwrócił poprawnej listy encji.');const states=new Map(result.map(s=>[s.entity_id,s]));
     if(c){
       const id=c.entities.status;
       if(!/^[a-z_]+\.[a-z0-9_]+$/.test(id))throw new Error('Niepoprawna encja statusu falownika.');

@@ -8,7 +8,7 @@ export function correction(model,p,start,issued,c){const key=calibrationKey(p,st
 export function correctionInfo(model,p,start,issued,c){const key=calibrationKey(p,start,issued,c),h=horizon(Math.max(0,(start-issued)/3600000)),bin=model.bins[key],global=model.scores[`${p}|${h}`],local=bin?.n>=c.quality.minSamples;return {factor:correction(model,p,start,issued,c),simpleFactor:factor(global,c.quality.minSamples*3),profile:local?'pozycja Słońca i sezon':global?.n?'ogólny dostawcy i horyzontu':'brak kalibracji',key,n:(local?bin:global)?.n||0};}
 export function sampleReasons(s,c){const reasons=[];
   if(s.historyUnverified)reasons.push('historia bez potwierdzenia świeżości');
-  if(s.power===null||s.power<0)reasons.push('brak mocy');
+  if(!Number.isFinite(s.power)||s.power<0)reasons.push('brak mocy');
   const flag=s.voltageFlag||(s.voltages?.some(v=>v===null)?'missing':s.voltages?.some(v=>v!==null&&v>=c.quality.voltageWarning)?'high':s.voltages?'normal':'missing');
   if(flag==='missing')reasons.push('brak napięcia');
   if(!c.quality.normalStatuses.includes(s.status))reasons.push('status falownika');
@@ -21,7 +21,7 @@ export function actualInterval(samples,start,c) {
   for(let i=1;i<rows.length;i++){const a=rows[i-1],b=rows[i];const lo=Math.max(start,a.at),hi=Math.min(end,b.at);if(hi<=lo)continue;
     if(b.at-a.at>c.quality.maxGapSeconds*1000){reasons.add('przerwa w danych');continue;}
     for(const s of [a,b]){for(const r of sampleReasons(s,c))reasons.add(r);if(s.voltageFlag==='high'||s.voltages?.some(v=>v!==null&&v>=c.quality.voltageWarning))warnings.add('wysokie napięcie');}
-    if(a.power===null||b.power===null)continue;
+    if(!Number.isFinite(a.power)||!Number.isFinite(b.power))continue;
     const x=a.power+(b.power-a.power)*(lo-a.at)/(b.at-a.at), y=a.power+(b.power-a.power)*(hi-a.at)/(b.at-a.at);
     wh+=(x+y)/2*(hi-lo)/3600000;coverage+=hi-lo;
   }

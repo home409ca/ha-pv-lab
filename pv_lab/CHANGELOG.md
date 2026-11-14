@@ -1,3 +1,13 @@
+# 0.8.0
+
+- Audyt stabilności, danych, rozliczeń oraz głównych widoków; bez nowych zależności i usuwania danych.
+- Naprawiono kolizje równoczesnych zapisów JSON i nadpisywanie własnego cennika przez migrację starszych ustawień.
+- Brak pomiaru nie jest zerem: odrzucono puste teksty i niepoprawne moce; dodano czytelny błąd niepoprawnej odpowiedzi HA.
+- Naprawiono pamięć podręczną ryzyka sieci: słaby lub zakończony kwadrans nie przejmuje potrącenia innego przedziału.
+- Uproszczono Prognozy i Optymalizator: wykresy, okna i wspólny harmonogram przed szczegółami; zaawansowane sekcje są rozwijane. Linie domu i nadwyżki są nadal domyślnie wyłączone.
+- Przyspieszono grupowanie kroków symulacji bez zmiany wyników; usunięto martwe instrukcje i powtórzone opisy źródeł w dymkach.
+- Dodano testy regresji, sprawdzenie kopii użytkownika i raport audytu. Pełna instrukcja jest zaktualizowana.
+
 # 0.7.9
 
 - Naprawiono włączanie linii zużycia domu i nadwyżki: kliknięcie w widoku W automatycznie przełącza na kWh. Pola nie są już zablokowane.

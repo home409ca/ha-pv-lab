@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.7.9 -->
+<!-- pv-lab-manual-version: 0.8.0 -->
 
-**Wersja aplikacji i instrukcji: 0.7.9.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.8.0.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -70,6 +70,8 @@ Nadwyżka godzinowa = max(suma PV w godzinie − suma bazy domu w godzinie, 0). 
 
 <!-- tab:forecast -->
 ## 4. Prognozy i korekty
+
+Na początku są wykres, najlepsze okna i tabela godzinowa. Dane dostawców, wpływ historii, kontrola panelu Energia, składniki obliczeń, historia zmian i korekta sieci pozostają dostępne w rozwijanych sekcjach. Kliknij tytuł, aby je otworzyć; otwarcie jest zachowywane podczas automatycznego odświeżania widoku. Ukrycie sekcji nie wyłącza korekty ani źródła.
 
 ### Prognoza godzina po godzinie
 
@@ -152,6 +154,8 @@ Wybiera termin jednego cyklu, ograniczając dokupioną energię. Nie wybiera wed
 
 <!-- tab:optimizer -->
 ## 7. Optymalizator zużycia energii
+
+Najpierw pokazujemy wspólny harmonogram, a następnie bieżące moce i ceny. Konfiguracja kosztów, profil domu, szczegóły cyklu, zapisane plany i objaśnienia są rozwijane. Aby zapisać ustawienia albo zobaczyć profil bazy, otwórz odpowiednią sekcję. Wszystkie dotychczasowe ustawienia i operacje pozostały dostępne. „Koszt tego cyklu” oznacza koszt przy pozostałych urządzeniach już zaplanowanych; tych pozycji nie należy sumować. Całkowity dodatkowy koszt wspólnego planu jest liczony osobno, tylko raz.
 
 Wybiera terminy cykli według PV, zużycia domu, taryfy, bilansowania i niepewności. Zapis i potwierdzenie wykonania nie uruchamiają urządzeń.
 
@@ -480,3 +484,10 @@ HTML działa bez internetu; można go wydrukować lub zapisać do PDF z przeglą
 
 
 Włączenie „Zużycie domu — baza” lub „Nadwyżka PV po odjęciu domu” działa również z widoku W: aplikacja automatycznie przełącza wykres na energię godzinową kWh i zapamiętuje tę jednostkę. Pola nie są blokowane w widoku mocy. Obie dodatkowe linie pozostają domyślnie wyłączone.
+
+
+## Kontrola stabilności od wersji 0.8.0
+
+Zapisy JSON są wykonywane kolejno, z kopią wartości z momentu zlecenia zapisu. Zmniejsza to ryzyko kolizji równoczesnych operacji. Migracja istniejącego cennika zachowuje własne stawki, daty i wybór depozytu; wartości domyślne dotyczą nowych konfiguracji. Puste tekstowe pomiary, w tym same spacje, nie oznaczają zera. Niepoprawne wartości mocy nie mogą tworzyć pozornej zmierzonej energii.
+
+Ryzyko sieci sprawdza próg energii i zakończenie okresu przed odczytem wyniku z pamięci podręcznej. Słaby kwadrans poniżej 25 Wh nie przejmuje potrącenia z mocniejszego kwadransa tej samej godziny. Zasady identyfikowania przestoju, wymagane dni i maksymalna redukcja pozostają bez zmian. Wyniki cenowe nadal są symulacją przy podanych stawkach; aplikacja nie pobiera rachunku ani nie przewiduje automatycznie przyszłej RCEm.

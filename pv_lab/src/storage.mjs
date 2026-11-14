@@ -4,7 +4,7 @@ export class Storage {
   constructor(dir) {this.dir=dir;this.queue=Promise.resolve();this.bytes=0;}
   async init(){await mkdir(this.dir,{recursive:true});}
   async read(name,fallback){try{return JSON.parse(await readFile(path.join(this.dir,name),'utf8'));}catch(e){if(e.code==='ENOENT')return structuredClone(fallback);throw new Error(`Nie można odczytać ${name}; plik zachowano do odzyskania.`);}}
-  async atomic(name,value){const p=path.join(this.dir,name);await writeFile(p+'.tmp',JSON.stringify(value),{mode:0o600});await rename(p+'.tmp',p);}
+  async atomic(name,value){const p=path.join(this.dir,name),text=JSON.stringify(value);const task=this.queue.then(async()=>{await writeFile(p+'.tmp',text,{mode:0o600});await rename(p+'.tmp',p);});this.queue=task.catch(()=>{});return task;}
   async journal(kind,row){const name=`${kind}-${new Date(row.at).toISOString().slice(0,10)}.jsonl`;await appendFile(path.join(this.dir,name),JSON.stringify(row)+'\n');}
   async load(kind,days){const since=Date.now()-days*86400000, rows=[];for(const name of (await readdir(this.dir)).filter(n=>n.startsWith(kind+'-')&&n.endsWith('.jsonl')).sort()){
     const day=Date.parse(name.slice(kind.length+1,kind.length+11));if(day+86400000<since)continue;

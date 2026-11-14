@@ -54,6 +54,6 @@ export function planDevice(f,samples,c,plan=defaultPlan,now=Date.now(),library=e
     options.push({start,end,energyKWh:p.energyKWh,averageW:power,coveredKWh:p.energyKWh-deficit,coveragePercent:(1-deficit/p.energyKWh)*100,deficitKWh:deficit,physicalImportKWh:physical/1000,balanceEstimated:estimated,mode:p.mode});
   }
   options.sort((a,b)=>Math.round(a.deficitKWh*1e6)-Math.round(b.deficitKWh*1e6)||a.start-b.start);result.best=options[0]||null;result.alternatives=options.slice(0,3);
-  if(result.best){result.status=result.best.deficitKWh<.000001?'pełne pokrycie':'częściowe pokrycie';const overlap=Math.max(0,Math.min(result.best.end,periodEnd)-Math.max(result.best.start,now));balance.afterDeviceKWh=balance.forecastNetKWh===null?null:balance.forecastNetKWh-deviceWh(Math.max(result.best.start,now),Math.min(result.best.end,periodEnd),result.best.start)/1000;}
+  if(result.best){result.status=result.best.deficitKWh<.000001?'pełne pokrycie':'częściowe pokrycie';balance.afterDeviceKWh=balance.forecastNetKWh===null?null:balance.forecastNetKWh-deviceWh(Math.max(result.best.start,now),Math.min(result.best.end,periodEnd),result.best.start)/1000;}
   return result;
 }
