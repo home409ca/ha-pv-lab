@@ -1,3 +1,10 @@
+# 0.7.5
+
+- Dodano „PV Lab a panel Energia”: wykres i tabelę tych samych pełnych godzin w kWh, z różnicą, wersją, momentem zapisu i przyczyną.
+- Podgląd korzysta z dokładnie tego samego eksportera co integracja, bez przeliczania lub nadpisywania archiwum.
+- Dodano odczyt prognozy po stronie Home Assistant, kontrolę zgodności i ostrzeżenia o sumowaniu źródeł.
+- Wyjaśniono agregację kwadransów, pozycje punktów oraz dymki HA i uzupełniono pełną instrukcję.
+
 # 0.7.4
 
 - Dodano wykres profilu bazy domu używanego w bieżącej symulacji optymalizatora, nad tabelą kwadransów. Podgląd pokazuje moc, energię, źródło i liczbę dni; linia odniesienia wskazuje rezerwę.
