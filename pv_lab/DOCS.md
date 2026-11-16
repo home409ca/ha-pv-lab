@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.8.1 -->
+<!-- pv-lab-manual-version: 0.8.2 -->
 
-**Wersja aplikacji i instrukcji: 0.8.1.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.8.2.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -54,7 +54,7 @@ Prognoza jest kwadransowa. Godziny wyświetla się w ustawionej strefie, domyśl
 
 **Porównanie prognoz i produkcji:** linie źródeł, PV Lab i pomiaru. Przełącznik „Widok wykresu” wybiera „Energia w godzinie · kWh” (domyślnie) lub „Moc · W”. Wybór jest zapamiętany w przeglądarce i wspólny dla Przeglądu oraz Prognoz. Dzień, źródła i ukryte linie zachowują się w obu trybach tak samo. Oś W przedstawia średnią moc, czyli Wh kwadransa × 4. Ukrywanie linii i przełączenie wersji źródłowej/po limicie zmienia tylko wygląd. Mysz/dotyk pokazuje czas, pionową linię i wartości. Noc jest ograniczana; prawdziwe zera w dzień pozostają.
 
-W trybie kWh punkt oznacza sumę czterech kwadransów pełnej godziny, jest rysowany w jej środku, a wskazanie myszą/dotykiem pokazuje pełny zakres. Niekompletny przebieg pozostaje brakiem. Pomiar kWh pochodzi z zakończonych godzin raportów, w pierwszej kolejności statystyk HA, a nie z przypadkowej średniej punktów wykresu. Bieżący niepełny pomiar nie udaje produkcji całej godziny.
+W trybie kWh punkt oznacza sumę czterech kwadransów pełnej godziny, jest rysowany w jej środku, a wskazanie myszą/dotykiem pokazuje pełny zakres. Niekompletny przebieg pozostaje brakiem. Linia zakończonych pomiarów kWh pochodzi z raportów, w pierwszej kolejności statystyk HA, a nie z przypadkowej średniej punktów wykresu. Bieżący niepełny pomiar jest pokazywany osobno jako „Wyprodukowano dotychczas”; nie udaje produkcji całej godziny.
 
 To energia produkcji PV, a nie nadwyżka dla pralki. Przy bilansowaniu godzinowym wcześniejszy eksport w tej samej godzinie może pomóc, ale trzeba uwzględnić też inne odbiorniki. Przykład: 2 kWh produkcji minus 0,4 kWh zużycia reszty domu daje około 1,6 kWh na dodatkowy cykl w tej godzinie. To oszacowanie, nie gwarancja. Bieżącą pozostałą prognozę pokazuje tabela; wybór terminu z profilem urządzenia i domem obsługują Planowanie i Optymalizator. Przełącznik zmienia prezentację, nie model ani wyniki.
 
@@ -490,19 +490,30 @@ HTML działa bez internetu; można go wydrukować lub zapisać do PDF z przeglą
 Włączenie „Zużycie domu — baza” lub „Nadwyżka PV po odjęciu domu” działa również z widoku W: aplikacja automatycznie przełącza wykres na energię godzinową kWh i zapamiętuje tę jednostkę. Pola nie są blokowane w widoku mocy. Obie dodatkowe linie pozostają domyślnie wyłączone.
 
 
-## Kontrola stabilności od wersji 0.8.1
+## Kontrola stabilności od wersji 0.8.2
 
 Zapisy JSON są wykonywane kolejno, z kopią wartości z momentu zlecenia zapisu. Zmniejsza to ryzyko kolizji równoczesnych operacji. Migracja istniejącego cennika zachowuje własne stawki, daty i wybór depozytu; wartości domyślne dotyczą nowych konfiguracji. Puste tekstowe pomiary, w tym same spacje, nie oznaczają zera. Niepoprawne wartości mocy nie mogą tworzyć pozornej zmierzonej energii.
 
 Ryzyko sieci sprawdza próg energii i zakończenie okresu przed odczytem wyniku z pamięci podręcznej. Słaby kwadrans poniżej 25 Wh nie przejmuje potrącenia z mocniejszego kwadransa tej samej godziny. Zasady identyfikowania przestoju, wymagane dni i maksymalna redukcja pozostają bez zmian. Wyniki cenowe nadal są symulacją przy podanych stawkach; aplikacja nie pobiera rachunku ani nie przewiduje automatycznie przyszłej RCEm.
 
 
-## Odświeżanie, raporty i ocena limitu od wersji 0.8.1
+## Odświeżanie, raporty i ocena limitu od wersji 0.8.2
 
 „Odczytaj dane” wymusza świeży odczyt pomiarów i dostępnych prognoz z Home Assistant oraz ponowienie statystyk kWh. Omija interwał PV Lab; nie jest poleceniem zmiany harmonogramu dostawców chmurowych. Dodatkowy przycisk „Odśwież pomiary kWh” w raportach ponawia tylko statystyki energii. Równoległe żądania statystyk są łączone w jedno. Przycisk nie tworzy brakujących pomiarów.
 
-Automatycznie sprawdzamy statystyki co 2 minuty, po pierwszym odczycie godziny pobierając tylko ostatnie 2 godziny; szersze uzupełnienie następuje raz na godzinę. Błąd nie blokuje ponowienia do kolejnej pełnej godziny. Nadal pokazujemy tylko zakończone godziny kWh; punkt 08:30 oznacza całe 08:00–09:00. Poprawne całkowanie mocy jest źródłem zastępczym, a brak danych pozostaje brakiem. Panel raportu pokazuje czas odczytu statystyk i ewentualny błąd.
+Automatycznie sprawdzamy statystyki co 2 minuty, po pierwszym odczycie godziny pobierając tylko ostatnie 2 godziny; szersze uzupełnienie następuje raz na godzinę. Błąd nie blokuje ponowienia do kolejnej pełnej godziny. Linia pełnych pomiarów pokazuje zakończone godziny kWh; punkt 08:30 oznacza całe 08:00–09:00. Poprawne całkowanie mocy jest źródłem zastępczym, a brak danych pozostaje brakiem. Panel raportu pokazuje czas odczytu statystyk i ewentualny błąd.
 
 „Prognoza a produkcja” ma wykres z wyborem dnia i źródeł. Przy poziomie dni/miesięcy/lat wykres pokazuje kompletne sumy, a niepełne pozostają w tabeli jako częściowe. Obok jest porównanie średniego błędu źródeł na tych samych godzinach. Liczba wygranych wierszy nie jest jedyną miarą trafności. „Historia i trendy” pokazuje także miesięczny przebieg energii z importu; są to sumy pełnych dni, kompletność nadal widać w tabelach.
 
 Limit po normalizacji został wybrany po retrospektywnym porównaniu kilku wariantów na dostępnych wcześniej zapisanych prognozach. Przy wyznaczaniu profilu wykluczono późniejsze pomiary; nie odtwarzamy jednak dawnej dostępności i kwalifikacji wszystkich plików. Próba jest krótka i nie stanowi niezależnego testu przyszłych dni. Zmiana działa na nowe prognozy. Stare publikacje, raporty i godziny w Energii pozostają zapisami starej wersji i nie są poprawiane po fakcie.
+
+
+## Zakresy godzin i bieżąca produkcja od wersji 0.8.2
+
+Na godzinowych wykresach kWh oś pokazuje zakresy, np. **09–10**, **10–11**, zamiast czasu środka przedziału. Punkt nadal leży w środku godziny, lecz opis wskazuje cały zakres. Dotyczy to głównego wykresu, archiwum godzinowego, raportu godzinowego oraz porównania z panelem Energia. Osie W, kwartalne oraz podsumowania dobowe/miesięczne nie zmieniają jednostki. Przy jesiennej powtórce godziny dodajemy oznaczenie przesunięcia, aby odróżnić przedziały.
+
+Na głównym wykresie bieżącego dnia trwająca godzina ma podświetlone tło i osobny pusty, przerywany niebieski znacznik. Nie jest połączony z linią pełnych pomiarów. Pod wykresem widnieje np. „10–11 · Wyprodukowano dotychczas: 0,720 kWh”, czas ostatniego odczytu oraz źródło. Włącza i wyłącza go istniejąca opcja **Pomiar**; widok W zachowuje bieżącą moc.
+
+Wartość oznacza wyłącznie zmierzoną energię od początku godziny do ostatniego poprawnego odczytu. Pierwszeństwo ma różnica narastającego licznika AC, następnie licznika dziennego. Początek może być interpolowany między bliskimi odczytami — wtedy jest to opisane w źródle. Reset albo nieprawdopodobny przyrost wyklucza ten licznik z obliczenia. Nie dopisujemy prognozowanej energii do części już zmierzonej i nie przeliczamy wyniku na całą godzinę.
+
+Jeżeli brak odpowiednich liczników, używamy całki z mocy AC, tylko przy co najmniej 95% pokrycia minionego okresu; źródło pokazuje pokrycie. Nie uzupełniamy luk ani czasu po ostatnim odczycie prognozą. Brak świeżych danych daje komunikat i brak znacznika, a nie 0 kWh. Zmierzone 0 pozostaje poprawnym zerem. O pełnej godzinie poprzednia wartość częściowa znika, a zakończony przedział pojawia się na linii po otrzymaniu jego pełnego pomiaru. Archiwum i raporty zachowują pełne godziny; częściowego wyniku nie zapisujemy jako prognozy lub pełnej produkcji. Zmiana dotyczy prezentacji i pomiaru bieżącego, nie algorytmu prognozy, rozliczeń ani kalibracji.

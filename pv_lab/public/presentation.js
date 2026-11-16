@@ -1,4 +1,13 @@
 const HOUR=3600000, SLOT=900000;
+export function hourRangeTicks(begin,end,zone){
+ const fmt=new Intl.DateTimeFormat('pl-PL',{timeZone:zone,hour:'2-digit',hourCycle:'h23'}),offset=new Intl.DateTimeFormat('pl-PL',{timeZone:zone,hour:'2-digit',timeZoneName:'shortOffset'}),rows=[];
+ for(let start=Math.floor(begin/HOUR)*HOUR;start<end;start+=HOUR){const x=start+HOUR/2;if(x<begin||x>end)continue;rows.push({x,start,label:fmt.format(start)+'–'+fmt.format(start+HOUR),hour:fmt.format(start)});}
+ return rows.map(r=>({x:r.x,label:rows.some(other=>other.start!==r.start&&other.hour===r.hour)?r.label+' '+offset.formatToParts(r.start).find(p=>p.type==='timeZoneName').value:r.label}));
+}
+export function ongoingProductionSeries(measurement,day,zone,visible=true){
+ if(!visible||!measurement||!Number.isFinite(measurement.kWh)||measurement.kWh<0||!Number.isFinite(measurement.through)||measurement.through<=measurement.start||measurement.through>=measurement.end||dayAt(measurement.start,zone)!==day)return [];
+ return [{label:'Wyprodukowano dotychczas — trwająca godzina',color:'#72b8ff',partial:true,marker:true,width:3,interval:true,points:[{x:measurement.start+HOUR/2,start:measurement.start,end:measurement.end,y:measurement.kWh,tooltip:shortRange(measurement.start,measurement.through,zone)+' · wyprodukowano dotychczas · niepełna godzina · '+measurement.source}]}];
+}
 const dayFormatters=new Map(),boundsCache=new Map();
 const dayAt=(t,zone)=>{if(!dayFormatters.has(zone))dayFormatters.set(zone,new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}));return dayFormatters.get(zone).format(t);};
 export function dayBounds(day,zone){

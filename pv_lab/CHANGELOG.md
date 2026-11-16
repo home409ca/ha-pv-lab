@@ -1,3 +1,11 @@
+# 0.8.2
+
+- Godzinowe wykresy kWh pokazują zakresy 09–10, 10–11 zamiast czasu środka przedziału.
+- Dodano osobny pusty znacznik i podświetlenie trwającej godziny oraz komunikat „Wyprodukowano dotychczas” z czasem i źródłem pomiaru.
+- Bieżąca energia pochodzi z różnicy liczników AC albo poprawnej całki mocy. Brak pomiarów nie jest zerem; niepełna godzina nie jest dopełniana prognozą.
+- Pełne godziny, archiwum, prognozy i rozliczenia zachowują swoje znaczenie. Linie domu i nadwyżki pozostają domyślnie wyłączone.
+- Zaktualizowano instrukcję i dodano testy granic godzin, braków, resetów liczników oraz zmiany czasu.
+
 # 0.8.1
 
 - Wprowadzono kwalifikowany godzinowy limit poziomu po normalizacji, z edytowalnym marginesem, bezpiecznikiem i możliwością powrotu do dawnej korekty. Nie zmieniamy starych raportów.
