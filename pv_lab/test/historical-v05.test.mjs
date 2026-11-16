@@ -5,7 +5,7 @@ import {clearSkyHour,clearSkyPowers,solarHour,irradiance} from '../src/clear-sky
 import {geometryKey,createHistoricalProfile,historicalDay,applyHistoricalProfile,makeHistoryArchive,quantile} from '../src/historical-profile.mjs';
 import {dayBounds} from '../public/presentation.js';
 import {importStatistics} from '../src/statistics.mjs';
-const H=3600000,D=86400000,now=Date.parse('2026-11-12T17:00:00Z'),c={...structuredClone(defaults),location:{latitude:52.23,longitude:21.01}},target=Date.parse('2026-06-10T10:00:00Z');
+const H=3600000,D=86400000,now=Date.parse('2026-11-12T17:00:00Z'),c={...structuredClone({...defaults,historyProfile:{...defaults.historyProfile,limitMode:'soft'}}),location:{latitude:52.23,longitude:21.01}},target=Date.parse('2026-06-10T10:00:00Z');
 function archive(){const rows=[];for(const year of [2023,2024,2025])for(let offset=-15;offset<=15;offset++){const date=new Date(Date.UTC(year,5,10,12)+offset*D).toISOString().slice(0,10),[a,b]=dayBounds(date,c.timezone);for(let at=a;at<b;at+=H)rows.push([at,clearSkyHour(at,'total',c)*.8,'unknown']);}return {version:1,geometry:geometryKey(c),at:now,channels:{total:{...c.statistics.channels[0],rows,invalid:0}}};}
 const source=archive(),profile=createHistoricalProfile(source,c,now);
 test('clear-sky reference respects night, two orientations and the shared AC inverter cap',()=>{
@@ -48,7 +48,7 @@ test('all-history import discovers monthly beginning and reads hours only in 30-
  const report=await importStatistics(ha,c,'all');assert.equal(calls[0].period,'month');assert.ok(calls.slice(1).every(call=>call.period==='hour'&&call.to-call.start<=30*D));assert.equal(report.historyArchive.channels.total.rows.length,2);assert.equal(report.start,first);
 });
 test('historical configuration validates ranges, dates and excluded channels',()=>{
- const base=migrateConfig(structuredClone(defaults));assert.equal(validate(base).historyProfile.windowDays,31);assert.throws(()=>validate({...base,historyProfile:{...base.historyProfile,windowDays:30}}));assert.throws(()=>validate({...base,historyProfile:{...base.historyProfile,validFrom:'2026-02-30'}}));assert.throws(()=>validate({...base,historyProfile:{...base.historyProfile,excluded:[{channel:'bogus',from:'2020-01-01',to:'2020-02-01'}]}}));
+ const base=migrateConfig(structuredClone({...defaults,historyProfile:{...defaults.historyProfile,limitMode:'soft'}}));assert.equal(validate(base).historyProfile.windowDays,31);assert.throws(()=>validate({...base,historyProfile:{...base.historyProfile,windowDays:30}}));assert.throws(()=>validate({...base,historyProfile:{...base.historyProfile,validFrom:'2026-02-30'}}));assert.throws(()=>validate({...base,historyProfile:{...base.historyProfile,excluded:[{channel:'bogus',from:'2020-01-01',to:'2020-02-01'}]}}));
 });
 test('December and January from one winter are not two independent historical seasons',()=>{
  const rows=[];for(let at=Date.parse('2024-12-20T00:00:00Z');at<Date.parse('2025-01-10T00:00:00Z');at+=H)rows.push([at,clearSkyHour(at,'total',c)*.8,'unknown']);

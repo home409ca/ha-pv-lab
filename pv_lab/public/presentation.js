@@ -16,6 +16,11 @@ export function hourlyRows(rows,day,zone,now){
   }return out;
 }
 export const providerColors={forecast_solar:'#ffbd66',open_meteo:'#43d9ce',solcast:'#c39bff'};
+// Archived records are the original issued forecasts, never a replay of today's model.
+export function archivedHourlySeries(records,day,mode,visibility,definitions,zone){
+ const rows=records.filter(r=>r.date===day&&r.mode===mode).sort((a,b)=>a.start-b.start),make=(id,label,color,dashed=false)=>({label,color,dashed,width:id==='pv_lab'?3:2,interval:true,maxGapMs:HOUR,points:rows.map(r=>({x:r.start+HOUR/2,start:r.start,end:r.start+HOUR,y:id==='actual'?r.actualKWh??null:r.predictions?.[id]??null,tooltip:shortRange(r.start,r.start+HOUR,zone)+(id==='actual'?' · '+r.actualSource:r.issued?.[id]?' · zapis '+new Intl.DateTimeFormat('pl-PL',{timeZone:zone,dateStyle:'short',timeStyle:'short'}).format(r.issued[id]):' · brak wcześniejszego zapisu')}))});
+ return [...definitions.filter(p=>p.enabled&&visibility.providers?.[p.id]!==false).map(p=>make(p.id,p.name,providerColors[p.id]||'#a7b4c5',true)),...(visibility.raw?[make('without_history','PV Lab przed historią','#a7b4c5',true)]:[]),...(visibility.corrected?[make('pv_lab','PV Lab — zapisana prognoza','#bcf46b')]:[]),...(visibility.measured?[make('actual','Rzeczywista produkcja','#72b8ff')]:[])];
+}
 export function forecastSeries(rows,actual,{raw=true,corrected=true,measured=true,providers={},basis='limited'}={},definitions=[]){
   const sourceSeries=definitions.filter(p=>p.enabled&&providers[p.id]!==false).map((p,i)=>({label:p.name,provider:p.id,color:providerColors[p.id]||['#ffbd66','#43d9ce','#c39bff'][i%3],width:2,dashed:true,points:rows.map(r=>{const source=r.sources?.find(s=>s.provider===p.id),wh=source?.[basis==='limited'?'rawWh':'originalWh'];return {x:r.start+SLOT/2,y:Number.isFinite(wh)?wh*4:null};})}));
   // The wide dashed source line remains visible under an identical corrected line.

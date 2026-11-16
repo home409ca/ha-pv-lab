@@ -4,7 +4,7 @@ import {defaults} from '../src/defaults.mjs';
 import {clearSkyHour} from '../src/clear-sky.mjs';
 import {dayBounds} from '../public/presentation.js';
 import {geometryKey,createHistoricalProfile,applyHistoricalProfile,qualifyReferences,historyDefaults} from '../src/historical-profile.mjs';
-const H=3600000,D=86400000,c={...structuredClone(defaults),location:{latitude:52.23,longitude:21.01}},target=Date.parse('2026-06-10T10:00:00Z'),now=Date.parse('2026-11-13T12:00:00Z');
+const H=3600000,D=86400000,c={...structuredClone({...defaults,historyProfile:{...defaults.historyProfile,limitMode:'soft'}}),location:{latitude:52.23,longitude:21.01}},target=Date.parse('2026-06-10T10:00:00Z'),now=Date.parse('2026-11-13T12:00:00Z');
 function archive({hours=null,ratio=.8,badHour=null}={}){const rows=[];for(const year of [2024,2025])for(let day=4;day<=15;day++){const date=`${year}-06-${String(day).padStart(2,'0')}`,[begin,end]=dayBounds(date,c.timezone);for(let at=begin;at<end;at+=H){if(hours&&!hours.includes(new Date(at).getUTCHours()))continue;const clear=clearSkyHour(at,'total',c);rows.push([at,clear*ratio,new Date(at).getUTCHours()===badHour?'excluded':'valid']);}}return {version:1,geometry:geometryKey(c),at:now,channels:{total:{...c.statistics.channels[0],rows}}};}
 test('a single excluded midday hour no longer discards every other good hour of a sunny day',()=>{
  const profile=createHistoricalProfile(archive({badHour:9}),c,now),bad=profile.hour('total',target-H),good=profile.hour('total',target);

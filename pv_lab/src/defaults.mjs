@@ -97,6 +97,7 @@ export function validate(c) {
   for(const k of ['hourBalance','importEnergy','exportEnergy'])if(c.grid[k]!==''&&!id(c.grid[k]))throw new Error('Niepoprawna encja bilansu: '+k);
   if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(c.reports?.freezeTime||''))throw new Error('Godzina zapisania planu: HH:MM.');
   c.historyProfile={...historyDefaults,...c.historyProfile};const hp=c.historyProfile;
+  if(!['normalized','soft'].includes(hp.limitMode)||!Number.isFinite(hp.limitMargin)||hp.limitMargin<0||hp.limitMargin>.5||!Number.isFinite(hp.limitMaxReduction)||hp.limitMaxReduction<0||hp.limitMaxReduction>.9)throw new Error('Niepoprawny limit historyczny.');
   if(typeof hp.enabled!=='boolean'||typeof hp.autoRefresh!=='boolean')throw new Error('Niepoprawny przełącznik profilu historycznego.');
   for(const [key,min,max] of [['windowDays',7,91],['percentile',.8,.99],['minDays',10,500],['minYears',1,10],['maxReduction',0,.5],['margin',0,.5],['dcFactor',.5,1],['acEfficiency',.8,1],['minReferenceHours',3,8],['minReferenceCoverage',.25,1],['minReferenceRatio',.4,1],['maxFragmentSpread',0,1],['minEnvelopeCoverage',.1,1]])number(hp[key],min,max,'profil historyczny: '+key);
   if(!Number.isInteger(hp.minReferenceHours))throw new Error('Liczba godzin fragmentu musi być całkowita.');

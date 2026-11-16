@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {defaults} from '../src/defaults.mjs';
 import {profileReadiness,createHistoricalProfile,geometryKey,applyHistoricalProfile} from '../src/historical-profile.mjs';
-const H=3600000,start=Date.parse('2026-06-10T10:00:00Z'),now=start+10*H,c={...structuredClone(defaults),location:{latitude:52.23,longitude:21.01}};
+const H=3600000,start=Date.parse('2026-06-10T10:00:00Z'),now=start+10*H,c={...structuredClone({...defaults,historyProfile:{...defaults.historyProfile,limitMode:'soft'}}),location:{latitude:52.23,longitude:21.01}};
 const ready=(days,years=4,extra={})=>profileReadiness({days,years,clear:2,geometryMatches:true,basis:'AC',matureDays:30,minYears:2,...extra});
 test('observed counts 20, 26 and 28 days are preliminary with gradual nonzero influence',()=>{
  const references=[20,26,28].map(n=>ready(n));assert.ok(references.every(r=>r.eligible&&r.status==='preliminary'&&r.confidence>0));assert.ok(references[0].confidence<references[1].confidence&&references[1].confidence<references[2].confidence);assert.ok(Math.abs(references[1].confidence-.30044444444444446)<1e-8);

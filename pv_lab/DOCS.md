@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.8.0 -->
+<!-- pv-lab-manual-version: 0.8.1 -->
 
-**Wersja aplikacji i instrukcji: 0.8.0.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.8.1.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -13,7 +13,7 @@ PV Lab tworzy jedną prognozę produkcji AC z prognoz dostawców, pomiarów i hi
 | Dane dostawców i limit falownika | Tak — podstawa oraz fizyczne ograniczenie. |
 | Kalibracja i wagi źródeł | Tak — poprawiają powtarzalny błąd i ustalają udział dostawców. |
 | Świeża produkcja | Tak — dostosowuje najbliższy okres, ze słabnącym wpływem. |
-| Historyczny potencjał całości AC | Tak, po kwalifikacji — łagodnie ogranicza zawyżenie. |
+| Historyczny potencjał całości AC | Tak, po kwalifikacji — ogranicza wynik godzinowy według poziomu po normalizacji. |
 | Ryzyko przestojów | Tak, po kwalifikacji — odejmuje oczekiwaną stratę. |
 | Panele i zacienienie | Diagnostyka; nie jest dodatkowym mnożnikiem prognozy. |
 | Historia i trendy | Widok opisowy; te same dane mogą zasilać kwalifikowany potencjał. |
@@ -70,6 +70,8 @@ Nadwyżka godzinowa = max(suma PV w godzinie − suma bazy domu w godzinie, 0). 
 
 <!-- tab:forecast -->
 ## 4. Prognozy i korekty
+
+Lista dni na głównym wykresie obejmuje również minione dni dostępne w raportach godzinowych. Dla minionego dnia wykres przechodzi na kWh i pokazuje oryginalne zapisane wartości: plan z poprzedniego wieczoru albo ostatnią prognozę przed każdą godziną. Drugi wariant łączy różne wydania — nie jest jednym planem znanym na początku dnia. Dostawców, PV Lab, wariant przed historią i rzeczywistą produkcję można ukrywać osobno. Dymek zawiera godzinę zapisu. Brak zapisu nie jest rekonstruowany dzisiejszym modelem. Szczegóły godzinowe są dostępne przez 7 dni; starsze podsumowania są w raportach. Wykres historii zmian pokazuje kolejne całodzienne wyniki wybranego dnia.
 
 Na początku są wykres, najlepsze okna i tabela godzinowa. Dane dostawców, wpływ historii, kontrola panelu Energia, składniki obliczeń, historia zmian i korekta sieci pozostają dostępne w rozwijanych sekcjach. Kliknij tytuł, aby je otworzyć; otwarcie jest zachowywane podczas automatycznego odświeżania widoku. Ukrycie sekcji nie wyłącza korekty ani źródła.
 
@@ -339,7 +341,7 @@ Profil wstępny może działać od 10 kwalifikowanych dni i 2 sezonów rocznych.
 
 Korekta korzysta z potwierdzonego **całego AC**. PV1/PV2 są diagnostyką; AC połaci często jest oszacowanym podziałem.
 
-Pełne cztery kwadranse godziny porównywane są z poziomem znormalizowanym +15% marginesu. Poniżej niczego nie zmieniamy. Powyżej zmniejszamy łagodnie, proporcjonalnie do pewności, maksymalnie o 25%. Nigdy nie podnosimy niskiej prognozy do historycznego maksimum.
+Domyślnie pełne cztery kwadranse godziny są ograniczane do kwalifikowanego wysokiego poziomu po normalizacji. Margines tego limitu wynosi początkowo 0 i jest edytowalny. To oszacowanie sezonowego potencjału, nie fizyczny rekord ani gwarantowane maksimum. Bezpiecznik pozwala obniżyć godzinę najwyżej o 75%; przy skrajnym zawyżeniu wynik może więc pozostać ponad poziomem odniesienia. Zachowujemy proporcje czterech kwadransów. Niska prognoza nie jest podnoszona. Brak kwalifikacji, niezgodna geometria albo niepełna godzina blokują korektę. W ustawieniach można wybrać dawny tryb łagodny: margines i maksymalna redukcja z dotychczasowych ustawień, a wpływ zależny od pewności. W nowym trybie pewność pozostaje informacją o profilu; nie jest mnożnikiem siły obcięcia. Sam rekord nie wyznacza limitu, ponieważ może być skokiem i może zostać pobity.
 
 Skok nie powinien sam wyznaczać korekty: fizycznie niemożliwe przyrosty są wykluczane, a stosowany poziom wymaga powtarzalności. Sam rekord nadal bywa wrażliwy na błąd źródła; pomarańczowa linia nie jest mnożnikiem korekty. Kreska w pomiarze oznacza brak danych. Noc — korekta nie dotyczy — nie wymaga uczenia nocnej produkcji.
 
@@ -377,6 +379,8 @@ Historia jest trwała po ponownym wejściu. Przy włączonym automatycznym uzupe
 
 <!-- tab:storage -->
 ## 15. Pliki i retencja
+
+Na wejściu automatycznie odczytujemy listę plików i rozmiary. „PV Lab — kod i dane” to suma plików kodu aplikacji oraz jej katalogu danych, w MiB (1 MiB = 1 048 576 bajtów). Osobno pokazujemy kod i dane, w tym rozmiar prywatnej konfiguracji. Nie jest to rozmiar całego kontenera, bazy HA, InfluxDB ani kopii HA. Rozmiary są buforowane przez 30 sekund. Przy pliku „Podejrzyj” pokazuje pierwsze 32 kB, a „Pobierz” zapisuje cały plik. Duże pliki są przesyłane strumieniowo. Klucz parowania, hasło InfluxDB, katalogi i dowiązania nie są udostępniane do pobrania. Archiwum Energii nadal nie ma automatycznej retencji.
 
 Brak nowej bazy. Dane to JSON i JSONL w `/data` dodatku; ta ścieżka nie musi być dostępna w File Editorze.
 
@@ -442,7 +446,7 @@ Urządzenia mają nazwę, encję mocy, opcjonalną energię i progi wykrywania. 
 3. Kalibracja dostawcy zależy od horyzontu, a przy odpowiednich danych od sezonu i położenia Słońca; po niej ponownie limit.
 4. Źródła są łączone średnią ważoną na podstawie wspólnych wcześniejszych ocen.
 5. Świeża produkcja dostosowuje najbliższą prognozę, ze słabnącym wpływem.
-6. Kwalifikowany potencjał łagodnie ogranicza zawyżenie.
+6. Kwalifikowany potencjał ogranicza godzinowe zawyżenie zgodnie z wybranym trybem.
 7. Ryzyko sieci odejmuje oczekiwaną stratę.
 8. Końcowe kwadranse zasilają sumy, okna, planowanie i integrację.
 
@@ -486,8 +490,19 @@ HTML działa bez internetu; można go wydrukować lub zapisać do PDF z przeglą
 Włączenie „Zużycie domu — baza” lub „Nadwyżka PV po odjęciu domu” działa również z widoku W: aplikacja automatycznie przełącza wykres na energię godzinową kWh i zapamiętuje tę jednostkę. Pola nie są blokowane w widoku mocy. Obie dodatkowe linie pozostają domyślnie wyłączone.
 
 
-## Kontrola stabilności od wersji 0.8.0
+## Kontrola stabilności od wersji 0.8.1
 
 Zapisy JSON są wykonywane kolejno, z kopią wartości z momentu zlecenia zapisu. Zmniejsza to ryzyko kolizji równoczesnych operacji. Migracja istniejącego cennika zachowuje własne stawki, daty i wybór depozytu; wartości domyślne dotyczą nowych konfiguracji. Puste tekstowe pomiary, w tym same spacje, nie oznaczają zera. Niepoprawne wartości mocy nie mogą tworzyć pozornej zmierzonej energii.
 
 Ryzyko sieci sprawdza próg energii i zakończenie okresu przed odczytem wyniku z pamięci podręcznej. Słaby kwadrans poniżej 25 Wh nie przejmuje potrącenia z mocniejszego kwadransa tej samej godziny. Zasady identyfikowania przestoju, wymagane dni i maksymalna redukcja pozostają bez zmian. Wyniki cenowe nadal są symulacją przy podanych stawkach; aplikacja nie pobiera rachunku ani nie przewiduje automatycznie przyszłej RCEm.
+
+
+## Odświeżanie, raporty i ocena limitu od wersji 0.8.1
+
+„Odczytaj dane” wymusza świeży odczyt pomiarów i dostępnych prognoz z Home Assistant oraz ponowienie statystyk kWh. Omija interwał PV Lab; nie jest poleceniem zmiany harmonogramu dostawców chmurowych. Dodatkowy przycisk „Odśwież pomiary kWh” w raportach ponawia tylko statystyki energii. Równoległe żądania statystyk są łączone w jedno. Przycisk nie tworzy brakujących pomiarów.
+
+Automatycznie sprawdzamy statystyki co 2 minuty, po pierwszym odczycie godziny pobierając tylko ostatnie 2 godziny; szersze uzupełnienie następuje raz na godzinę. Błąd nie blokuje ponowienia do kolejnej pełnej godziny. Nadal pokazujemy tylko zakończone godziny kWh; punkt 08:30 oznacza całe 08:00–09:00. Poprawne całkowanie mocy jest źródłem zastępczym, a brak danych pozostaje brakiem. Panel raportu pokazuje czas odczytu statystyk i ewentualny błąd.
+
+„Prognoza a produkcja” ma wykres z wyborem dnia i źródeł. Przy poziomie dni/miesięcy/lat wykres pokazuje kompletne sumy, a niepełne pozostają w tabeli jako częściowe. Obok jest porównanie średniego błędu źródeł na tych samych godzinach. Liczba wygranych wierszy nie jest jedyną miarą trafności. „Historia i trendy” pokazuje także miesięczny przebieg energii z importu; są to sumy pełnych dni, kompletność nadal widać w tabelach.
+
+Limit po normalizacji został wybrany po retrospektywnym porównaniu kilku wariantów na dostępnych wcześniej zapisanych prognozach. Przy wyznaczaniu profilu wykluczono późniejsze pomiary; nie odtwarzamy jednak dawnej dostępności i kwalifikacji wszystkich plików. Próba jest krótka i nie stanowi niezależnego testu przyszłych dni. Zmiana działa na nowe prognozy. Stare publikacje, raporty i godziny w Energii pozostają zapisami starej wersji i nie są poprawiane po fakcie.

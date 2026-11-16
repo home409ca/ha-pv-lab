@@ -19,7 +19,7 @@ test('statistical references still require observation count, independent years 
  assert.equal(statisticalReference(records(9),9,1,opts,now,130).eligible,false);const year=records(30).map(r=>({...r,year:2025}));assert.equal(statisticalReference(year,30,1,opts,now,130).eligible,false);assert.equal(statisticalReference(records(30),30,0,opts,now,130).eligible,false);
 });
 test('untrusted data never enters fallback reference; a repeatable shaded-hour regression affects only excessive forecasts',()=>{
- const c={...structuredClone(defaults),location:{latitude:52,longitude:21}},start=Date.parse('2026-05-15T05:00:00Z'),rows=[];
+ const c={...structuredClone({...defaults,historyProfile:{...defaults.historyProfile,limitMode:'soft'}}),location:{latitude:52,longitude:21}},start=Date.parse('2026-05-15T05:00:00Z'),rows=[];
  for(const year of [2024,2025,2026])for(let d=1;d<=25;d++){const t=Date.UTC(year,4,d,5);rows.push([t,clearSkyHour(t,'total',c)*.4,'valid']);rows.push([t+H,clearSkyHour(t+H,'total',c),'excluded']);}
  const archive={version:1,geometry:geometryKey(c),at:now,channels:{total:{...c.statistics.channels[0],rows}}},profile=createHistoricalProfile(archive,c,now),r=profile.hour('total',start);assert.equal(r.referenceMethod,'statistical');assert.equal(r.eligible,true);assert.equal(profile.hour('total',start+H).attainableKWh,null);
  const issue=Array.from({length:4},(_,i)=>({start:start+i*900000,wh:300,rawWh:300}));applyHistoricalProfile(issue,profile,c);assert.ok(issue.every(row=>row.wh<300&&row.wh>=225&&row.rawWh===300));assert.ok(issue.every(row=>row.history.days>0&&row.history.method==='statistical'));

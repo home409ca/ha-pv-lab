@@ -1,4 +1,4 @@
-import {mkdir,readFile,writeFile,rename,appendFile,readdir,unlink,stat} from 'node:fs/promises';
+import {mkdir,readFile,writeFile,rename,appendFile,readdir,unlink,stat,lstat} from 'node:fs/promises';
 import path from 'node:path';
 export class Storage {
   constructor(dir) {this.dir=dir;this.queue=Promise.resolve();this.bytes=0;}
@@ -16,9 +16,13 @@ export class Storage {
   async prune(c){let bytes=0;for(const name of await readdir(this.dir)){const days=name.startsWith('sample-')?c.retention.samplesDays:name.startsWith('forecast-')||name.startsWith('published-')?c.retention.forecastsDays:name.startsWith('revision-')?c.retention.revisionsDays:null;const p=path.join(this.dir,name);if(name.startsWith('sample-')&&name.endsWith('.partial')&&c.retention.voltageHours===0){await unlink(p);continue;}if(days!==null&&Date.parse(name.split('-').slice(1).join('-').slice(0,10))+86400000<Date.now()-days*86400000){await unlink(p);continue;}
     if(/^sample-.*\.jsonl$/.test(name)){const lines=(await readFile(p,'utf8')).split('\n');let changed=false;const out=[];for(const line of lines){if(!line)continue;let row;try{row=JSON.parse(line);}catch{throw new Error(`Uszkodzony dziennik ${name}; retencja nie zmieniła jego zawartości.`);}const clean=withoutExpiredVoltage(row,c);if(clean!==row)changed=true;out.push(JSON.stringify(clean));}if(changed){await writeFile(p+'.tmp',out.join('\n')+'\n');await rename(p+'.tmp',p);}}
     bytes+=(await stat(p)).size;}this.bytes=bytes;}
-  async files(){return Promise.all((await readdir(this.dir)).filter(n=>!['integration-key.json','influx-credentials.json'].includes(n)&&!n.endsWith('.tmp')).map(async name=>({name,bytes:(await stat(path.join(this.dir,name))).size})));}
+  async usage(codeDir){return {dataBytes:await directoryBytes(this.dir),codeBytes:codeDir?await directoryBytes(codeDir,new Set([path.resolve(this.dir)])):0,at:Date.now()};}
+  async files(){const files=await Promise.all((await readdir(this.dir)).filter(n=>!['integration-key.json','influx-credentials.json'].includes(n)&&!n.endsWith('.tmp')).map(async name=>{try{const info=await lstat(path.join(this.dir,name));return info.isFile()?{name,bytes:info.size}:null;}catch(e){if(e.code==='ENOENT')return null;throw e;}}));return files.filter(Boolean);}
+
 }
 export function withoutExpiredVoltage(row,c,now=Date.now()){
   if(!Array.isArray(row.voltages)||c.retention.voltageHours>0&&row.at>=now-c.retention.voltageHours*3600000)return row;
   const {voltages,...rest}=row;return {...rest,voltageFlag:row.voltageFlag||(voltages.some(v=>v===null)?'missing':voltages.some(v=>v>=c.quality.voltageWarning)?'high':'normal'),voltageThreshold:row.voltageThreshold||c.quality.voltageWarning};
 }
+
+export async function directoryBytes(dir,excluded=new Set()){let total=0;for(const name of await readdir(dir)){const file=path.resolve(dir,name);if(excluded.has(file)||['.git','__pycache__','node_modules'].includes(name))continue;try{const info=await lstat(file);if(info.isSymbolicLink())continue;if(info.isDirectory())total+=await directoryBytes(file,excluded);else if(info.isFile())total+=info.size;}catch(e){if(e.code!=='ENOENT')throw e;}}return total;}

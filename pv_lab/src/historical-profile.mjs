@@ -1,7 +1,7 @@
 import {DAY,localParts} from './time.mjs';
 import {dayBounds} from '../public/presentation.js';
 import {clearSkyHour,solarHour,clearSkyDescription} from './clear-sky.mjs';
-export const historyDefaults={enabled:true,autoRefresh:true,windowDays:31,percentile:.95,minDays:30,minYears:2,maxReduction:.25,margin:.15,dcFactor:.9,acEfficiency:.97,validFrom:'',excluded:[],minReferenceHours:3,minReferenceCoverage:.5,minReferenceRatio:.6,maxFragmentSpread:.35,minEnvelopeCoverage:.5};
+export const historyDefaults={enabled:true,autoRefresh:true,limitMode:'normalized',limitMargin:0,limitMaxReduction:.75,windowDays:31,percentile:.95,minDays:30,minYears:2,maxReduction:.25,margin:.15,dcFactor:.9,acEfficiency:.97,validFrom:'',excluded:[],minReferenceHours:3,minReferenceCoverage:.5,minReferenceRatio:.6,maxFragmentSpread:.35,minEnvelopeCoverage:.5};
 export const geometryKey=c=>JSON.stringify([c.location,c.strings.map(({id,panels,panelW,tilt,azimuth})=>({id,panels,panelW,tilt,azimuth})),c.inverter.limitW]);
 const stamp=v=>typeof v==='number'?(v>1e12?v:v*1000):Date.parse(v);
 const seasonDay=date=>Math.round((Date.parse('2000-'+date.slice(5)+'T12:00:00Z')-Date.parse('2000-01-01T12:00:00Z'))/DAY);
@@ -97,8 +97,8 @@ export function historicalDay(profile,date,c){const [begin,end]=dayBounds(date,c
 export function applyHistoricalProfile(rows,profile,c){const opts={...historyDefaults,...c.historyProfile};for(const r of rows){r.beforeHistoryWh=r.wh;r.historyFactor=1;r.historyCheck={status:!opts.enabled?'disabled':'missing',reason:!opts.enabled?'Korekta historyczna wyłączona':'Brak potwierdzonego profilu AC całości'};}if(!opts.enabled||!profile)return;
  if(!profile.summary.channels.some(ch=>ch.id==='total'&&ch.basis==='AC'))return;
  const groups=new Map();for(const row of rows){const hour=Math.floor(row.start/3600000)*3600000;(groups.get(hour)||groups.set(hour,[]).get(hour)).push(row);}
- for(const [start,parts] of groups){if(parts.length!==4||new Set(parts.map(r=>r.start)).size!==4)continue;const ref=profile.hour('total',start),sum=parts.reduce((s,r)=>s+r.wh,0);if(ref)for(const row of parts)row.historyCheck={status:ref.status,reason:ref.reason,eligible:ref.eligible,confidence:ref.confidence,referenceKWh:ref.attainableKWh};if(!ref?.eligible||ref.attainableKWh===null||sum<=0)continue;const target=ref.attainableKWh*1000*(1+opts.margin);if(sum<=target)continue;
+ for(const [start,parts] of groups){if(parts.length!==4||new Set(parts.map(r=>r.start)).size!==4)continue;const ref=profile.hour('total',start),sum=parts.reduce((s,r)=>s+r.wh,0);if(ref)for(const row of parts)row.historyCheck={status:ref.status,reason:ref.reason,eligible:ref.eligible,confidence:ref.confidence,referenceKWh:ref.attainableKWh,limitMode:opts.limitMode,limitKWh:ref.attainableKWh*(1+(opts.limitMode==='normalized'?opts.limitMargin:opts.margin))};if(!ref?.eligible||ref.attainableKWh===null||sum<=0)continue;const normalized=opts.limitMode==='normalized',target=ref.attainableKWh*1000*(1+(normalized?opts.limitMargin:opts.margin));if(sum<=target)continue;
   // A soft upper-envelope check on the already calibrated result, never another loss multiplier.
-  const factor=Math.max(1-opts.maxReduction,1-opts.maxReduction*ref.confidence*(1-target/sum));for(const row of parts){row.wh*=factor;row.historyFactor=factor;row.history={days:ref.referenceDays??ref.brightDays,years:ref.referenceYears??ref.brightYears,method:ref.referenceMethod,referenceKWh:ref.attainableKWh,confidence:ref.confidence};}
+  const factor=normalized?Math.max(1-opts.limitMaxReduction,target/sum):Math.max(1-opts.maxReduction,1-opts.maxReduction*ref.confidence*(1-target/sum));for(const row of parts){row.wh*=factor;row.historyFactor=factor;row.history={days:ref.referenceDays??ref.brightDays,years:ref.referenceYears??ref.brightYears,method:ref.referenceMethod,referenceKWh:ref.attainableKWh,confidence:ref.confidence};}
  }
 }

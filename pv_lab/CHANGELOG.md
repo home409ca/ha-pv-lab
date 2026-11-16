@@ -1,3 +1,11 @@
+# 0.8.1
+
+- Wprowadzono kwalifikowany godzinowy limit poziomu po normalizacji, z edytowalnym marginesem, bezpiecznikiem i możliwością powrotu do dawnej korekty. Nie zmieniamy starych raportów.
+- Główny wykres pokazuje minione dni oraz plan wieczorny lub prognozy zapisane przed kolejnymi godzinami. Raporty mają wykresy i porównanie błędów, Historia i trendy — przebieg miesięczny, a historia zmian — przebieg kolejnych wydań.
+- Pomiary kWh ponawiamy co 2 minuty; błędy nie blokują odczytu na godzinę. „Odczytaj dane” wymusza odczyt dostępnych danych HA; raport ma osobne odświeżenie kWh.
+- Pliki i retencja: łączny rozmiar kodu i danych, osobne rozmiary oraz pobieranie całych pojedynczych plików. Prywatna konfiguracja nadal chroniona.
+- Linie domu i nadwyżki pozostają domyślnie wyłączone. Instrukcja i testy zostały zaktualizowane.
+
 # 0.8.0
 
 - Audyt stabilności, danych, rozliczeń oraz głównych widoków; bez nowych zależności i usuwania danych.
