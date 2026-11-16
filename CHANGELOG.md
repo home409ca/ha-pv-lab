@@ -1,3 +1,10 @@
+# 0.8.3
+
+- Osobne mapy paneli PV1 i PV2 według schematu instalacji, z przerwami między panelami.
+- Edycja układu: przeciąganie myszą i dotykiem, strzałki, pola położenia, obrót i zamiana numerów w obrębie połaci.
+- Zapis układu w osobnym pliku, bez restartu kalibracji, zmiany prognozy lub usuwania historii.
+- Zachowane opcjonalne linie zużycia domu i nadwyżki, domyślnie wyłączone.
+
 # 0.8.2
 
 - Godzinowe wykresy kWh pokazują zakresy 09–10, 10–11 zamiast czasu środka przedziału.

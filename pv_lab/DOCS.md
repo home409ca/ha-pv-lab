@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.8.2 -->
+<!-- pv-lab-manual-version: 0.8.3 -->
 
-**Wersja aplikacji i instrukcji: 0.8.2.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.8.3.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -255,7 +255,11 @@ Profile wpływają na planowanie i optymalizator, nie prognozę PV.
 <!-- tab:panels -->
 ## 9. Panele i zacienienie
 
-Kafelek łączy aktualne W i najniższą historyczną relację kwalifikowanego przedziału. Te informacje nie muszą dotyczyć tej samej chwili.
+Każda połać ma osobną mapę paneli. Układ początkowy odwzorowuje numerowany schemat: PV1 01–11, PV2 01–07, z przerwami. Na panelu widać numer i aktualną moc W. Bursztynowy kolor oznacza najniższą historyczną relację poniżej 80%; szary oznacza brak bieżącego pomiaru. Relacja i moc nie muszą dotyczyć tej samej chwili. Najniższa relacja jest także w podpowiedzi, szczegóły w tabeli.
+
+„Edytuj układ paneli” pozwala przeciągać panele myszą lub dotykiem, przesuwać strzałkami (Shift: większy krok), wpisać położenie i obrócić panel o 90°. Wybór innego numeru w „Panel w tym miejscu” zamienia pozycje dwóch paneli tej samej połaci, bez zmiany ich encji i numerów seryjnych. „Zapisz układ” zapisuje obie połacie dla wszystkich przeglądarek; „Anuluj” odrzuca niezapisane zmiany. „Przywróć schemat” ustawia początkową mapę w edytorze i również wymaga zapisu. Podczas edycji odświeżanie nie zastępuje formularza. Po zapisie moc odświeża się normalnie.
+
+Układ jest wyłącznie wizualny: nie zmienia azymutu, nachylenia, parametrów instalacji, historii ani kalibracji. Zapis znajduje się w /data/panel-layout.json i jest dołączony do eksportu kopii. Brak pliku oznacza układ początkowy. Nowe optymalizatory otrzymują pozycję początkową; istniejące są rozpoznawane po identyfikatorze.
 
 **Powtarzalne różnice według położenia Słońca:** moc panelu jest odniesiona do mediany paneli tej samej połaci. 100% to mediana, 70% — 30% poniżej niej. Agregat to średnia zapisanych relacji, nie sprawność modułu.
 
@@ -395,6 +399,7 @@ Brak nowej bazy. Dane to JSON i JSONL w `/data` dodatku; ta ścieżka nie musi b
 | grid-risk.json | Zagregowane ryzyko, nie pełen zapis woltów. |
 | energy-forecast-archive.json | Prognozy do Energii, bez automatycznej retencji. |
 | reports.json | Porównania agregowane godzinowo/dobowo/miesięcznie/rocznie. |
+| panel-layout.json | Pozycje i orientacja paneli; wyłącznie prezentacja, trwały zapis. |
 | appliance-profiles.json | Cykle i profile. |
 | optimizer-settings/load/history.json | Ustawienia, oczyszczona baza i zapisane plany/oceny. Nazwy trzech osobnych plików zaczynają się od optimizer-. |
 
