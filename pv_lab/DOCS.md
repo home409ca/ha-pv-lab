@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.8.4 -->
+<!-- pv-lab-manual-version: 0.8.5 -->
 
-**Wersja aplikacji i instrukcji: 0.8.4.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.8.5.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -14,6 +14,7 @@ PV Lab tworzy jedną prognozę produkcji AC z prognoz dostawców, pomiarów i hi
 | Kalibracja i wagi źródeł | Tak — poprawiają powtarzalny błąd i ustalają udział dostawców. |
 | Świeża produkcja | Tak — dostosowuje najbliższy okres, ze słabnącym wpływem. |
 | Historyczny potencjał całości AC | Tak, po kwalifikacji — ogranicza wynik godzinowy według poziomu po normalizacji. |
+| Ostrożniejsza prognoza na jutro | Tak — po ryzyku sieci; wyłącznie obniża następną dobę, gdy wcześniejsza ocena uzasadnia źródło odniesienia. |
 | Ryzyko przestojów | Tak, po kwalifikacji — odejmuje oczekiwaną stratę. |
 | Panele i zacienienie | Diagnostyka; nie jest dodatkowym mnożnikiem prognozy. |
 | Historia i trendy | Widok opisowy; te same dane mogą zasilać kwalifikowany potencjał. |
@@ -121,6 +122,23 @@ Podsumowanie prowadzi przez średnią ważoną, korektę bieżącą, historię i
 
 Wynik zmienia się po odczytach źródeł, kalibracji, aktualizacji profilu i upływie czasu. Czas obliczenia nie musi być czasem zmiany. Wpisy drobnych zmian są ograniczane do godziny, większa zmiana ≥0,5 kWh względem zapisu może trafić wcześniej. Widać poprzednią/nową wartość, kierunek i przyczyny.
 
+
+### Ostrożniejsza prognoza na jutro (0.8.5)
+
+Po dotychczasowej kalibracji, historii i ryzyku sieci zachowujemy wynik bazowy jako beforeTomorrowWh. Dla następnej lokalnej doby wybieramy dostawcę z najmniejszym wcześniejszym błędem ważonym (zawyżenie 100%, niedoszacowanie 50%). Zmiana przełącznika oceny w raporcie nie zmienia tej stałej reguły. Dostawca musi wypaść lepiej od bazowego PV Lab. Używamy tych samych pełnych godzin i tego samego zestawu aktywnych dostawców. Minimum to 3 kompletne dni; domyślnie bierzemy ostatnie 14 dostępnych kompletnych dni w zakresie zachowanych podsumowań dobowych. Wykluczamy dzisiejszą dobę, dzień prognozy oraz dni sprzed ostatniego resetu kalibracji. Nie używamy produkcji przewidywanego dnia do wyboru źródła.
+
+W każdym kwadransie nowa energia = minimum z bazowego wyniku i średniej ważonej: 50% wyniku bazowego + 50% prognozy wybranego dostawcy po limicie falownika. Wyższa prognoza dostawcy nie podnosi wyniku. Brak jego przedziału nie tworzy sztucznego zera i pozostawia bazę. Nie przekraczamy wcześniejszego ograniczenia historycznego ani limitu AC. Dzisiejsza i dalsze doby pozostają przy dotychczasowym mechanizmie; korekta na jutro nie zastępuje bieżącej korekty od rzeczywistej mocy. Z chwilą przejścia do dzisiejszej doby działa model bieżący, co może zmienić wynik względem wcześniejszego wydania.
+
+Karta „Ostrożniejsza prognoza na jutro” pokazuje warunki, źródło odniesienia, liczbę pełnych dni i godzin, energię odjętą oraz liczbę zmienionych kwadransów. Wyłącznik, udział 0–0,75, minimum dni i długość historii są w Ustawieniach. Ich zmiana nie zeruje dotychczasowej kalibracji. W historii publikacji zapisujemy wynik przed korektą i po niej. Przy kolejnej ocenie jakości używamy wariantu bazowego bez tej korekty, aby jej własny wynik nie zafałszował wyboru źródła. Jeśli wariant bazowy jest zapisany tylko dla części dnia, ten dzień nie uczy tego mechanizmu. Dawne dni sprzed tej funkcji korzystają z dawnych bazowych wyników.
+
+Udział 50% wybrano na wcześniejszym odcinku retrospektywnego testu spośród 25%, 50% i 75%, preferując umiarkowaną ingerencję przy podobnym błędzie. Późniejszy odcinek sprawdzono z tym ustalonym parametrem. Jest to krótka próba z jednego sezonu i kilku wersji aplikacji; nie gwarantuje poprawy przy każdej pogodzie. Kopia danych nie odtwarza dokładnie chwili dostępności ewentualnie później poprawionych statystyk HA. Stosujemy wyłącznie poprzednie pełne dni i zachowane wersje prognoz, ale ostateczna ocena skuteczności powstanie na nowych dniach po aktualizacji.
+
+### Rzeczywista produkcja i kolory w tabeli godzinowej (0.8.5)
+
+Tabela „Prognoza godzina po godzinie” zawiera rzeczywiste kWh z raportu godzinowego, źródło pomiaru i prognozy dostawców oraz PV Lab. Dla zakończonych godzin dzisiejszej doby pokazuje wersję bieżącą zapisaną przed początkiem godziny, nie przeliczony później przebieg. Dla minionego dnia respektuje wybór wersji na wykresie: plan z poprzedniego dnia lub bieżącą wersję sprzed godziny. Brak wcześniejszego zapisu pozostaje kreską. Łączna krzywa przed kalibracją nie ma osobnego zapisu godzinowego w raporcie, więc w przeszłości jest kreska. Przyszłe godziny pokazują aktualny przebieg. Bieżąca godzina pokazuje „Wyprodukowano dotychczas” z czasem pomiaru, a nie energię pełnej godziny.
+
+Zielony kolor i znak ✓ oznaczają najniższy błąd ważony wśród dostępnych zapisanych prognoz, bursztynowy najwyższy. Remisy są wspólne. Ocena korzysta z aktualnego wyboru kary niedoszacowania w „Prognoza a produkcja”, domyślnie 50%. Wymaga zakończonej godziny, rzeczywistego pomiaru i co najmniej dwóch prognoz. Niepełna godzina ani przyszłość nie dostają rankingu. Kolor ma znaczenie porównawcze, nie oznacza fizycznego ograniczenia ani niedostępności dostawcy. Podsumowanie uczciwego rankingu na wspólnym komplecie dostawców nadal jest w raporcie.
+
 <!-- tab:reports -->
 ## 5. Prognoza a produkcja
 
@@ -168,9 +186,9 @@ Wybiera termin jednego cyklu, ograniczając dokupioną energię. Nie wybiera wed
 
 ### Wspólny plan kilku cykli (od 0.8.4)
 
-Na początku zakładki wybierasz liczbę cykli dla każdego skonfigurowanego urządzenia, np. 2 prania i 1 zmywanie. Maksymalnie 8 cykli łącznie. Każdy wiersz może używać wybranego profilu i wariantu albo ręcznej energii i czasu. Profil ma pierwszeństwo przed polami ręcznymi. Różne programy tego samego fizycznego sprzętu nadal mają wspólną blokadę. Rozpoznajemy sprzęt po encji mocy; dwa różnie nazwane urządzenia z tą samą encją nie mogą pracować równolegle. Różne urządzenia mogą.
+Na początku zakładki wybierasz liczbę cykli dla każdego skonfigurowanego urządzenia, np. 2 prania i 1 zmywanie. Maksymalnie 8 cykli łącznie. Zakres wyszukiwania dopasowujemy do wybranego zakończenia: 48, 72 lub 168 godzin od teraz, maksymalnie siedem dni. Każdy wiersz może używać wybranego profilu i wariantu albo ręcznej energii i czasu. Profil ma pierwszeństwo przed polami ręcznymi. Różne programy tego samego fizycznego sprzętu nadal mają wspólną blokadę. Rozpoznajemy sprzęt po encji mocy; dwa różnie nazwane urządzenia z tą samą encją nie mogą pracować równolegle. Różne urządzenia mogą.
 
-Plan korzysta z rezerwy domu wpisanej w tym formularzu, a nie z profilu historycznego bazy Optymalizatora. Wynik minimalizuje dodatkowy import po wskazanym bilansowaniu, bez taryfy i depozytu. Wykorzystuje ten sam silnik wspólnego harmonogramu co Optymalizator: starty co 15 minut, profile w krokach 5 minut, plan priorytetowy i do 3 przejść poprawek. Jest heurystyką, nie gwarantuje globalnego minimum. Gdy nie można zmieścić wszystkich cykli, status i licznik pokazują częściowy plan, a brakujące cykle nie dostają fikcyjnej godziny.
+Plan korzysta z rezerwy domu wpisanej w tym formularzu, a nie z profilu historycznego bazy Optymalizatora. Wynik minimalizuje dodatkowy import po wskazanym bilansowaniu, bez taryfy i depozytu. Wykorzystuje ten sam silnik wspólnego harmonogramu co Optymalizator: starty co 15 minut, profile w krokach 5 minut, plan priorytetowy i do 3 przejść poprawek. Jest heurystyką, nie gwarantuje globalnego minimum. Gdy nie można zmieścić wszystkich cykli, status i licznik pokazują częściowy plan, a brakujące cykle nie dostają fikcyjnej godziny. Pokazujemy koniec wyszukiwania, ostatni dostępny przedział prognozy oraz powód nieznalezienia okna. Przed 0.8.5 wspólny planer miał stałe 48 godzin mimo wyboru dalszej daty; poprawiono to. Niepełna prognoza w dzień nadal nie jest zerem, a brak okna może oznaczać również nakładanie cykli tego samego sprzętu lub zbyt krótki zakres.
 
 Domyślnie plan obejmuje dzisiaj. Zapisany zakres z poprzedniej doby automatycznie wraca do dzisiejszej przy kolejnym przeliczeniu; liczba cykli i ustawienia zostają. Zakres można zmienić ręcznie lub przyciskiem „Ustaw zakres na dziś”. Przed rozpoczęciem kolejnego cyklu trzeba faktycznie zakończyć poprzedni; program nie wykrywa przełożenia prania ani nie steruje sprzętem.
 
@@ -256,6 +274,11 @@ Trzy scenariusze zmieniają PV i zużycie domu. Margines PV korzysta z wcześnie
 Ranking = koszt centralny + waga ostrożności × różnica między najgorszym a centralnym scenariuszem. Domyślnie waga 0,25. Zakres scenariuszy nie jest przedziałem ufności ani gwarantowanym kosztem.
 
 Zapis planu utrwala prognozę, ceny i założenia. Po rzeczywistym wykonaniu zaznacz potwierdzenie, a po zakończeniu okresów uruchom weryfikację. Odczytywane są pomiary domu, PV i urządzeń. Braki nie są zastępowane planem jako rzekomą rzeczywistością. Ocena korzysta z utrwalonych cen, nie faktury. Nie zmienia automatycznie cen ani profilu pralki. Wynik można wyeksportować.
+
+
+### Zakres dat względem Planowania urządzenia
+
+Optymalizator analizuje od chwili przeliczenia przez wybrane 48, 72 lub 168 godzin. Każde urządzenie może mieć dodatkowy najwcześniejszy start i termin zakończenia. Planowanie urządzenia ma osobny wspólny zakres (domyślnie dzisiaj, po zmianie do 7 dni). Oba widoki korzystają z jednego silnika harmonogramu, lecz Planowanie minimalizuje dodatkowy import, a Optymalizator koszt. Nie kopiujemy automatycznie dat ani ustawień między widokami. Przy porównywaniu rekomendacji należy ustawić ten sam zakres, urządzenia, bilansowanie i założenia zużycia domu. Ustawienie daty dalej niż horyzont wymaga zwiększenia horyzontu i kompletnej prognozy; ceny z encji i ceny przyszłych miesięcy nadal są założeniem zgodnie z ich opisem.
 
 <!-- tab:appliances -->
 ## 8. Profile urządzeń
@@ -434,6 +457,17 @@ Podgląd pliku ma limit pierwszych 32 000 bajtów. Nie jest pełnym pobraniem du
 
 Brak automatycznego kasowania prognozy Energii nie chroni przed usunięciem danych dodatku lub awarią nośnika. Rób kopie HA. Nie ma odtworzenia archiwum, którego nigdy nie zapisano.
 
+
+### Bezstratna kompresja i kopie (0.8.5)
+
+Przy pierwszym starcie dzienniki forecast-RRRR-MM-DD.jsonl i published-RRRR-MM-DD.jsonl są kompresowane algorytmem GZIP na miejscu. Przed atomową podmianą sprawdzamy, że rozpakowane bajty są identyczne z oryginałem. Wszystkie rekordy, czasy wydań, źródła, warianty i precyzja pozostają. Nowe rekordy są dopisywane jako kolejne człony GZIP; format obsługuje także wcześniejszy zwykły tekst. Nie tworzymy drugiej trwałej kopii każdego pliku. Podczas podmiany potrzebne jest chwilowe miejsce na jeden plik tymczasowy. Uszkodzenie nie jest maskowane: przy urwanym końcu zachowujemy uszkodzone dane jako .partial i odzyskujemy poprawne rekordy, a przy błędzie sumy kontrolnej odczyt zgłasza błąd.
+
+Nazwy logiczne w /data pozostają takie same, ale zawartość tych dwóch rodzajów dzienników może być binarna GZIP. Przeglądarka plików pokazuje rzeczywisty rozmiar skompresowany i oznaczenie. „Podejrzyj” automatycznie rozpakowuje do czytelnego tekstu. „Pobierz GZIP” dodaje rozszerzenie .gz, a „Pobierz JSONL” pobiera rozpakowany tekst. Małe ustawienia, próbki, importowane dni i archiwum Energii zachowują wcześniejszy format. Starsza wersja aplikacji nie obsługuje nowego skompresowanego dziennika: przed powrotem trzeba rozpakować te dzienniki albo odtworzyć kopię dodatku HA.
+
+Kompresja nie usuwa historii, ale nie wyłącza też ustawionej retencji. Wersje prognoz nadal mają skonfigurowany okres przechowywania, a archiwum prognozy Energii pozostaje trwałe. Nie zmieniamy liczby dni na potrzeby oszczędności miejsca. Informacja o oszczędności przy pierwszym starcie dotyczy skompresowanych dzienników; całość aplikacji obejmuje również inne dane.
+
+„Pobierz mniejszą kopię JSON.gz” daje standardowy plik GZIP zawierający ten sam komplet danych co zwykły eksport JSON. Zwykły JSON jest nadal dostępny. Strumieniowy eksport kompresuje kolejne rekordy bez budowania jednego ogromnego tekstu całej kopii w pamięci. Schemat kopii pozostaje w wersji 2, dodano numer aplikacji appVersion. Tak jak wcześniej eksport zawiera zbiorczą historię, a pełna kopia dodatku HA obejmuje również indywidualne pliki dni i plik poświadczeń. Kopia JSON nie jest kopią całego Home Assistant ani InfluxDB.
+
 <!-- tab:integration -->
 ## 16. Integracja HA i Energia
 
@@ -547,3 +581,7 @@ Na głównym wykresie bieżącego dnia trwająca godzina ma podświetlone tło i
 Wartość oznacza wyłącznie zmierzoną energię od początku godziny do ostatniego poprawnego odczytu. Pierwszeństwo ma różnica narastającego licznika AC, następnie licznika dziennego. Początek może być interpolowany między bliskimi odczytami — wtedy jest to opisane w źródle. Reset albo nieprawdopodobny przyrost wyklucza ten licznik z obliczenia. Nie dopisujemy prognozowanej energii do części już zmierzonej i nie przeliczamy wyniku na całą godzinę.
 
 Jeżeli brak odpowiednich liczników, używamy całki z mocy AC, tylko przy co najmniej 95% pokrycia minionego okresu; źródło pokazuje pokrycie. Nie uzupełniamy luk ani czasu po ostatnim odczycie prognozą. Brak świeżych danych daje komunikat i brak znacznika, a nie 0 kWh. Zmierzone 0 pozostaje poprawnym zerem. O pełnej godzinie poprzednia wartość częściowa znika, a zakończony przedział pojawia się na linii po otrzymaniu jego pełnego pomiaru. Archiwum i raporty zachowują pełne godziny; częściowego wyniku nie zapisujemy jako prognozy lub pełnej produkcji. Zmiana dotyczy prezentacji i pomiaru bieżącego, nie algorytmu prognozy, rozliczeń ani kalibracji.
+
+## Aktualizacja 0.8.5 — rozdzielenie wpływu korekt
+
+Raport zapisuje dodatkowy wariant without_tomorrow. Karta „Czy korekta na jutro poprawia wynik?” porównuje go z końcowym PV Lab dopiero po zakończeniu godzin. Brak wcześniejszego wariantu nie jest rekonstruowany dzisiejszym modelem. Aby nie przypisywać tej zmiany historii lub napięciu, ocena historii korzysta z wariantu sprzed korekty na jutro, jeśli jest dostępny, a wspólna ocena ryzyka sieci kończy się przed nią. Historyczne oceny i prognozy pozostają zapisami swoich wydań.

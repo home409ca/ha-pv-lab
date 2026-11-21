@@ -35,3 +35,5 @@ table th small{display:block;font-weight:400;color:var(--muted)}.legend .check-l
 @media(max-width:600px){.mapped-panel{font-size:11px}.panel-map{aspect-ratio:1.1}.panel-map-tools button{flex:1 1 auto}}
 
 .panel-roofs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.panel-roofs>article{min-width:0}.panel-roofs .mapped-panel{font-size:clamp(10px,1.1vw,15px)}@media(max-width:900px){.panel-roofs{grid-template-columns:1fr}.panel-roofs .mapped-panel{font-size:13px}}
+
+td.forecast-best{background:#243d28;color:#c3f98a;font-weight:650;box-shadow:inset 0 -2px #88ba59}td.forecast-worst{background:#3c2e20;color:#ffd49a}

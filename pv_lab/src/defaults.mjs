@@ -1,3 +1,4 @@
+import {tomorrowDefaults} from './tomorrow-adjustment.mjs';
 import {historyDefaults} from './historical-profile.mjs';
 import {defaultPlan,validatePlan} from './planner.mjs';
 import {defaultAppliances,validateAppliance} from './appliances.mjs';
@@ -36,6 +37,7 @@ export const defaults = {
   appliances: structuredClone(defaultAppliances),
   planner: structuredClone(defaultPlan),
   grid: {hourBalance:'sensor.energia_bilans_netto',importEnergy:'sensor.0_electricity_meter_total_forward_active_energy_balanced',exportEnergy:'sensor.0_electricity_meter_total_reverse_active_energy_balanced',confirmed:true,countersAreHourlyBalanced:false,semanticsVersion:2},
+  tomorrowForecast: structuredClone(tomorrowDefaults),
   reports: {freezeTime:'20:00'},
   historyProfile: structuredClone(historyDefaults),
   statistics: { channels: [
@@ -61,6 +63,8 @@ export function validate(c) {
   number(c.quality.staleSeconds,c.pollSeconds,86400,'ważność pomiaru');
   number(c.quality.minSamples,5,1000,'liczba próbek kalibracji');
   if(!Array.isArray(c.quality.normalStatuses) || !c.quality.normalStatuses.length || c.quality.normalStatuses.some(x=>typeof x!=='string')) throw new Error('Podaj poprawne statusy normalnej pracy.');
+  if(typeof c.tomorrowForecast.enabled!=='boolean')throw new Error('Niepoprawny przełącznik prognozy na jutro.');
+  number(c.tomorrowForecast.blend,0,.75,'udział ostrożnej prognozy');number(c.tomorrowForecast.minDays,3,30,'pełne dni prognozy na jutro');number(c.tomorrowForecast.lookbackDays,c.tomorrowForecast.minDays,30,'historia prognozy na jutro');if(!Number.isInteger(c.tomorrowForecast.minDays)||!Number.isInteger(c.tomorrowForecast.lookbackDays))throw new Error('Liczba dni musi być całkowita.');
   number(c.retention.samplesDays,1,90,'retencja pomiarów'); number(c.retention.forecastsDays,2,30,'retencja prognoz');
   number(c.retention.voltageHours,0,168,'retencja napięć [h]');number(c.retention.revisionsDays,1,365,'retencja zmian prognozy');
   if(!Array.isArray(c.statistics?.channels)||c.statistics.channels.length>8)throw new Error('Niepoprawna konfiguracja statystyk.');
@@ -108,4 +112,4 @@ export function validate(c) {
   return c;
 }
 
-export function migrateConfig(c){if(!c.grid?.semanticsVersion&&c.grid?.hourBalance==='sensor.energia_bilans_netto'&&c.grid?.importEnergy===defaults.grid.importEnergy&&c.grid?.exportEnergy===defaults.grid.exportEnergy)c={...c,grid:{...c.grid,countersAreHourlyBalanced:false,semanticsVersion:2}};return {...c,historyProfile:{...historyDefaults,...c.historyProfile},appliances:c.appliances||structuredClone(defaultAppliances),planner:{...defaultPlan,...c.planner},grid:{...defaults.grid,...c.grid},reports:{...defaults.reports,...c.reports},retention:{...defaults.retention,...c.retention},statistics:c.statistics||structuredClone(defaults.statistics)};}
+export function migrateConfig(c){if(!c.grid?.semanticsVersion&&c.grid?.hourBalance==='sensor.energia_bilans_netto'&&c.grid?.importEnergy===defaults.grid.importEnergy&&c.grid?.exportEnergy===defaults.grid.exportEnergy)c={...c,grid:{...c.grid,countersAreHourlyBalanced:false,semanticsVersion:2}};return {...c,tomorrowForecast:{...tomorrowDefaults,...c.tomorrowForecast},historyProfile:{...historyDefaults,...c.historyProfile},appliances:c.appliances||structuredClone(defaultAppliances),planner:{...defaultPlan,...c.planner},grid:{...defaults.grid,...c.grid},reports:{...defaults.reports,...c.reports},retention:{...defaults.retention,...c.retention},statistics:c.statistics||structuredClone(defaults.statistics)};}

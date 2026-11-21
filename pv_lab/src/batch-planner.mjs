@@ -18,7 +18,7 @@ export function planBatch(f,samples,c,raw,library,now=Date.now()){
  if(input.latest!==null&&input.latest<=begin){input.earliest=null;input.latest=null;}
  const earliest=Math.max(now,input.earliest??begin),latest=input.latest??end,s=optimizerDefaults(c,library);
  // This view minimizes additional imported energy, independently of tariff and deposit.
- s.horizonHours=48;s.riskWeight=0;s.balanceMode=input.mode;s.export.enabled=false;s.devices=[];s.load.mode='constant';s.load.baseW=input.baseW;s.load.uncertainty=0;
+ const hoursNeeded=Math.ceil((latest-now)/3600000);s.horizonHours=hoursNeeded<=48?48:hoursNeeded<=72?72:168;s.riskWeight=0;s.balanceMode=input.mode;s.export.enabled=false;s.devices=[];s.load.mode='constant';s.load.baseW=input.baseW;s.load.uncertainty=0;
  for(const v of s.tariff.versions)for(const k of rateKeys)v[k]={value:['energyDay','energyNight'].includes(k)?1:0,entity:''};
  const seen=new Map();for(const e of input.entries){const a=c.appliances.find(a=>a.id===e.deviceId);for(let i=0;i<e.count;i++){const seq=(seen.get(a.id)||0)+1;seen.set(a.id,seq);s.devices.push({id:a.id+'_'+seq,name:a.name+' · cykl '+seq,enabled:true,profileId:e.profileId,variant:e.variant,powerEntity:a.powerEntity,energyKWh:e.energyKWh,durationMinutes:e.durationMinutes,earliest,deadline:latest,allowedHours:[[0,1440]],skipWeekends:false,priority:5});}}
  const result=optimizeEnergy(f,samples,c,s,emptyLoad(),null,new Map(),{},library,now);
@@ -30,5 +30,8 @@ export function planBatch(f,samples,c,raw,library,now=Date.now()){
   device.curve.wh.forEach((wh,i)=>{const at=device.scheduled.start+i*300000,group=ctx.slots.get(at).group;reserved.slots.set(at,(reserved.slots.get(at)||0)+wh/1000);reserved.groups.set(group,(reserved.groups.get(group)||0)+wh/1000);});reserved.costs=reserved.costs.map((v,i)=>v+device.accounting.scenarioCosts[i]);
  }
  result.schedule.physicalImportKWh=physical;result.schedule.balancingKWh=input.mode==='instant'?0:Math.max(0,physical-result.schedule.additionalImportKWh);
- result.settings=input;result.range={earliest,latest};return result;
+ const forecastEnd=Math.max(now,...f.fullRows.map(r=>r.start+900000));
+ result.settings=input;result.range={earliest,latest,forecastEnd,searchEnd:Math.min(latest,now+s.horizonHours*3600000)};
+ if(result.schedule.devices<result.schedule.requested){result.warnings.push(latest>now+168*3600000?'Wybrany zakres wykracza poza limit 7 dni planowania.':forecastEnd<earliest?'Prognoza kończy się przed wybranym początkiem.':latest-earliest<input.entries.reduce((m,e)=>Math.max(m,e.count*e.durationMinutes*60000),0)?'Zakres może być zbyt krótki, aby wykonać kolejno wszystkie cykle jednego urządzenia.':'Sprawdź pełne kwadranse prognozy w wybranym zakresie oraz czas kolejnych cykli tego samego sprzętu.');}
+ return result;
 }

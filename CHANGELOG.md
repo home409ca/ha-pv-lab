@@ -1,3 +1,12 @@
+# 0.8.5
+
+- Bezstratna kompresja istniejących i nowych dzienników prognoz; te same rekordy, czasy wydań i ustawienia retencji. Kopia JSON.gz i zwykły JSON, rozpakowany podgląd i pobieranie plików.
+- Ostrożniejsza prognoza na jutro wybrana w retrospektywnym teście kolejnych dni: niższa prognoza lepszego wcześniej dostawcy może obniżyć wynik PV Lab z udziałem 50%. Warunek pełnych wcześniejszych dni, bez danych z dnia wydania i dnia prognozy. Wyłącznik i parametry w ustawieniach.
+- Nowe zapisy zachowują wynik przed korektą na jutro do późniejszej oceny. Stare prognozy i archiwum Energii pozostają bez zmian.
+- Rzeczywista produkcja w tabeli godzinowej; kolorowanie najlepszych i najsłabszych zapisanych prognoz. Bieżąca godzina jest częściowa i nie jest oceniana.
+- Naprawiono planowanie późniejszych dat: horyzont dopasowany do zakresu, do 7 dni, z opisem braku okna. Nie scala to automatycznie ustawień Planowania i Optymalizatora.
+- Opcjonalne linie bazy domu i nadwyżki pozostają domyślnie wyłączone.
+
 # 0.8.4
 
 - Wspólne porównanie prognozy na jutro i aktualizowanej w ciągu dnia. Ocena ryzyka: zawyżenie 100%, niedoszacowanie domyślnie 50%, obok zwykłego błędu.

@@ -6,17 +6,17 @@ const HOUR=3600000,freezeCache=new Map();
 const dateShift=(day,n)=>new Date(Date.parse(day+'T12:00:00Z')+n*DAY).toISOString().slice(0,10);
 export const emptyReports=()=>({version:3,hours:{},pending:{},days:{},months:{},years:{},lastAt:0});
 function hourPrediction(pub,start,c){
-  const map=pub.rowMap||new Map(pub.rows.map(r=>[r.start,r])),date=localParts(start,c.timezone).date,ids=['pv_lab','without_history',...(pub.providers||c.providers.filter(p=>p.enabled).map(p=>p.id))],predictions={},issued={};
+  const map=pub.rowMap||new Map(pub.rows.map(r=>[r.start,r])),date=localParts(start,c.timezone).date,ids=['pv_lab','without_history','without_tomorrow',...(pub.providers||c.providers.filter(p=>p.enabled).map(p=>p.id))],predictions={},issued={};
   for(const id of ids){let sum=0,ok=true;
     const dayAvailable=pub.daySources?.[date]?.has(id);
     if(!dayAvailable){predictions[id]=null;continue;}
-    for(let t=start;t<start+HOUR;t+=SLOT){const row=map.get(t),value=id==='pv_lab'?row?.wh:id==='without_history'?row?.beforeHistoryWh:row?.sources?.find(s=>s.provider===id)?.rawWh;
+    for(let t=start;t<start+HOUR;t+=SLOT){const row=map.get(t),value=id==='pv_lab'?row?.wh:id==='without_history'?row?.beforeHistoryWh:id==='without_tomorrow'?row?.beforeTomorrowWh:row?.sources?.find(s=>s.provider===id)?.rawWh;
       if(Number.isFinite(value))sum+=Math.min(c.inverter.limitW/4,Math.max(0,value));else {const sun=sunPosition(t+SLOT/2,c.location);if(!sun||sun.elevation>0){ok=false;break;}}}
-    const at=['pv_lab','without_history'].includes(id)?pub.at:pub.sourceTimes?.[id]??pub.at;predictions[id]=ok&&pub.at-at<=6*HOUR?sum/1000:null;issued[id]=at;
+    const at=['pv_lab','without_history','without_tomorrow'].includes(id)?pub.at:pub.sourceTimes?.[id]??pub.at;predictions[id]=ok&&pub.at-at<=6*HOUR?sum/1000:null;issued[id]=at;
   }return {predictions,issued};
 }
 export function captureReportForecasts(state,pub,c){
-  if(!pub.rows?.length)return;pub={...pub,rowMap:new Map(pub.rows.map(r=>[r.start,r])),daySources:{}};for(const row of pub.rows){const d=localParts(row.start,c.timezone).date;const set=pub.daySources[d]??=new Set(['pv_lab']);if(Number.isFinite(row.beforeHistoryWh))set.add('without_history');for(const src of row.sources||[])set.add(src.provider);}
+  if(!pub.rows?.length)return;pub={...pub,rowMap:new Map(pub.rows.map(r=>[r.start,r])),daySources:{}};for(const row of pub.rows){const d=localParts(row.start,c.timezone).date;const set=pub.daySources[d]??=new Set(['pv_lab']);if(Number.isFinite(row.beforeHistoryWh))set.add('without_history');if(Number.isFinite(row.beforeTomorrowWh))set.add('without_tomorrow');for(const src of row.sources||[])set.add(src.provider);}
   const dates=[...new Set(pub.rows.map(r=>localParts(r.start,c.timezone).date))];
   for(const date of dates){const [begin,end]=dayBounds(date,c.timezone),[previous]=dayBounds(dateShift(date,-1),c.timezone),[hh,mm]=(c.reports?.freezeTime||'20:00').split(':').map(Number),cutoff=previous+(hh*60+mm)*60000;
     // Freeze at a local clock time even on DST transition dates.
@@ -48,7 +48,8 @@ function aggregateDay(rows,c){const first=rows[0],[a,b]=dayBounds(first.date,c.t
   for(const r of rows){const actual=r.actualKWh;if(actual!==null){result.actualSum+=actual;result.actualHours++;}
     for(const [id,p] of Object.entries(r.predictions)){if(p!==null){const f=result.forecasts[id]??={sum:0,hours:0};f.sum+=p;f.hours++;if(actual!==null)addMetric(result.paired[id]??=blank(),metric(actual,p));}}
     const ids=['pv_lab',...r.providers],cohort=[...ids].sort().join('|');if(actual!==null&&ids.every(id=>Number.isFinite(r.predictions[id]))){for(const id of ids)addMetric((result.cohorts[cohort]??={})[id]??=blank(),metric(actual,r.predictions[id]));}
-    if(actual!==null&&Number.isFinite(r.predictions.pv_lab)&&Number.isFinite(r.predictions.without_history)){const effect=result.historyEffect??={n:0,changedHours:0,withErrorKWh:0,withoutErrorKWh:0};effect.n++;if(Math.abs(r.predictions.pv_lab-r.predictions.without_history)>1e-6)effect.changedHours++;effect.withErrorKWh+=Math.abs(actual-r.predictions.pv_lab);effect.withoutErrorKWh+=Math.abs(actual-r.predictions.without_history);}
+    const historyFinal=r.predictions.without_tomorrow??r.predictions.pv_lab;
+    if(actual!==null&&Number.isFinite(historyFinal)&&Number.isFinite(r.predictions.without_history)){const effect=result.historyEffect??={n:0,changedHours:0,withErrorKWh:0,withoutErrorKWh:0};effect.n++;if(Math.abs(historyFinal-r.predictions.without_history)>1e-6)effect.changedHours++;effect.withErrorKWh+=Math.abs(actual-historyFinal);effect.withoutErrorKWh+=Math.abs(actual-r.predictions.without_history);}
     result.quality.push(...r.quality);
   }
   result.quality=[...new Set(result.quality)];for(const s of Object.values(result.paired))if(s.n===result.expectedHours){s.dailyN=1;s.dailyAbsErrorKWh=Math.abs(s.forecastKWh-s.actualKWh);}
