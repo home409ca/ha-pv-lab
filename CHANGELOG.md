@@ -1,3 +1,11 @@
+# 0.8.4
+
+- Wspólne porównanie prognozy na jutro i aktualizowanej w ciągu dnia. Ocena ryzyka: zawyżenie 100%, niedoszacowanie domyślnie 50%, obok zwykłego błędu.
+- Poprawione błędy dobowe w widoku godzinowym: kompletne podsumowania dni zamiast sztucznego zera pełnych dób.
+- Wspólny plan wielu cykli urządzeń: blokada nakładania pracy tego samego sprzętu, równoległa praca różnego sprzętu i jedna pula bilansowania.
+- Domyślny zakres na dziś, pobór fizyczny, pokrycie bilansem i dodatkowa energia do rozliczenia pokazane osobno.
+- Zachowane opcjonalne linie bazy domu i nadwyżki, domyślnie wyłączone. Historia i wcześniejsze prognozy pozostają bez zmian.
+
 # 0.8.3
 
 - Osobne mapy paneli PV1 i PV2 według schematu instalacji, z przerwami między panelami.

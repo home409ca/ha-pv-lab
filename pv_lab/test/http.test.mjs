@@ -68,9 +68,9 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
     assert.equal((await post('/api/plan',{energyKWh:0},{Authorization:'Bearer '+pairingKey})).status,400);assert.equal((await post('/api/plan',{entities:{}},{Authorization:'Bearer '+pairingKey})).status,400);assert.equal((await post('/api/plan',{energyKWh:4},{Authorization:'Bearer wrong'})).status,401);
     assert.ok((await get('/api/view')).reports);assert.ok((await get('/api/view')).planner);assert.equal((await fetch(base+'/planning.js')).status,200);
     assert.equal((await fetch(base+'/appliances.js')).status,200);
-    const htmlResponse=await fetch(base+'/');assert.equal(htmlResponse.headers.get('cache-control'),'no-store');assert.ok((await htmlResponse.text()).includes('./ui/0.8.3/app.js'));
-    const uiResponse=await fetch(base+'/ui/0.8.3/app.js');assert.equal(uiResponse.status,200);assert.ok(uiResponse.headers.get('cache-control').includes('immutable'));
-    assert.equal((await fetch(base+'/ui/0.8.3/historical.js')).status,200);assert.equal((await fetch(base+'/ui/0.8.3/view-state.js')).status,200);assert.equal((await fetch(base+'/ui/0.4.2/app.js')).status,410);
+    const htmlResponse=await fetch(base+'/');assert.equal(htmlResponse.headers.get('cache-control'),'no-store');assert.ok((await htmlResponse.text()).includes('./ui/0.8.4/app.js'));
+    const uiResponse=await fetch(base+'/ui/0.8.4/app.js');assert.equal(uiResponse.status,200);assert.ok(uiResponse.headers.get('cache-control').includes('immutable'));
+    assert.equal((await fetch(base+'/ui/0.8.4/historical.js')).status,200);assert.equal((await fetch(base+'/ui/0.8.4/view-state.js')).status,200);assert.equal((await fetch(base+'/ui/0.4.2/app.js')).status,410);
     assert.ok((await get('/api/historical-profile?date=2026-06-10')).rows);
 
     assert.equal((await post('/api/profiles/analyze',{deviceId:'pralka',days:1})).status,200);
@@ -84,6 +84,11 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
     await post('/api/plan',{profileId:profile.id,profileVariant:'typical'});assert.equal((await post('/api/profiles/delete',{id:profile.id})).status,200);assert.equal((await get('/api/view')).planner.settings.profileId,null);
     const discovered=await get('/api/statistics/metadata');assert.equal(discovered.items.length,3);assert.equal(discovered.items[0].unit_of_measurement,'kWh');assert.equal(discovered.items[2].unit_of_measurement,'Wh');
     const previousStatsCalls=statsSocket.commands.filter(m=>m.type==='recorder/statistics_during_period').length;assert.equal((await post('/api/statistics/import',{days:35})).status,200);await until(async()=>{const x=await get('/api/view');return x.job?.type==='statistics'&&!x.job.running;});const statisticsView=await get('/api/view');assert.equal(statisticsView.job.error,null);assert.equal(statisticsView.job.done,35);assert.ok(statisticsView.statistics.days.length>0);assert.equal(statsSocket.commands.filter(m=>m.type==='recorder/statistics_during_period').length-previousStatsCalls,2);
+    assert.ok(v.batchPlan);const batch=structuredClone(v.batchPlan.settings);batch.entries[0].count=2;batch.entries[1].count=1;
+    assert.equal((await post('/api/batch-plan',batch)).status,200);assert.equal((await get('/api/view')).batchPlan.schedule.requested,3);
+    assert.equal(JSON.parse(await readFile(path.join(dir,'batch-plan.json'),'utf8')).entries[0].count,2);
+    const badBatch=structuredClone(batch);badBatch.entries[0].count=99;assert.equal((await post('/api/batch-plan',badBatch)).status,400);
+    assert.equal((await get('/api/view')).batchPlan.schedule.requested,3);
     const visual=structuredClone(v.panelLayout),panelId=Object.keys(visual.panels)[0],calibrationBefore=(await get('/api/settings')).calibrationFrom;
     visual.panels[panelId]={x:55,y:32,landscape:true};assert.equal((await post('/api/panel-layout',visual)).status,200);
     assert.deepEqual((await get('/api/view')).panelLayout.panels[panelId],visual.panels[panelId]);
