@@ -1,0 +1,87 @@
+import {buildContext,deviceCurve,rankDevice,reservations,candidate} from './optimizer.mjs';
+import {validateOptimizer} from './optimizer-settings.mjs';
+import {dayBounds,parseLocalInput} from '../public/presentation.js';
+import {localParts} from './time.mjs';
+const H=3600000,Q=900000,STEP=300000;
+const addDay=(day,n)=>new Date(Date.parse(day+'T12:00:00Z')+n*24*H).toISOString().slice(0,10);
+export function planRange(s,c,now){
+ const day=localParts(now,c.timezone).date;
+ const start=s.preset==='tomorrow'?dayBounds(addDay(day,1),c.timezone)[0]:now;
+ const end=dayBounds(addDay(day,s.preset==='both'||s.preset==='tomorrow'?1:0),c.timezone)[1];
+ return {earliest:s.preset==='custom'?Math.max(now,s.earliest):start,latest:s.preset==='custom'?s.latest:end};
+}
+export function migrateUnified(batch,optimizer,c,library){
+ const entries=(batch.entries||[]).map(e=>{const a=c.appliances.find(a=>a.id===e.deviceId);return {...e,id:e.deviceId,name:a?.name||e.deviceId,powerEntity:a?.powerEntity||'',finishBy:'',finishDate:'',template:null};});
+ for(const d of optimizer.devices.filter(d=>d.enabled)){
+  const p=library.profiles.find(p=>p.id===d.profileId),resource=d.powerEntity||p?.source?.powerEntity||c.appliances.find(a=>a.id===p?.deviceId)?.powerEntity||'';
+  if(entries.some(e=>e.count&&resource&&e.powerEntity===resource))continue;
+  entries.push({id:'old_'+d.id,deviceId:p?.deviceId||null,name:d.name,powerEntity:resource,count:1,profileId:d.profileId,variant:d.variant,energyKWh:d.energyKWh,durationMinutes:d.durationMinutes,finishBy:'',finishDate:'',template:structuredClone(d)});
+ }
+ let remaining=8;for(const e of entries){const accepted=Math.min(e.count,remaining);remaining-=accepted;e.count=accepted;}
+ return {version:1,preset:batch.latest?'custom':'today',earliest:batch.earliest,latest:batch.latest,mode:batch.mode,entries,migration:'Zachowano liczbę cykli z Planowania. Dodatkowe urządzenia ze starego Optymalizatora włączono tylko, gdy nie powielały sprzętu z tej listy. Wspólna baza domu i cennik pochodzą z Optymalizatora; dawne ustawienia pozostają w osobnych plikach i kopii danych.'};
+}
+export function validateUnified(raw,c,library,optimizer){
+ if(raw?.version!==1||!['today','tomorrow','both','custom'].includes(raw.preset)||!['hourly','quarterly','instant'].includes(raw.mode)||!Array.isArray(raw.entries)||raw.entries.length>40||new Set(raw.entries.map(e=>e.id)).size!==raw.entries.length)throw new Error('Niepoprawna konfiguracja wspólnego planu.');
+ if(raw.preset==='custom'&&(!Number.isFinite(raw.earliest)||!Number.isFinite(raw.latest)||raw.latest<=raw.earliest))throw new Error('Sprawdź początek i koniec zakresu.');
+ const next=structuredClone(raw);let count=0;
+ for(const e of next.entries){
+  if(typeof e.id!=='string'||!e.id||typeof e.name!=='string'||!e.name.trim()||!Number.isInteger(e.count)||e.count<0||e.count>8||typeof e.powerEntity!=='string')throw new Error('Sprawdź nazwę urządzenia i liczbę cykli.');
+  count+=e.count;
+  if(e.finishBy&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(e.finishBy))throw new Error('Termin zakończenia wpisz jako HH:MM.');
+  if(e.finishDate&&(!/^\d{4}-\d\d-\d\d$/.test(e.finishDate)||!Number.isFinite(Date.parse(e.finishDate+'T12:00:00Z'))))throw new Error('Sprawdź datę zakończenia.');
+  if(e.finishDate&&!e.finishBy)throw new Error('Przy dacie zakończenia podaj również godzinę.');
+  if(e.profileId){const p=library.profiles.find(p=>p.id===e.profileId);if(!p?.variants[e.variant])throw new Error('Profil lub wariant urządzenia nie jest dostępny. Wybierz go ponownie.');e.powerEntity||=p.source?.powerEntity||c.appliances.find(a=>a.id===p.deviceId)?.powerEntity||'';}
+  validateOptimizer({...structuredClone(optimizer),devices:[task(e,0,0,1e15)]});
+ }
+ if(count>8)throw new Error('Można zaplanować najwyżej 8 cykli łącznie.');
+ return next;
+}
+function task(e,i,earliest,deadline){return {...e.template,id:e.id+'_'+(i+1),name:e.name+' · cykl '+(i+1),enabled:true,powerEntity:e.powerEntity,profileId:e.profileId||null,variant:e.variant,energyKWh:e.energyKWh,durationMinutes:e.durationMinutes,earliest:Math.max(earliest,e.template?.earliest??0),deadline:Math.min(deadline,e.template?.deadline??Infinity),allowedHours:e.template?.allowedHours||[[0,1440]],skipWeekends:e.template?.skipWeekends||false,priority:e.template?.priority||5};}
+export function expandUnified(input,c,library,optimizer,now){
+ const s=validateUnified(input,c,library,optimizer),range=planRange(s,c,now),settings=structuredClone(optimizer);
+ if(range.latest<=range.earliest)throw new Error('Wybrany zakres już minął. Wybierz dziś, jutro lub nowe daty.');
+ if(range.latest-now>168*H)throw new Error('Zakres może kończyć się najwyżej 7 dni od teraz.');
+ settings.horizonHours=range.latest-now<=48*H?48:range.latest-now<=72*H?72:168;settings.balanceMode=s.mode;settings.devices=[];
+ const lastDay=localParts(range.latest-1,c.timezone).date,deadlines=new Map();
+ for(const e of s.entries.filter(e=>e.count))if(e.finishBy){const deadline=parseLocalInput((e.finishDate||lastDay)+'T'+e.finishBy,c.timezone),key=e.powerEntity||e.id;deadlines.set(key,Math.min(deadlines.get(key)??Infinity,deadline));}
+ for(const e of s.entries)for(let i=0;i<e.count;i++)settings.devices.push(task(e,i,range.earliest,Math.min(range.latest,deadlines.get(e.powerEntity||e.id)??Infinity)));
+ return {settings,range};
+}
+const rounded=v=>Math.round(v*1e8);
+function metrics(ctx,assignments){
+ const r=reservations(ctx,assignments);let additionalImportKWh=0,lostExportKWh=0,physicalImportKWh=0,gridCost=0,opportunityCost=0,surplusKWh=0,minimumSurplusKWh=Infinity;
+ for(const [id,kWh] of r.groups){const g=ctx.groups.get(id),di=Math.max(0,g.net[0]+kWh)-Math.max(0,g.net[0]),de=Math.max(0,-g.net[0])-Math.max(0,-g.net[0]-kWh);const spare=Math.max(0,-g.net[0]-kWh);surplusKWh+=spare;minimumSurplusKWh=Math.min(minimumSurplusKWh,spare);additionalImportKWh+=di;lostExportKWh+=de;gridCost+=di*g.price.buy;opportunityCost+=de*g.price.sell;}
+ for(const [at,kWh] of r.slots){const net=ctx.slots.get(at).net[0];physicalImportKWh+=Math.max(0,net+kWh)-Math.max(0,net);}
+ return {...r,surplusKWh,minimumSurplusKWh:Number.isFinite(minimumSurplusKWh)?minimumSurplusKWh:0,additionalImportKWh,lostExportKWh,physicalImportKWh,balancingKWh:ctx.s.balanceMode==='instant'?0:Math.max(0,physicalImportKWh-additionalImportKWh),gridCost,opportunityCost,cost:r.costs[0],optimisticCost:Math.min(...r.costs),pessimisticCost:Math.max(...r.costs),objective:r.costs[0]+ctx.s.riskWeight*(Math.max(...r.costs)-r.costs[0])};
+}
+function search(ctx,prepared,objective){
+ const cmp=(a,b)=>rounded(a[objective==='pv'?'additionalImportKWh':'objective'])-rounded(b[objective==='pv'?'additionalImportKWh':'objective'])||(a.additionalImportKWh<1e-8&&b.additionalImportKWh<1e-8?rounded(b.surplusKWh)-rounded(a.surplusKWh):0)||(objective==='pv'?rounded(a.physicalImportKWh)-rounded(b.physicalImportKWh):0)||a.start-b.start;
+ const margin=(item,option,reserved)=>{const used=new Map(reserved.groups);item.curve.wh.forEach((wh,i)=>{const id=ctx.slots.get(option.start+i*STEP).group;used.set(id,(used.get(id)||0)+wh/1000);});return [...used].reduce((sum,[id,kWh])=>sum+Math.max(0,-ctx.groups.get(id).net[0]-kWh),0);};
+ const rank=(item,assigned)=>{const reserved=reservations(ctx,assigned);return rankDevice(ctx,item.device,item.curve,reserved).map(r=>({...r,surplusKWh:margin(item,r,reserved)})).sort(cmp);};
+ const compare=(a,b)=>{if(a.length!==b.length)return b.length-a.length;return cmp({...metrics(ctx,a),start:Math.max(0,...a.map(a=>a.start+a.curve.duration))},{...metrics(ctx,b),start:Math.max(0,...b.map(a=>a.start+a.curve.duration))});};
+ const base=[...prepared].sort((a,b)=>a.device.deadline-b.device.deadline||b.curve.duration-a.curve.duration||a.device.id.localeCompare(b.device.id));
+ const orders=[base,[...base].sort((a,b)=>b.device.priority-a.device.priority),[...base].reverse(),[...base].sort((a,b)=>b.curve.kWh-a.curve.kWh)];
+ for(let i=1;i<Math.min(base.length,5);i++)orders.push([...base.slice(i),...base.slice(0,i)]);
+ const found=new Map();let evaluated=0;
+ for(const order of orders)for(const seed of [0,1,2]){
+  const assigned=[];
+  for(const item of order){const choices=rank(item,assigned);evaluated+=choices.length;const best=choices[assigned.length===0?Math.min(seed,choices.length-1):0];if(best)assigned.push({...item,start:best.start});}
+  for(let pass=0;pass<2;pass++)for(const item of order){const old=assigned.find(a=>a.device.id===item.device.id),others=assigned.filter(a=>a!==old),choices=rank(item,others);evaluated+=choices.length;const best=choices[0];if(!best)continue;if(!old)assigned.push({...item,start:best.start});else{const reserved=reservations(ctx,others),before=candidate(ctx,item.device,item.curve,old.start,reserved);before.surplusKWh=margin(item,before,reserved);if(cmp({...best,start:0},{...before,start:0})<0)old.start=best.start;}}
+  const signature=assigned.map(a=>JSON.stringify([a.device._resource,a.curve.wh,a.start])).sort().join('|');found.set(signature,assigned);
+ }
+ return {plans:[...found.values()].sort(compare).slice(0,3),evaluated,distinct:found.size};
+}
+function materialize(ctx,prepared,assignments,objective,stats,range){
+ const total=metrics(ctx,assignments),{slots,groups,costs,resources,...summary}=total;
+ const devices=prepared.map(p=>{const a=assignments.find(a=>a.device.id===p.device.id);return {id:p.device.id,name:p.device.name,powerEntity:p.device.powerEntity||null,curve:p.curve,energyKWh:p.curve.kWh,durationMinutes:p.curve.duration/60000,scheduled:a?candidate(ctx,p.device,p.curve,a.start,reservations(ctx,assignments,p.device.id)):null,status:a?'gotowe':'Brak pełnego okna: termin zakończenia, kolejność cykli, prognoza lub limit poboru.'};});
+ const sequence=new Map();for(const d of devices.filter(d=>d.scheduled).sort((a,b)=>a.scheduled.start-b.scheduled.start||a.id.localeCompare(b.id))){const group=d.id.slice(0,d.id.lastIndexOf('_')),n=(sequence.get(group)||0)+1;sequence.set(group,n);d.name=d.name.replace(/ · cykl \d+$/,' · cykl '+n);}
+ const assigned=[];for(const a of [...assignments].sort((a,b)=>a.start-b.start||a.device.id.localeCompare(b.device.id))){const d=devices.find(d=>d.id===a.device.id);d.accounting=candidate(ctx,a.device,a.curve,a.start,reservations(ctx,assigned));d.accounting.balancingKWh=ctx.s.balanceMode==='instant'?0:Math.max(0,d.accounting.physicalImportKWh-d.accounting.additionalImportKWh);assigned.push(a);}
+ return {version:1,calculatedAt:ctx.now,validUntil:Math.floor(ctx.now/Q)*Q+Q,range,horizonHours:ctx.s.horizonHours,mode:ctx.s.balanceMode,objective,status:devices.length?(assignments.length===devices.length?'Pełny plan':'Plan niepełny — sprawdź brakujące cykle'):'Dodaj cykle urządzeń',devices,schedule:{...summary,scenarioCosts:costs,devices:assignments.length,requested:devices.length,finishesAt:assignments.length?Math.max(...assignments.map(a=>a.start+a.curve.duration)):null,method:'Różne kolejności, trzy punkty startowe i dwa przejścia poprawek; bez gwarancji globalnego minimum.',evaluated:stats.evaluated,distinct:stats.distinct},timeline:ctx.quarterRows.filter(r=>r.end>range.earliest&&r.start<range.latest).map(r=>{let deviceKWh=0;for(let at=r.start;at<r.end;at+=STEP)deviceKWh+=slots.get(at)||0;return {...r,deviceKWh,netWithDevicesKWh:r.netKWh===null?null:r.netKWh+deviceKWh};}),load:ctx.load.summary,prices:ctx.prices,errors:ctx.errors,warnings:ctx.warnings};
+}
+export function planUnified(f,samples,c,input,optimizer,load,live,states,model,library,now=Date.now()){
+ input=validateUnified(input,c,library,optimizer);const {settings,range}=expandUnified(input,c,library,optimizer,now),ctx=buildContext(f,samples,c,settings,load,live,states,model,now);
+ const prepared=settings.devices.map(device=>({device:{...device,_resource:device.powerEntity||input.entries.find(e=>e.id===device.id.slice(0,device.id.lastIndexOf('_')))?.id||device.id},curve:deviceCurve(device,library)}));
+ if(settings.load.mode==='history')for(const entity of settings.load.excludeEntities)if(!prepared.some(p=>p.device.powerEntity===entity))ctx.warnings.push('Od bazy odjęto '+entity+', ale ten sprzęt nie ma cyklu we wspólnym planie. Jego niezaplanowana praca nie jest uwzględniona.');
+ const analyses={};for(const objective of ['pv','cost']){const found=search(ctx,prepared,objective);analyses[objective]=found.plans.map((a,i)=>({...materialize(ctx,prepared,a,objective,found,range),id:objective+'_'+i}));}
+ return {settings:input,expandedSettings:settings,calculatedAt:now,range,analyses};
+}

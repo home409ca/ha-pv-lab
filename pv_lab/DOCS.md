@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.8.5 -->
+<!-- pv-lab-manual-version: 0.8.6 -->
 
-**Wersja aplikacji i instrukcji: 0.8.5.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.8.6.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -171,59 +171,76 @@ Starsze agregaty można ocenić asymetrycznie bez odtwarzania prognoz: zawyżeni
 Kolumna „Średni błąd sum dobowych” wymaga wszystkich oczekiwanych godzin danego dnia ze wspólnym kompletem źródeł. Również przy widoku godzin pobieramy ją z zapisanych kompletnych podsumowań dni; wcześniej interfejs pokazywał zawsze zero pełnych dób w tym widoku. Jeśli warunek nie jest spełniony, widzisz „Brak pełnej doby” i licznik, zamiast samej kreski z jednostką. W trybie bieżącym suma dobowa składa się z kolejnych wersji znanych przed poszczególnymi godzinami, nie jest jedną prognozą wydaną rano.
 
 <!-- tab:planner -->
-## 6. Planowanie urządzenia
+## 6. Planowanie zużycia — jeden wspólny moduł (0.8.6)
 
-Wybiera termin jednego cyklu, ograniczając dokupioną energię. Nie wybiera według taryfy. Domyślny zakres dat to od teraz do końca dzisiejszej doby w strefie HA, również po wyczyszczeniu dat. Podaj kWh, czas, rezerwę lub profil. Bez profilu 4 kWh/2 godziny oznacza stałe 2 kW. Starty co 15 minut, profil w krokach 5 minut; dostępne ograniczenia początku i końca. Wynik pokazuje okno, pokrycie, dodatkowy import i alternatywy. Najpierw uwzględnia się resztę domu.
+Dawne Planowanie urządzenia i Optymalizator są połączone pod pozycją **Planowanie zużycia**. Dawny odnośnik #optimizer przekierowuje do tego widoku. Jedna lista cykli, ten sam zakres, profile urządzeń, model domu i bilans służą obu analizom. Nie zmieniamy produkcji PV — wybieramy, kiedy użyć energii.
 
-| Tryb | Zasada |
+### Co chcesz uruchomić?
+
+Ustaw liczbę cykli każdego urządzenia, np. pralka 2 i zmywarka 1. Maksymalnie osiem cykli łącznie. Profil programu i wariant (typowy, średni, największy) narzucają rzeczywisty czas, energię i kształt poboru. Przy „Ręcznie” energia i czas znajdują się w rozwijanych parametrach. Przykład: 4 kWh przez 2 h to stałe 2 kW, dopóki nie wybierzesz profilu.
+
+W parametrach dodasz sprzęt, zmienisz nazwę, encję mocy oraz wartości ręczne. Aby zaplanować różne programy jednego fizycznego urządzenia, dodaj kolejny wiersz z tym samym identyfikatorem encji mocy i wybierz inny profil. Wiersze o tej samej encji mają wspólną blokadę i wspólny najwcześniejszy termin zakończenia. Bez encji blokujemy powtórzenia w obrębie jednego wiersza. Profile z historii budujesz w Profile urządzeń.
+
+Ten sam sprzęt pracuje kolejno; pralka i zmywarka mogą pracować równocześnie. Nie zakładamy czasu na wyjęcie prania i nie sterujemy urządzeniami.
+
+### Daty i terminy
+
+| Wybór | Zakres w strefie czasowej instalacji |
 | --- | --- |
-| Godzinowy | Kompensacja importu i eksportu w tej samej pełnej godzinie. |
-| 15-minutowy | Kompensacja w kwadransie. |
-| Bez czasowego | Przybliżenie przepływu w krokach 5 minut. |
+| Dziś | Od teraz do końca dzisiejszej doby. |
+| Jutro | Cała jutrzejsza doba. |
+| Dziś i jutro | Od teraz do końca jutrzejszej doby. |
+| Własny zakres | Zapisane konkretne daty; miniony początek ograniczamy do teraz. |
 
-Świeża potwierdzona encja salda godzinowego ma pierwszeństwo dla bieżącej godziny: plus eksport, minus import, reset o pełnej godzinie. Liczniki narastające nie są automatycznie godzinowe. Bez pomiaru saldo może być szacowane — źródło jest opisane. Saldo nie przechodzi do następnej godziny; to nie fizyczny magazyn.
+Presety przesuwają się wraz z datą, a zakres własny pozostaje stały. Zakres może kończyć się najwyżej siedem dni od teraz. Rzeczywiste starty są co 15 minut; przebieg urządzenia i szacowane przepływy mają krok 5 minut. Nocne zero astronomiczne może być poprawną prognozą; brak dziennych danych nie oznacza zera. Gdy własny zakres minie, wybierz nowy — nie zmieniamy po cichu stałej daty.
 
+**Wszystkie cykle zakończ do:** przykładowo wpisz 15:00 przy pralce. Przy dwóch praniach oba muszą być zakończone do tej godziny. Pusta godzina przy zmywarce oznacza wyłącznie wspólny koniec zakresu. Pusta data oznacza ostatni dzień wybranego zakresu. Dla „Dziś i jutro”, gdy prania mają być gotowe już dziś o 15:00, wpisz również dzisiejszą datę. Termin nie oznacza startu; cały cykl musi się zmieścić. Jawnie podana data nie przesuwa się automatycznie. Dawne dodatkowe ograniczenia dat i dozwolonych godzin przejętych urządzeń pozostają zachowane.
 
-### Wspólny plan kilku cykli (od 0.8.4)
+### Dwie analizy
 
-Na początku zakładki wybierasz liczbę cykli dla każdego skonfigurowanego urządzenia, np. 2 prania i 1 zmywanie. Maksymalnie 8 cykli łącznie. Zakres wyszukiwania dopasowujemy do wybranego zakończenia: 48, 72 lub 168 godzin od teraz, maksymalnie siedem dni. Każdy wiersz może używać wybranego profilu i wariantu albo ręcznej energii i czasu. Profil ma pierwszeństwo przed polami ręcznymi. Różne programy tego samego fizycznego sprzętu nadal mają wspólną blokadę. Rozpoznajemy sprzęt po encji mocy; dwa różnie nazwane urządzenia z tą samą encją nie mogą pracować równolegle. Różne urządzenia mogą.
+| Cel | Co minimalizujemy |
+| --- | --- |
+| Najlepsze wykorzystanie PV | Dodatkowy import energii kWh do rozliczenia po bilansowaniu; przy dodatnim imporcie i remisie preferujemy mniejszy import fizyczny. |
+| Najniższy koszt energii | Dodatkowy koszt według cen zakupu, opcjonalnej wartości eksportu i wagi ostrożności. |
 
-Plan korzysta z rezerwy domu wpisanej w tym formularzu, a nie z profilu historycznego bazy Optymalizatora. Wynik minimalizuje dodatkowy import po wskazanym bilansowaniu, bez taryfy i depozytu. Wykorzystuje ten sam silnik wspólnego harmonogramu co Optymalizator: starty co 15 minut, profile w krokach 5 minut, plan priorytetowy i do 3 przejść poprawek. Jest heurystyką, nie gwarantuje globalnego minimum. Gdy nie można zmieścić wszystkich cykli, status i licznik pokazują częściowy plan, a brakujące cykle nie dostają fikcyjnej godziny. Pokazujemy koniec wyszukiwania, ostatni dostępny przedział prognozy oraz powód nieznalezienia okna. Przed 0.8.5 wspólny planer miał stałe 48 godzin mimo wyboru dalszej daty; poprawiono to. Niepełna prognoza w dzień nadal nie jest zerem, a brak okna może oznaczać również nakładanie cykli tego samego sprzętu lub zbyt krótki zakres.
+W obu analizach pokazujemy prawdziwą skonfigurowaną taryfę. Tryb PV nie udaje ceny 1 zł/kWh i nie pokazuje kWh jako złotówek. Baza domu i profile cykli są identyczne. Zmiana celu nie zmienia zapotrzebowania ani cen.
 
-Domyślnie plan obejmuje dzisiaj. Zapisany zakres z poprzedniej doby automatycznie wraca do dzisiejszej przy kolejnym przeliczeniu; liczba cykli i ustawienia zostają. Zakres można zmienić ręcznie lub przyciskiem „Ustaw zakres na dziś”. Przed rozpoczęciem kolejnego cyklu trzeba faktycznie zakończyć poprzedni; program nie wykrywa przełożenia prania ani nie steruje sprzętem.
+### Alternatywne harmonogramy i margines nadwyżki
 
-„Pobór fizyczny urządzeń z sieci” to dodatkowy import wynikający z przebiegu mocy względem domu bez nowych cykli. „Dodatkowy pobór do rozliczenia” to przyrost importu po bilansowaniu całych godzin lub kwadransów. „Pokryte dzięki bilansowaniu” to dodatnia różnica tych dwóch wartości, korzyść rozliczeniowa; nie jest fizycznym magazynem. Przy braku bilansowania wynosi 0. Saldo wygasa na granicy okresu. Dane bieżącego salda są uwzględniane jeden raz.
+Tabela zawiera do trzech różnych znalezionych wariantów całego planu: liczbę cykli, dokupione kWh, pokrycie bilansem, margines nadwyżki PV, koniec całego planu, koszt i rozrzut scenariuszy. Wybierz wariant, aby zobaczyć jego pełne godziny i wykres. Alternatywy mogą mieć tę samą cenę, lecz inne zakończenie. Przy ciasnym terminie mogą istnieć tylko jeden lub dwa znalezione warianty.
 
-Podsumowanie liczy wspólną pulę PV i salda raz dla całego harmonogramu, nie dodaje niezależnych rekomendacji. Wiersze przydzielają przyrost importu w kolejności startów. Średnie przepływy wewnątrz kwadransa są oszacowane. Gdy saldo domu wcześniej było ujemne, bilans może zwiększać dodatkową energię do rozliczenia względem chwilowego importu — dlatego „pokryte bilansem” nigdy nie jest ujemne. Podsumowanie dotyczy tylko zaplanowanych cykli. Ustawienia zapisujemy w /data/batch-plan.json i eksporcie, bez zmiany prognozy PV i kalibracji. Stare planowanie jednego cyklu i saldo pozostają w rozwijanej sekcji.
+Przy zerowym dodatkowym imporcie i remisie podstawowej oceny preferujemy **większy margines nadwyżki**. To suma dodatnich sald po odjęciu domu i wszystkich zaplanowanych cykli wyłącznie w okresach rozliczeniowych, w których pracuje przynajmniej jeden cykl. Każdą godzinę/kwadrans liczymy raz; nie dodajemy nadwyżki z pozostałej części dnia. Przykład: w godzinach pracy PV daje 5 kWh, baza 1 kWh, cykle 2 kWh — margines 2 kWh. Przy bilansowaniu uwzględnia odpowiedni bieżący pomiar salda. W trybie bez bilansowania używamy kroków 5 minut.
+
+Margines ułatwia ocenę zapasu względem prognozy, ale nie jest prawdopodobieństwem, fizycznym magazynem ani gwarancją. Suma może ukrywać słabszy pojedynczy okres; zweryfikuj też godziny i scenariusze. Zerowy import **po bilansowaniu** nie oznacza braku fizycznego importu w każdej minucie. Ceny i scenariusze pozostają widoczne również przy zerowym wyniku.
+
+Planer sprawdza kilka kolejności (m.in. terminy, czas, priorytety, odwrotność i rotacje), trzy punkty startowe i dwa przejścia poprawek po cyklach. Ponawia próbę wstawienia brakujących cykli. Najpierw preferuje pełniejsze plany, następnie ocenę celu; nie promuje taniego planu pomijającego urządzenia. Usuwa powtórzenia identycznego fizycznego harmonogramu. Licznik opisuje ocenione dopuszczalne terminy w przebiegach, a nie wszystkie matematycznie możliwe kombinacje. To **najlepszy znaleziony plan**, bez gwarancji globalnego minimum; nie używamy zewnętrznego solvera.
+
+### Rekomendacja — wspólny plan
+
+Tabela pokazuje cykl, start, koniec, energię, dodatkowy import fizyczny, pokrycie bilansowaniem i energię do dokupienia. Wiersze przypisują przyrosty według kolejności startów; podsumowanie oblicza wspólną pulę raz. Nie sumujemy niezależnych rekomendacji zużywających tę samą nadwyżkę. Wykres przedstawia kwadransową energię PV, bazy domu i wszystkich cykli, przed bilansowaniem godzinowym.
+
+Bilans godzinowy kompensuje import i eksport tylko w tej samej pełnej godzinie, 15-minutowy w kwadransie, a brak czasowego to przybliżenie przepływów co 5 minut. Bieżący pomiar salda jest uwzględniany raz; plus oznacza eksport. Saldo nie przechodzi na kolejny okres. Liczniki narastające nie stają się automatycznie godzinowo zbilansowane.
+
+„Pokryte bilansem” to dodatnia różnica dodatkowego poboru fizycznego i dodatkowego importu po rozliczeniu; w trybie bez bilansowania wynosi 0. Gdy wcześniejsze saldo domu jest ujemne, dodatkowy import do rozliczenia może przekraczać chwilowy import fizyczny. Brak pełnego okna jest opisany przy cyklu i w liczniku kompletności. Nie podajemy fikcyjnego terminu, gdy prognoza lub czas nie wystarczają.
+
+### Zapis i zachowanie ustawień
+
+„Zapisz i przelicz obie analizy” zapisuje wspólną listę i ograniczenia. „Odczytaj dane i przelicz” ponawia odczyt HA i wymusza nowe obliczenie wspólnych planów; najpierw zapisz edytowany formularz. W zwykłym podglądzie wynik jest buforowany do 5 minut, krócej przy granicy kwadransa lub zmianie ustawień i danych modelu domu. Duży plan może potrzebować kilku sekund. Kolejne odświeżenia samego widoku nie uruchamiają całego wyszukiwania od nowa. „Zapisz ten wariant do porównania” utrwala dokładnie wybrany pełny harmonogram z jego cenami, profilami i celem, bez uruchamiania sprzętu. Później jest dostępny w Zapisane plany i weryfikacja.
+
+Nowa konfiguracja to /data/unified-plan.json, zawarta także w kopii danych. Migracja zachowuje liczbę cykli z Planowania, a dodatkowy sprzęt dawnego Optymalizatora włącza, gdy nie powiela już aktywnego sprzętu. Nie dodajemy automatycznie trzeciego prania tylko dlatego, że oba dawne widoki miały pralkę. Łącznie aktywnych jest do ośmiu cykli; nadmiarowe definicje pozostają z liczbą 0. Wspólną bazę domu i rezerwę przejmujemy z Optymalizatora; odmienna dawna rezerwa prostego planera pozostaje w batch-plan.json. Oryginalne batch-plan.json i optimizer-settings.json nie są zastępowane nową listą; zachowane są taryfa, RCEm, profil domu, pomiary, ograniczenia, biblioteka i zapisane plany. Ustawienia kosztów i domu edytowane poniżej nadal zapisują dotychczasowy plik i działają wspólnie dla obu analiz. API dotychczasowych integracji pozostaje zgodne.
 
 <!-- tab:optimizer -->
-## 7. Optymalizator zużycia energii
+## 7. Koszty i baza domu — sekcje wspólnego planu
 
-Najpierw pokazujemy wspólny harmonogram, a następnie bieżące moce i ceny. Konfiguracja kosztów, profil domu, szczegóły cyklu, zapisane plany i objaśnienia są rozwijane. Aby zapisać ustawienia albo zobaczyć profil bazy, otwórz odpowiednią sekcję. Wszystkie dotychczasowe ustawienia i operacje pozostały dostępne. „Koszt tego cyklu” oznacza koszt przy pozostałych urządzeniach już zaplanowanych; tych pozycji nie należy sumować. Całkowity dodatkowy koszt wspólnego planu jest liczony osobno, tylko raz.
-
-Wybiera terminy cykli według PV, zużycia domu, taryfy, bilansowania i niepewności. Zapis i potwierdzenie wykonania nie uruchamiają urządzeń.
+To dalsze sekcje Planowania zużycia, a nie drugi niezależny moduł. Bilans i ceny pokazuje aktualne pomiary. Konfiguracja kosztów i bilansu, model domu i zapisane plany są rozwijane, aby najpierw pokazać rekomendację. Wspólny zakres i bilans wybiera się u góry; dawne wartości horyzontu pozostają zachowane w pliku dla zgodności API.
 
 ### Bilans i ceny
 
-Kafelki: moc PV, domu, import, eksport, baza bez urządzeń i ceny. „—” to brak poprawnego odczytu. **Noc nie uzasadnia braku mocy domu.** PV 0 W jest poprawne; niedostępna encja nie jest automatycznie zerem.
+Kafelki: moc PV, domu, import, eksport, baza bez urządzeń i cena zakupu oraz eksportu. „—” oznacza brak odczytu; PV 0 W w nocy jest poprawne. Noc nie uzasadnia braku mocy domu. Przeliczenie ponawia odczyt HA. Dla encji sieci z plusem importu: moc domu = moc PV + moc sieci. Domyślna sensor.grid_power_total_historia ma plus import i minus eksport. Usunięta sensor.zamel_pobor_caly_dom może nadal służyć do archiwum InfluxDB. Wzór nie obejmuje akumulatora ani dodatkowego generatora. Sam ponowny odczyt nie odtworzy historii usuniętej encji.
 
-„Przelicz symulację” ponawia odczyt HA. Panel podaje błędy połączenia, brakujące encje i nieprawidłowe jednostki. Samo przeliczenie nie stworzy historii usuniętej encji.
+### Wspólne założenia
 
-Bez bezpośredniego pomiaru domu można użyć bilansu mocy. Dla plusa oznaczającego import: `moc domu = moc PV + moc sieci`. Przy plusie eksportu odwróć znak w konfiguracji. Ujemna moc sieci nie jest ujemnym zużyciem domu. Domyślna sensor.grid_power_total_historia ma plus import i minus eksport; jednostka W/kW. Usunięty sensor.zamel_pobor_caly_dom może nadal służyć do odczytu archiwum InfluxDB.
-
-Wzór dotyczy instalacji bez akumulatora. Magazyn, drugi generator lub niewspółmierne miejsca pomiaru wymagają dodatkowego bilansu, którego ten wzór nie opisuje. Kafelek wskazuje, czy dom pochodzi z encji, czy z oszacowania.
-
-### Wspólny harmonogram i szczegóły
-
-Do 8 aktywnych urządzeń, każde jako jeden przyszły cykl. Tabela: wspólny start, koszt marginalny, samodzielnie najtaniej, samodzielnie najwięcej PV, status. Dwa urządzenia nie mogą zużyć tej samej nadwyżki dwa razy. Główną rekomendacją jest plan wspólny; dwa wyniki samodzielne to porównania.
-
-Plan powstaje według priorytetu, z maksymalnie trzema przejściami ulepszeń. To heurystyka bez gwarancji globalnego optimum. Programy tej samej encji urządzenia nie są planowane równocześnie. Koszty marginalne przy innych cyklach już zaplanowanych nie muszą sumować się do kosztu wspólnego.
-
-Wykres: kwadransowa energia PV, bazy, urządzeń i saldo przed bilansowaniem całej godziny. Plus salda oznacza eksport. Szczegóły urządzenia pokazują profil mocy, kWh/czas, koszty, import/eksport i alternatywy oraz wykres kosztu startów.
-
-„Udział PV” opisuje szacowane fizyczne pokrycie nadwyżką. „Dokupiona energia” dotyczy dodatkowego importu po bilansowaniu. Mogą się różnić. Różnica względem najdroższego terminu nie jest oszczędnością względem Twojego zwyczaju.
-
-Zakresy dat i godzin dotyczą całego cyklu. Limit mocy sieci jest oceniany w krokach 5 minut — nie zastępuje zabezpieczeń ani limitu chwilowego na każdej fazie. Niekompletna dzienna prognoza może wykluczyć termin; nocne zero modelowe jest dopuszczalne.
+Przy historii bazy trzeba odjąć osobno planowane urządzenia, aby nie dodać ich drugi raz. Obie analizy używają modelu i rezerwy z tej samej sekcji domu poniżej. Zachowany eksport archiwum dawnego Optymalizatora jest oznaczony jako dawny; aktualny wspólny plan i jego konfiguracja trafiają do pełnej kopii danych. Limit poboru jest oceniany co 5 minut, nie zastępuje zabezpieczeń fazowych.
 
 ### Ceny, taryfa i koszt
 
@@ -276,9 +293,9 @@ Ranking = koszt centralny + waga ostrożności × różnica między najgorszym a
 Zapis planu utrwala prognozę, ceny i założenia. Po rzeczywistym wykonaniu zaznacz potwierdzenie, a po zakończeniu okresów uruchom weryfikację. Odczytywane są pomiary domu, PV i urządzeń. Braki nie są zastępowane planem jako rzekomą rzeczywistością. Ocena korzysta z utrwalonych cen, nie faktury. Nie zmienia automatycznie cen ani profilu pralki. Wynik można wyeksportować.
 
 
-### Zakres dat względem Planowania urządzenia
+### Zakres danych modelu domu
 
-Optymalizator analizuje od chwili przeliczenia przez wybrane 48, 72 lub 168 godzin. Każde urządzenie może mieć dodatkowy najwcześniejszy start i termin zakończenia. Planowanie urządzenia ma osobny wspólny zakres (domyślnie dzisiaj, po zmianie do 7 dni). Oba widoki korzystają z jednego silnika harmonogramu, lecz Planowanie minimalizuje dodatkowy import, a Optymalizator koszt. Nie kopiujemy automatycznie dat ani ustawień między widokami. Przy porównywaniu rekomendacji należy ustawić ten sam zakres, urządzenia, bilansowanie i założenia zużycia domu. Ustawienie daty dalej niż horyzont wymaga zwiększenia horyzontu i kompletnej prognozy; ceny z encji i ceny przyszłych miesięcy nadal są założeniem zgodnie z ich opisem.
+Wykres bazy i tabela kwadransów pokazują ten sam wybrany zakres co widoczny wspólny harmonogram. Obie analizy korzystają z tej samej bazy; zmienia się cel optymalizacji. Daty i bilans ustawiasz wyłącznie na początku modułu. Stare API Optymalizatora zachowuje własny format horyzontu dla zgodności z wcześniejszą integracją.
 
 <!-- tab:appliances -->
 ## 8. Profile urządzeń
@@ -446,7 +463,8 @@ Brak nowej bazy. Dane to JSON i JSONL w `/data` dodatku; ta ścieżka nie musi b
 | grid-risk.json | Zagregowane ryzyko, nie pełen zapis woltów. |
 | energy-forecast-archive.json | Prognozy do Energii, bez automatycznej retencji. |
 | reports.json | Porównania agregowane godzinowo/dobowo/miesięcznie/rocznie. |
-| batch-plan.json | Liczba cykli, profile, zakres i rezerwa wspólnego planu; trwałe ustawienia. |
+| batch-plan.json | Zachowana konfiguracja dawnego planera, nie nowa wspólna lista. |
+| unified-plan.json | Wspólna lista cykli, daty, bilans i terminy zakończenia urządzeń; trwałe ustawienia od 0.8.6. |
 | panel-layout.json | Pozycje i orientacja paneli; wyłącznie prezentacja, trwały zapis. |
 | appliance-profiles.json | Cykle i profile. |
 | optimizer-settings/load/history.json | Ustawienia, oczyszczona baza i zapisane plany/oceny. Nazwy trzech osobnych plików zaczynają się od optimizer-. |

@@ -1,3 +1,12 @@
+# 0.8.6
+
+- Jeden moduł Planowanie zużycia: wspólny zakres dat, lista cykli, profile, zużycie domu i bilans; równoległa analiza wykorzystania PV oraz kosztu według zachowanej taryfy.
+- Szybkie daty Dziś, Jutro, Dziś i jutro oraz zakres własny; terminy zakończenia wszystkich cykli danego urządzenia, opcjonalnie z konkretną datą.
+- Różne kolejności i godziny startu, poprawki harmonogramu, do trzech różnych wariantów każdego celu. Te same fizyczne urządzenia nie pracują równocześnie, różne mogą.
+- Przy zerowym dodatkowym imporcie i remisie celu wybierany jest większy margines nadwyżki w okresach pracy. Pokazujemy margines i godzinę zakończenia całego wariantu.
+- Osobne, trwałe ustawienia wspólnego planu; dawne ustawienia, profile, historia, ceny, importy oraz zapisane plany pozostają zachowane. Przycisk zapisu utrwala dokładnie wybrany wariant.
+- Uaktualniona pełna instrukcja, testy zakresów i zmiany czasu, terminów urządzeń, wariantów, wspólnego bilansu i zgodności HTTP.
+
 # 0.8.5
 
 - Bezstratna kompresja istniejących i nowych dzienników prognoz; te same rekordy, czasy wydań i ustawienia retencji. Kopia JSON.gz i zwykły JSON, rozpakowany podgląd i pobieranie plików.
