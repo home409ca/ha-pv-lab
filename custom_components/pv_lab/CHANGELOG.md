@@ -1,3 +1,7 @@
+# 0.8.15
+
+Karta HA rozróżnia wybór dnia od działania: Dziś/Jutro mają neutralne tło, po wybraniu delikatne niebieskie podświetlenie i obramowanie. Zaplanuj zachowuje pełny kolor akcji z motywu HA. Zmiana obejmuje układ kompaktowy i pełny; obliczenia, ustawienia i moduł Gemini pozostają bez zmian.
+
 # 0.8.14
 
 Domyślny kompaktowy widok karty HA, nagłówek zmieniany/ukrywany w YAML, wspólny wiersz Dziś/Jutro/Zaplanuj i mniejsze odstępy. Opcje layout, title, show_header, max_plans, show_energy_bar, show_details. Opcjonalny moduł Analiza AI z Gemini: ręczny podgląd wysyłanych podsumowań, limit wywołań i klucz przechowywany wyłącznie po stronie serwera. AI nie zmienia obliczeń ani nie steruje urządzeniami.

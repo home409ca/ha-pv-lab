@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.8.14 -->
+<!-- pv-lab-manual-version: 0.8.15 -->
 
-**Wersja aplikacji i instrukcji: 0.8.14.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.8.15.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -757,3 +757,5 @@ Moduł znajduje się w menu „Analiza AI”. Domyślnie jest wyłączony. W dem
 **Pliki:** `ai-private.json` zawiera ustawienia i klucz wyłącznie po stronie serwera; jest wyłączony z przeglądarki plików, podglądu, pobierania oraz eksportu JSON/GZIP. Klucz nie wraca do formularza. `ai-usage.json` przechowuje licznik prób, `ai-reports.json` ostatnie 10 raportów i ich wejścia. Eksport PV Lab zawiera publiczny stan AI i raporty, bez klucza. Pełna kopia dodatku w Home Assistant obejmuje katalog `/data`, więc może zawierać także prywatny plik klucza — taką kopię należy chronić. Uszkodzona opcjonalna konfiguracja AI wyłącza moduł z komunikatem, nie zatrzymuje prognoz PV i nie kasuje plików.
 
 Odpowiedzi AI są opisem i hipotezami, nie dowodem przyczyny ani gwarancją oszczędności. Rzeczywistą poprawę prognozy należy nadal potwierdzać zapisanymi prognozami i późniejszymi pomiarami.
+
+Od wersji 0.8.15 przyciski Dziś/Jutro mają neutralne tło; zaznaczony dzień wyróżnia delikatne niebieskie podświetlenie i niebieskie obramowanie. Zaplanuj zachowuje pełne wypełnienie kolorem akcji motywu Home Assistant. Dzięki temu wybór zakresu jest wizualnie oddzielony od uruchomienia obliczeń. Dotyczy obu układów oraz jasnych i ciemnych motywów. Nie zmienia to wybranych dni, rankingu, obliczeń ani przechowywanych danych.
