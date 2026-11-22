@@ -1,3 +1,7 @@
+# 0.8.9
+
+Naprawa kompletności aktualizacji: pakiet naprawczy uzupełnia również moduł schedule-alternatives.mjs z 0.8.7. Kontrola wydania wykrywa brakujące lokalne importy przed pakowaniem. Plik karty dashboardu rejestrujemy przed pierwszym połączeniem z aplikacją, więc chwilowa awaria aplikacji nie blokuje jego udostępniania. Obliczenia, dane i ustawienia pozostają bez zmian.
+
 # 0.8.8
 
 - Natywna karta HA Zaplanuj uruchomienie: liczby prań i zmywań, daty, PV/koszt oraz 3 najlepsze znalezione wspólne harmonogramy. Jawne zatwierdzenie i anulowanie, flaga zatwierdzenia i osobne terminy cykli do późniejszych automatyzacji; bez fizycznego sterowania gniazdkami.

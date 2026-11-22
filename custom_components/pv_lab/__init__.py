@@ -31,11 +31,12 @@ class PVLabCoordinator(DataUpdateCoordinator):
 
 
 async def async_setup_entry(hass, entry):
+    # Serve the card even when the app is temporarily offline and setup is retried.
+    from .dashboard import async_setup_dashboard
+    await async_setup_dashboard(hass)
     coordinator = PVLabCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
-    from .dashboard import async_setup_dashboard
-    await async_setup_dashboard(hass)
     await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.DATETIME])
     return True
 

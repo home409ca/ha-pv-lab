@@ -26,6 +26,7 @@ def version_tuple(value):
 
 
 def validate_versions(root):
+    validate_local_imports(root)
     manifest = json.loads((root / 'custom_components/pv_lab/manifest.json').read_text(encoding='utf-8'))
     version = manifest['version']
     version_tuple(version)
@@ -49,6 +50,19 @@ def validate_versions(root):
     spec.loader.exec_module(manual)
     manual.validate_manual(root, version)
     return version
+
+
+def validate_local_imports(root):
+    """Reject an incomplete app tree before tests or release packaging."""
+    imports = re.compile(r"\b(?:import\s*(?:\(\s*)?|export\s+[^;\n]*?\sfrom\s*|import\s+[^;\n]*?\sfrom\s*)['\"](\.[^'\"]+)['\"]")
+    for folder in ('src', 'public'):
+        for file in (root / 'pv_lab' / folder).rglob('*'):
+            if not file.is_file() or file.suffix not in ('.js', '.mjs'):
+                continue
+            for name in imports.findall(file.read_text(encoding='utf-8')):
+                target = (file.parent / name.split('?', 1)[0].split('#', 1)[0]).resolve()
+                if not target.is_file():
+                    raise ValueError('Missing local import: ' + name + ' in ' + file.relative_to(root).as_posix())
 
 
 def archive_files(root):

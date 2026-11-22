@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {selectDiverseSchedules} from '../src/schedule-alternatives.mjs';
+import {visibleScheduleOptions} from '../public/unified-planning.js';
+const M=60000;
+function item(resource,start){return {device:{id:resource,_resource:resource},start,curve:{wh:[50,50,50],duration:15*M}};}
+const evaluate=p=>({surplusKWh:Math.max(0,p[0]?.start||0)/M});
+const compare=(a,b)=>(a[0]?.start||0)-(b[0]?.start||0);
+test('keeps actual winner and provides up to ten different complete schedules with five initially visible',()=>{const pool=Array.from({length:14},(_,i)=>[item('washer',i*60*M),item('dishwasher',i*60*M+30*M)]),selected=selectDiverseSchedules(pool,compare,evaluate);assert.equal(selected.length,10);assert.equal(selected[0].plan,pool[0]);assert.equal(visibleScheduleOptions(selected).length,5);assert.equal(visibleScheduleOptions(selected,true).length,10);assert.equal(new Set(selected.map(p=>p.plan[0].start)).size,10);assert.ok(selected.some(s=>s.reason==='Większy zapas PV'));});
+test('does not fill list with identical physical cycles, tiny shifts, or incomplete cheaper plans',()=>{const first=[item('washer',0)],same=[{...item('washer',0),device:{id:'alias',_resource:'washer'}}],slight=[item('washer',15*M)],later=[item('washer',60*M)];const selected=selectDiverseSchedules([first,same,slight,later,[]],compare,evaluate);assert.equal(selected.length,2);assert.ok(selected.every(s=>s.plan.length===1));assert.equal(visibleScheduleOptions(selected,true).length,2);});
+test('offers earlier finish and later start when they actually differ from the winner',()=>{const early=[item('a',0),item('b',60*M)],best=[item('a',120*M),item('b',180*M)],late=[item('b',300*M),item('a',360*M)];const cmp=(a,b)=>a===best?-1:b===best?1:compare(a,b);const selected=selectDiverseSchedules([early,best,late],cmp,()=>({surplusKWh:0}));assert.equal(selected[0].plan,best);assert.ok(selected.some(s=>s.reason==='Wcześniejszy koniec'&&s.plan===early));assert.ok(selected.some(s=>s.reason==='Późniejszy start'&&s.plan===late));});
+test('empty pool stays empty; expansion is a pure slice of ready results',()=>{assert.deepEqual(selectDiverseSchedules([],compare,evaluate),[]);const rows=Array.from({length:12},(_,id)=>({id})),before=JSON.stringify(rows);assert.deepEqual(visibleScheduleOptions(rows,true).map(r=>r.id),Array.from({length:10},(_,i)=>i));assert.equal(JSON.stringify(rows),before);});

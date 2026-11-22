@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.8.8 -->
+<!-- pv-lab-manual-version: 0.8.9 -->
 
-**Wersja aplikacji i instrukcji: 0.8.8.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.8.9.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -185,7 +185,7 @@ Na telefonie każde urządzenie ma osobną kartę z pełnymi podpisami: liczba k
 
 Ten sam sprzęt pracuje kolejno; pralka i zmywarka mogą pracować równocześnie. Nie zakładamy czasu na wyjęcie prania i nie sterujemy urządzeniami.
 
-### Urządzenia teraz — bieżące pranie i zmywanie (0.8.8)
+### Urządzenia teraz — bieżące pranie i zmywanie (0.8.9)
 
 PV Lab zna istniejące encje mocy sensor.gniazdkopomiarpralka_energy_power i sensor.gniazdkopomiarzmywarka_energy_power (W/kW). Korzysta z identyfikatorów zapisanych w konfiguracji urządzeń; po aktualizacji integracji HACS udostępnia też dwie encje binary_sensor: Pralka pracuje (ikona mdi:washing-machine) i Zmywarka pracuje (mdi:dishwasher). Stan pracy jest wyliczany raz w aplikacji i ten sam wynik trafia do planowania oraz encji HA. Inne urządzenia cykliczne z poprawną encją mocy mogą być obserwowane tak samo; urządzenia oznaczone jako praca ciągła nie są objęte tym detektorem cyklu.
 
@@ -207,15 +207,15 @@ Wykres pokazuje osobną linię Trwające cykle. Podsumowany koszt nadal dotyczy 
 
 W /data/appliance-live.json zapisujemy tylko kompaktowy bieżący stan, daty przejść i parametry detektora, bez pełnej historii mocy. Dzięki temu krótki restart zachowuje rozpoczęty cykl; po dłuższej przerwie ponownie odczytujemy historię. Plik jest częścią kopii danych i nie jest drugą bazą HA. Funkcja nie zmienia prognozy produkcji PV, nie steruje urządzeniami i nie potwierdza ich faktycznego zakończenia na podstawie samej prognozy.
 
-### Encje pracy w Home Assistant (0.8.8)
+### Encje pracy w Home Assistant (0.8.9)
 
-Zaktualizuj aplikację oraz integrację PV Lab w HACS do 0.8.8. Następnie uruchom ponownie HA lub przeładuj integrację. Platforma binary_sensor doda dwie encje, z proponowanymi identyfikatorami binary_sensor.pv_lab_pralka_pracuje i binary_sensor.pv_lab_zmywarka_pracuje. HA może nadać sufiks, gdy taki identyfikator już istnieje. Nazwy znajdziesz przy urządzeniu PV Lab: Pralka pracuje oraz Zmywarka pracuje.
+Zaktualizuj aplikację oraz integrację PV Lab w HACS do 0.8.9. Następnie uruchom ponownie HA lub przeładuj integrację. Platforma binary_sensor doda dwie encje, z proponowanymi identyfikatorami binary_sensor.pv_lab_pralka_pracuje i binary_sensor.pv_lab_zmywarka_pracuje. HA może nadać sufiks, gdy taki identyfikator już istnieje. Nazwy znajdziesz przy urządzeniu PV Lab: Pralka pracuje oraz Zmywarka pracuje.
 
 Klasa running oznacza pracę on i potwierdzoną bezczynność off. Potencjalny start oraz krótka pauza pozostają on z atrybutem niepewności. Unknown, observing, nieaktualny pomiar, brak nowego pola w starszej aplikacji lub błąd połączenia powodują niedostępność, a nie off. Dostępność nie zależy od prognozy PV — encje działają także nocą. Wykrywanie pozostaje w aplikacji; integracja nie uruchamia drugiego, różniącego się algorytmu.
 
 Atrybuty podają encję i moc źródłową, status, wykryty start (cycle_started_at), szacowany koniec (estimated_end_at), blokadę kolejnego startu (blocked_until), źródło oszacowania i niepewność. Daty mają format ISO ze strefą UTC. Ikony pralki i zmywarki są ustawione w encjach. Nie ma usług sterujących sprzętem. Dokumentacja klasy encji: [Home Assistant — binary sensor entity](https://contributors.home-assistant.io/core/entities/binary-sensor/).
 
-### Karta HA „Zaplanuj uruchomienie” (0.8.8)
+### Karta HA „Zaplanuj uruchomienie” (0.8.9)
 
 Karta jest częścią tej samej integracji HACS PV Lab, nie wymaga osobnego repozytorium ani dodatkowej instalacji JavaScript. Po aktualizacji integracji i restarcie HA odśwież stronę lub aplikację mobilną. W edycji wybranego dashboardu dodaj kartę **Zaplanuj uruchomienie**. Można też użyć ręcznej konfiguracji: `type: custom:pv-lab-plan-card`. Integracja rejestruje zasób /pv_lab_frontend/pv-lab-plan-card.js z numerem wersji. Nie nadpisujemy istniejących dashboardów. Przy jednej integracji instalacja wybiera się sama; przy kilku wybierz ją z listy.
 
@@ -674,3 +674,10 @@ Jeżeli brak odpowiednich liczników, używamy całki z mocy AC, tylko przy co n
 ## Aktualizacja 0.8.5 — rozdzielenie wpływu korekt
 
 Raport zapisuje dodatkowy wariant without_tomorrow. Karta „Czy korekta na jutro poprawia wynik?” porównuje go z końcowym PV Lab dopiero po zakończeniu godzin. Brak wcześniejszego wariantu nie jest rekonstruowany dzisiejszym modelem. Aby nie przypisywać tej zmiany historii lub napięciu, ocena historii korzysta z wariantu sprzed korekty na jutro, jeśli jest dostępny, a wspólna ocena ryzyka sieci kończy się przed nią. Historyczne oceny i prognozy pozostają zapisami swoich wydań.
+
+
+## Naprawa niekompletnej aktualizacji (0.8.9)
+
+ERR_MODULE_NOT_FOUND z nazwą schedule-alternatives.mjs oznacza brak wymaganego pliku kodu, a nie uszkodzenie historii. Pakiet naprawczy 0.8.9 zawiera zmiany od 0.8.6, także elementy z 0.8.7, których nie zawierał przyrostowy pakiet 0.8.8. Wgraj zawartość do głównego katalogu repozytorium z zachowaniem podkatalogów, następnie odśwież repozytorium aplikacji i zaktualizuj PV Lab do 0.8.9. Aktualizacja przebuduje obraz aplikacji; sam restart starego obrazu nie doda brakujących plików. Nie odinstalowuj aplikacji i nie kasuj /data. Historia, modele, ceny i profile pozostają bez zmian; ponowny import nie jest potrzebny. Przed wydaniem kontrolujemy lokalne importy w katalogach src i public oraz uruchamiamy testy aplikacji. To kontrola kodu, nie prognozy; nie zmienia obliczeń ani retencji.
+
+Rejestracja pliku karty HA następuje przed pierwszym odczytem aplikacji. Niedostępna aplikacja nie blokuje już udostępnienia /pv_lab_frontend/pv-lab-plan-card.js. Planowanie wymaga jednak działającej i sparowanej aplikacji. Po aktualizacji HACS uruchom ponownie HA. Gdy adres pliku nadal zwraca 404, sprawdź obecność pliku /config/custom_components/pv_lab/www/pv-lab-plan-card.js i log uruchomienia integracji PV Lab. Sama instalacja HACS bez skonfigurowanej integracji PV Lab nie rejestruje pliku.

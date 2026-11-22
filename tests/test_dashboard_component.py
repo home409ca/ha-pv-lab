@@ -1,5 +1,6 @@
 """Exercise native-card bridge, resource setup and timestamp contracts without a HA installation."""
 import asyncio
+import ast
 import importlib
 import pathlib
 import sys
@@ -52,8 +53,18 @@ class DashboardComponentTests(unittest.IsolatedAsyncioTestCase):
         await asyncio.gather(self.module.async_setup_dashboard(self.hass), self.module.async_setup_dashboard(self.hass))
         self.hass.http.async_register_static_paths.assert_awaited_once()
         self.js.assert_called_once()
-        self.assertIn("pv-lab-plan-card.js?v=0.8.8", self.js.call_args.args[1])
+        self.assertIn("pv-lab-plan-card.js?v=0.8.9", self.js.call_args.args[1])
         self.assertTrue((ROOT / "www/pv-lab-plan-card.js").is_file())
+
+    async def test_card_is_registered_before_offline_app_aborts_entry_setup(self):
+        setup = next(node for node in ast.parse((ROOT / '__init__.py').read_text(encoding='utf-8')).body if isinstance(node, ast.AsyncFunctionDef) and node.name == 'async_setup_entry')
+        coordinator = types.SimpleNamespace(async_config_entry_first_refresh=AsyncMock(side_effect=RuntimeError('app offline')))
+        namespace = {'__package__': 'dashboard_component_test', 'PVLabCoordinator': Mock(return_value=coordinator)}
+        exec(compile(ast.Module(body=[setup], type_ignores=[]), str(ROOT / '__init__.py'), 'exec'), namespace)
+        with self.assertRaisesRegex(RuntimeError, 'app offline'):
+            await namespace['async_setup_entry'](self.hass, self.coordinator.entry)
+        self.hass.http.async_register_static_paths.assert_awaited_once()
+        self.js.assert_called_once()
 
     async def test_preview_bridge_uses_server_credentials_and_publishes_no_switch_calls(self):
         request={"id": 1, "type": "pv_lab/device_schedule", "entry_id": "entry", "action": "preview", "counts": {"pralka": 2, "zmywarka": 1}, "range": "today", "goal": "pv"}
