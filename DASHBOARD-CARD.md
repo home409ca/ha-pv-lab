@@ -1,18 +1,16 @@
-# Zaplanuj uruchomienie — karta PV Lab 0.8.9
+# Zaplanuj uruchomienie — PV Lab 0.8.10
 
-1. Zaktualizuj aplikację PV Lab oraz integrację HACS do 0.8.9. Uruchom ponownie HA i odśwież dashboard/aplikację mobilną.
-2. W edycji dashboardu dodaj kartę **Zaplanuj uruchomienie**. Jeżeli używasz konfiguracji ręcznej, wklej:
+Zaktualizuj aplikację i integrację HACS, uruchom ponownie HA i odśwież dashboard. Dodaj kartę Zaplanuj uruchomienie albo użyj:
 
 ```yaml
 type: custom:pv-lab-plan-card
 title: Zaplanuj uruchomienie
 ```
 
-3. Wybierz liczbę kolejnych prań i zmywań, daty i cel PV lub koszt. Naciśnij Pokaż 3 najlepsze propozycje. Profile i dodatkowe ograniczenia pochodzą z Planowania zużycia.
-4. Każda propozycja pokazuje cały harmonogram, także oba osobne starty pralki. Zatwierdź wybrany wariant, jeśli chcesz opublikować jego terminy jako encje; Anuluj wycofuje zatwierdzenie.
+Naciśnij Pralka lub Zmywarka tyle razy, ile potrzebujesz cykli (do 3). Wyzeruj usuwa wybór danego sprzętu. Zaznacz Dziś, Jutro lub oba. Zaplanuj zwraca do trzech znalezionych planów według szacowanego kosztu, z PV i bilansowaniem. Do 5 gr dopłaty względem najtańszego planu wyżej jest większy zapas PV, a potem niższy koszt przy gorszej pogodzie. Widać kwotę i godziny każdego cyklu. Profile i terminy zakończenia zmienisz w pełnej aplikacji.
 
-Zatwierdzenie jeszcze nie włącza gniazdek. Flaga Plan urządzeń zatwierdzony i encje Zatwierdzony cykl 1…8 początek są przygotowane do późniejszych automatyzacji. Pierwsze trzy terminy są domyślnie włączone. Atrybuty wskazują urządzenie i plan_id; sprawdzenie stanu Pralka/Zmywarka pracuje pozostaje konieczne przed przyszłym sterowaniem.
+Zatwierdź publikuje terminy w encjach, Anuluj wycofuje zatwierdzenie. Gniazdka nie są sterowane. Pracujący sprzęt jest uwzględniony osobno i blokuje nakładanie cykli.
 
-Przy jednej integracji karta wybiera ją sama. Przy kilku wybierz instalację z listy. Zasób karty jest rejestrowany automatycznie. W razie korzystania z ręcznych zasobów: /pv_lab_frontend/pv-lab-plan-card.js?v=0.8.9, typ JavaScript module.
+Jeśli zasób nie załaduje się automatycznie, dodaj w Zasobach dashboardu /pv_lab_frontend/pv-lab-plan-card.js?v=0.8.10-dashboard jako Moduł JavaScript. Nie twórz drugiej integracji ani osobnego repozytorium.
 
-Pełny opis stanów, terminów, bilansowania i przechowywania jest w Instrukcji PV Lab w aplikacji.
+Na karcie pod ceną znajduje się cienki pasek udziałów energii: zielony PV i bilans, pomarańczowy Do dokupienia. Procent zakupu = dodatkowa energia do dokupienia po bilansowaniu / suma energii cykli, ograniczony do 0–100%; zielony jest dopełnieniem. To udział po rozliczeniu okresów, a nie fizyczny pobór w każdej minucie. Baza domu i trwające cykle są już uwzględnione przed nowymi cyklami. Przy brakującej energii lub niepoprawnym wyniku pasek jest pomijany, nie pokazuje fikcyjnego 100% PV. Gdy miniona część bieżącego okresu miała saldo importu, dodatkowy zakup może być większy niż energia cykli; udział jest wtedy ograniczony do 100%, a wyliczony koszt nie jest obcinany. Procenty zaokrąglamy do pełnych liczb.

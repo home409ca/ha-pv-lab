@@ -19,5 +19,5 @@ export function selectDiverseSchedules(pool,compare,evaluate,limit=10){
  const order=features.get(ranked[0]).order;
  for(const p of ranked)if(features.get(p).order!==order&&add(p,'Inna kolejność urządzeń'))break;
  while(selected.length<limit){let best=null,score=0;for(let i=0;i<ranked.length;i++){const p=ranked[i],separation=Math.min(...selected.map(s=>distance(features.get(s.plan),features.get(p)))),value=separation/(1+i*.3);if(value>score){best=p;score=value;}}if(!best||!add(best,'Inne godziny pracy'))break;}
- return selected;
+ return selected.sort((a,b)=>compare(a.plan,b.plan));
 }

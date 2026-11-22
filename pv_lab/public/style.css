@@ -62,3 +62,5 @@ tr.plan-selected td{background:#243b25}tr.plan-selected td:first-child{box-shado
 }
 
 .plan-choice-summary{overflow-wrap:anywhere;color:#d4e5f2;font-size:14px;line-height:1.5}
+
+.plan-counts{display:grid;grid-template-columns:repeat(4,minmax(44px,1fr));gap:8px}.plan-counts .button{min-height:44px;text-align:center;padding:10px;font-size:16px}.plan-counts .button[aria-pressed="true"]{border:2px solid #bcf46b;background:#2a4227;color:#e7faca}

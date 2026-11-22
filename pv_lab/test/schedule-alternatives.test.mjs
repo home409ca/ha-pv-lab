@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {selectDiverseSchedules} from '../src/schedule-alternatives.mjs';
-import {visibleScheduleOptions} from '../public/unified-planning.js';
+import {visibleScheduleOptions,costDifference} from '../public/unified-planning.js';
 const M=60000;
 function item(resource,start){return {device:{id:resource,_resource:resource},start,curve:{wh:[50,50,50],duration:15*M}};}
 const evaluate=p=>({surplusKWh:Math.max(0,p[0]?.start||0)/M});
@@ -10,3 +10,6 @@ test('keeps actual winner and provides up to ten different complete schedules wi
 test('does not fill list with identical physical cycles, tiny shifts, or incomplete cheaper plans',()=>{const first=[item('washer',0)],same=[{...item('washer',0),device:{id:'alias',_resource:'washer'}}],slight=[item('washer',15*M)],later=[item('washer',60*M)];const selected=selectDiverseSchedules([first,same,slight,later,[]],compare,evaluate);assert.equal(selected.length,2);assert.ok(selected.every(s=>s.plan.length===1));assert.equal(visibleScheduleOptions(selected,true).length,2);});
 test('offers earlier finish and later start when they actually differ from the winner',()=>{const early=[item('a',0),item('b',60*M)],best=[item('a',120*M),item('b',180*M)],late=[item('b',300*M),item('a',360*M)];const cmp=(a,b)=>a===best?-1:b===best?1:compare(a,b);const selected=selectDiverseSchedules([early,best,late],cmp,()=>({surplusKWh:0}));assert.equal(selected[0].plan,best);assert.ok(selected.some(s=>s.reason==='Wcześniejszy koniec'&&s.plan===early));assert.ok(selected.some(s=>s.reason==='Późniejszy start'&&s.plan===late));});
 test('empty pool stays empty; expansion is a pure slice of ready results',()=>{assert.deepEqual(selectDiverseSchedules([],compare,evaluate),[]);const rows=Array.from({length:12},(_,id)=>({id})),before=JSON.stringify(rows);assert.deepEqual(visibleScheduleOptions(rows,true).map(r=>r.id),Array.from({length:10},(_,i)=>i));assert.equal(JSON.stringify(rows),before);});
+
+test('diverse options are finally sorted by cost, not convenience labels',()=>{const pool=[1.12,1.54,1.28,1.91,1.34].map((cost,i)=>Object.assign([item('washer',i*60*M)],{cost})),cmp=(a,b)=>a.cost-b.cost;const rows=selectDiverseSchedules(pool,cmp,evaluate);assert.deepEqual(rows.map(x=>x.plan.cost),[1.12,1.28,1.34,1.54,1.91]);});
+test('cost difference reports rounded ties without minus zero',()=>{assert.equal(costDifference(1.12-1e-15,1.12),'Ten sam koszt');assert.equal(costDifference(1.28,1.12),'+0,16 zł względem planu 1');assert.equal(costDifference(.90,1.12),'-0,22 zł względem planu 1');});

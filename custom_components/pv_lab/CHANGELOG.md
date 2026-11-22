@@ -1,3 +1,7 @@
+# 0.8.10
+
+Planowanie zużycia: przyciski liczby cykli 0–3, jedna główna rekomendacja według szacowanego kosztu z PV i bilansowaniem. Różne propozycje są uporządkowane według kryterium; do 5 gr dopłaty preferowany jest zapas PV, potem niższy koszt wariantu z mniej korzystną pogodą. Kolumna Koszt przy innej pogodzie pozostaje z objaśnieniem. Rozwinięcie do 10 jest dostępne także w porównaniu PV. Karta HA ma dwa dni do zaznaczenia, liczniki urządzeń i krótkie propozycje bez wyboru celu. Historia i ustawienia zachowane.
+
 # 0.8.9
 
 Naprawa kompletności aktualizacji: pakiet naprawczy uzupełnia również moduł schedule-alternatives.mjs z 0.8.7. Kontrola wydania wykrywa brakujące lokalne importy przed pakowaniem. Plik karty dashboardu rejestrujemy przed pierwszym połączeniem z aplikacją, więc chwilowa awaria aplikacji nie blokuje jego udostępniania. Obliczenia, dane i ustawienia pozostają bez zmian.

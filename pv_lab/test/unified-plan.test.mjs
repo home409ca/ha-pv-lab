@@ -1,3 +1,4 @@
+import {compareCostPlans,PLAN_COST_TOLERANCE} from '../src/unified-planner.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {defaults} from '../src/defaults.mjs';
@@ -18,3 +19,14 @@ test('future custom date is searched, missing forecasts never become zero produc
 test('validation rejects invalid units/count/deadline and more than eight cycles',()=>{const x=fixture();x.s.entries[0].finishBy='25:00';assert.throws(()=>validateUnified(x.s,x.c,library,x.optimizer));x.s.entries[0].finishBy='';x.s.entries[0].count=8;assert.throws(()=>validateUnified(x.s,x.c,library,x.optimizer));});
 test('fully solar alternatives prefer largest spare energy, counted once per occupied settlement period',()=>{const x=fixture();x.s.entries.forEach(e=>{e.count=0;});x.s.entries[0].count=1;x.s.entries[0].energyKWh=.2;x.s.latest=x.now+4*H;x.f.fullRows.forEach((r,i)=>r.wh=i<4?200:i<8?500:1000);const result=run(x);for(const goal of ['pv','cost']){const plans=result.analyses[goal];assert.ok(plans.length>=2);for(const p of plans.filter(p=>p.schedule.additionalImportKWh<1e-8))assert.ok(plans[0].schedule.surplusKWh>=p.schedule.surplusKWh-1e-8);const best=plans[0],used=new Map();for(const d of best.devices.filter(d=>d.scheduled))d.curve.wh.forEach((wh,i)=>{const t=d.scheduled.start+i*300000,g=Math.floor(t/H)*H;used.set(g,(used.get(g)||0)+wh/1000);});let expected=0;for(const [g,kWh] of used)expected+=Math.max(0,x.f.fullRows.filter(r=>r.start>=g&&r.start<g+H).reduce((n,r)=>n+r.wh/1000,0)-kWh);assert.ok(Math.abs(expected-best.schedule.surplusKWh)<1e-8);}});
 test('cost objective uses actual tariff while PV objective prefers solar energy',()=>{const x=fixture();x.s.entries.forEach(e=>{e.count=0;});x.s.entries[0].count=1;x.optimizer.tariff.cheapWeekends=false;x.optimizer.tariff.holidays=false;x.optimizer.tariff.winterOffPeak=[[660,720]];x.optimizer.tariff.versions[0].energyDay.value=10;x.optimizer.tariff.versions[0].energyNight.value=.01;x.optimizer.load.baseW=0;x.f.fullRows.forEach((r,i)=>r.wh=i<4?200:0);x.s.latest=x.now+2*H;const result=run(x);assert.ok(result.analyses.pv[0].schedule.additionalImportKWh<result.analyses.cost[0].schedule.additionalImportKWh);assert.ok(result.analyses.cost[0].schedule.cost<result.analyses.pv[0].schedule.cost);});
+
+test('main list applies its explicit five-cent budget and preserves weather variants, independent of legacy risk surcharge',()=>{const x=fixture();x.optimizer.riskWeight=1;const result=run(x);const rows=result.analyses.cost;assert.ok(rows.length>1);for(let i=0;i<rows.length;i++){const s=rows[i].schedule;assert.ok(s.optimisticCost<=s.cost+1e-8&&s.pessimisticCost>=s.cost-1e-8);if(i)assert.ok(compareCostPlans({...rows[i-1].schedule,start:rows[i-1].schedule.finishesAt},{...s,start:s.finishesAt},rows[0].schedule.cheapestFoundCost)<=0);}x.optimizer.riskWeight=0;assert.ok(Math.abs(run(x).analyses.cost[0].schedule.cost-rows[0].schedule.cost)<1e-8);});
+
+test('five-cent budget prefers solar reserve and then worse-weather cost without tolerance chaining',()=>{
+ const make=(cost,surplusKWh,pessimisticCost)=>({cost,surplusKWh,pessimisticCost,additionalImportKWh:1,start:0});
+ const rows=[make(1.12,1,2),make(1.16,2,2.2),make(1.20,5,1.8),make(1.15,2,1.9)];
+ const sorted=[...rows].sort((a,b)=>compareCostPlans(a,b,1.12));
+ assert.deepEqual(sorted.map(p=>p.cost),[1.15,1.16,1.12,1.20]);
+ assert.equal(PLAN_COST_TOLERANCE,.05);
+ for(const a of rows)for(const b of rows)for(const c of rows)if(compareCostPlans(a,b,1.12)<=0&&compareCostPlans(b,c,1.12)<=0)assert.ok(compareCostPlans(a,c,1.12)<=0);
+});
