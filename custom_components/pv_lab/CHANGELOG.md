@@ -1,3 +1,7 @@
+# 0.8.13
+
+Karta HA pokazuje jeden polecany plan; strzałka rozwija pozostałe, zielona przy pełnym pokryciu wszystkich ukrytych planów przez PV/bilans, pomarańczowa przy koniecznym zakupie. W aplikacji dodatkowo porównujemy start w dziennej taniej strefie według konfiguracji taryfy oraz początek godziny największej prognozowanej produkcji PV. Ograniczenia czasu, sprzętu i kompletność danych są zachowane.
+
 # 0.8.12
 
 Karta HA wybiera do trzech pełnych harmonogramów z udziałem PV lub bilansu, filtrując przed ograniczeniem listy. Gdy takich planów nie znaleziono, pokazuje jeden najtańszy znaleziony i najwcześniejszy przy tej samej cenie. Pełne porównanie kosztów pozostaje w PV Lab. Dla jednego urządzenia sprawdzane są wszystkie dopuszczalne starty co 15 minut. Zatwierdzenie zapisuje dokładnie wybraną propozycję. Historia, taryfa i ustawienia pozostają zachowane.

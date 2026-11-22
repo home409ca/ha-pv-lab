@@ -1,3 +1,4 @@
+import {comparisonRequests,buildComparisonPlans} from './planning-comparisons.mjs';
 import {applyRunningAppliances} from './appliance-live.mjs';
 import {selectDiverseSchedules,selectDashboardSchedules} from './schedule-alternatives.mjs';
 import {buildContext,deviceCurve,rankDevice,reservations,candidate} from './optimizer.mjs';
@@ -62,7 +63,7 @@ function metrics(ctx,assignments){
  for(const [at,kWh] of r.slots){const net=ctx.slots.get(at).net[0];physicalImportKWh+=Math.max(0,net+kWh)-Math.max(0,net);}
  return {...r,surplusKWh,minimumSurplusKWh:Number.isFinite(minimumSurplusKWh)?minimumSurplusKWh:0,additionalImportKWh,lostExportKWh,physicalImportKWh,balancingKWh:ctx.s.balanceMode==='instant'?0:Math.max(0,physicalImportKWh-additionalImportKWh),gridCost,opportunityCost,cost:r.costs[0],optimisticCost:Math.min(...r.costs),pessimisticCost:Math.max(...r.costs),objective:r.costs[0]+ctx.s.riskWeight*(Math.max(...r.costs)-r.costs[0])};
 }
-function search(ctx,prepared,objective){
+function search(ctx,prepared,objective,comparisons=[]){
  const cmp=(a,b)=>rounded(a[objective==='pv'?'additionalImportKWh':'cost'])-rounded(b[objective==='pv'?'additionalImportKWh':'cost'])||(objective==='cost'||a.additionalImportKWh<1e-8&&b.additionalImportKWh<1e-8?rounded(b.surplusKWh)-rounded(a.surplusKWh):0)||rounded(a.additionalImportKWh)-rounded(b.additionalImportKWh)||rounded((a.pessimisticCost??a.cost)) - rounded((b.pessimisticCost??b.cost))||(objective==='pv'?rounded(a.physicalImportKWh)-rounded(b.physicalImportKWh):0)||a.start-b.start;
  const margin=(item,option,reserved)=>{const used=new Map(reserved.groups);item.curve.wh.forEach((wh,i)=>{const id=ctx.slots.get(option.start+i*STEP).group;used.set(id,(used.get(id)||0)+wh/1000);});return [...used].reduce((sum,[id,kWh])=>sum+Math.max(0,-ctx.groups.get(id).net[0]-kWh),0);};
  const rank=(item,assigned)=>{const reserved=reservations(ctx,assigned);return rankDevice(ctx,item.device,item.curve,reserved).map(r=>({...r,surplusKWh:margin(item,r,reserved)})).sort(cmp);};
@@ -72,6 +73,7 @@ function search(ctx,prepared,objective){
  const orders=[base,[...base].sort((a,b)=>b.device.priority-a.device.priority),[...base].reverse(),[...base].sort((a,b)=>b.curve.kWh-a.curve.kWh)];
  for(let i=1;i<Math.min(base.length,5);i++)orders.push([...base.slice(i),...base.slice(0,i)]);
  const found=new Map();let evaluated=0;const remember=plan=>{const copy=plan.map(a=>({...a})),signature=copy.map(a=>JSON.stringify([a.device._resource,a.curve.wh,a.start])).sort().join('|');if(!found.has(signature))found.set(signature,copy);};
+ for(const row of comparisons)if(row.plan.length===prepared.length&&prepared.length)remember(row.plan);
  for(const order of orders)for(const seed of [0,1,2]){
   const assigned=[];
   for(const item of order){const choices=rank(item,assigned);evaluated+=choices.length;const best=choices[assigned.length===0?Math.min(seed,choices.length-1):0];if(best)assigned.push({...item,start:best.start});}
@@ -101,7 +103,8 @@ export function planUnified(f,samples,c,input,optimizer,load,live,states,model,l
  for(const device of settings.devices){const running=activity?.devices.find(d=>d.powerEntity===device.powerEntity);if(running&&running.status!=='idle')device.earliest=Math.max(device.earliest??now,running.blockedUntil);}
  const prepared=settings.devices.map(device=>({device:{...device,_resource:device.powerEntity||input.entries.find(e=>e.id===device.id.slice(0,device.id.lastIndexOf('_')))?.id||device.id},curve:deviceCurve(device,library)}));
  if(settings.load.mode==='history')for(const entity of settings.load.excludeEntities)if(!prepared.some(p=>p.device.powerEntity===entity))ctx.warnings.push('Od bazy odjęto '+entity+', ale ten sprzęt nie ma cyklu we wspólnym planie. Jego niezaplanowana praca nie jest uwzględniona.');
- const searches=Object.fromEntries(['pv','cost'].map(goal=>[goal,search(ctx,prepared,goal)])),analyses={},dashboardAnalyses={},dashboardSelection={};
+ const references=buildComparisonPlans(ctx,prepared,comparisonRequests(f,range,c,settings),range);
+ const searches=Object.fromEntries(['pv','cost'].map(goal=>[goal,search(ctx,prepared,goal,references)])),analyses={},dashboardAnalyses={},dashboardSelection={};
  for(const objective of ['pv','cost']){const found=searches[objective];analyses[objective]=found.plans.map(({plan,reason},i)=>({...materialize(ctx,prepared,plan,objective,found,range),id:objective+'_'+i,alternativeReason:reason}));
   const pool=[...searches.cost.pool,...searches.pv.pool],full=pool.filter(p=>p.length===prepared.length),cheapest=Math.min(...full.map(p=>found.evaluate(p).cost));
   const compare=objective==='cost'?(a,b)=>b.length-a.length||compareCostPlans({...found.evaluate(a),start:Math.min(...a.map(x=>x.start))},{...found.evaluate(b),start:Math.min(...b.map(x=>x.start))},cheapest):found.compare;
@@ -109,5 +112,7 @@ export function planUnified(f,samples,c,input,optimizer,load,live,states,model,l
   dashboardSelection[objective]={mode:selection.mode,omittedGrid:selection.omittedGrid};
   dashboardAnalyses[objective]=selection.plans.map(({plan,reason},i)=>({...materialize(ctx,prepared,plan,objective,found,range),id:'dashboard_'+objective+'_'+i,alternativeReason:reason}));
  }
- return {settings:input,expandedSettings:settings,calculatedAt:now,range,analyses,dashboardAnalyses,dashboardSelection,activity};
+ const signature=p=>p.devices.filter(d=>d.scheduled).map(d=>JSON.stringify([d.powerEntity||d.id,d.curve.wh,d.scheduled.start])).sort().join('|');
+ const comparisons=references.map(row=>{const {plan,...info}=row,result=materialize(ctx,prepared,plan,'cost',searches.cost,range),id='comparison_'+row.kind+'_'+row.day;result.id=id;result.comparisonLabel=row.label;result.schedule.method='Wariant ze wskazanym startem; kolejne cykle najwcześniej po zwolnieniu sprzętu, z zachowaniem ograniczeń.';const match=Object.fromEntries(['cost','pv'].map(goal=>[goal,result.schedule.devices===result.schedule.requested&&result.schedule.requested?analyses[goal].find(r=>signature(r)===signature(result))?.id||null:null]));return {...info,id,result,matchedPlan:match};});
+ return {settings:input,expandedSettings:settings,calculatedAt:now,range,analyses,dashboardAnalyses,dashboardSelection,comparisons,activity};
 }
