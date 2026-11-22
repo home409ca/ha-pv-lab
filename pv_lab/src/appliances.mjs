@@ -2,12 +2,13 @@ import {randomUUID} from 'node:crypto';
 import {DAY,localParts} from './time.mjs';
 export const detectionDefaults={startW:10,stopW:5,idleMinutes:20,minActiveMinutes:2,minDurationMinutes:10,maxDurationMinutes:480,minEnergyKWh:.05};
 export const defaultAppliances=[
-  {id:'pralka',name:'Pralka',powerEntity:'sensor.gniazdkopomiarpralka_energy_power',energyEntity:'sensor.gniazdkopomiarpralka_energy_today',detection:{...detectionDefaults}},
-  {id:'zmywarka',name:'Zmywarka',powerEntity:'sensor.gniazdkopomiarzmywarka_energy_power',energyEntity:'sensor.gniazdkopomiarzmywarka_energy_today',detection:{...detectionDefaults}}
+  {id:'pralka',name:'Pralka',switchEntity:'switch.gniazdkopomiarpralka',powerEntity:'sensor.gniazdkopomiarpralka_energy_power',energyEntity:'sensor.gniazdkopomiarpralka_energy_today',detection:{...detectionDefaults}},
+  {id:'zmywarka',name:'Zmywarka',switchEntity:'switch.gniazdkopomiarzmywarka',powerEntity:'sensor.gniazdkopomiarzmywarka_energy_power',energyEntity:'sensor.gniazdkopomiarzmywarka_energy_today',detection:{...detectionDefaults}}
 ];
 export const emptyProfiles=()=>({version:1,analyses:{},profiles:[]});
 export function validateAppliance(d){
   if(!d||!/^[a-z0-9_]{1,40}$/.test(d.id)||typeof d.name!=='string'||!d.name.trim()||d.name.length>80)throw new Error('Niepoprawna nazwa lub identyfikator urządzenia.');
+  const switchDefaults={pralka:'switch.gniazdkopomiarpralka',zmywarka:'switch.gniazdkopomiarzmywarka'};d={...d,switchEntity:d.switchEntity??switchDefaults[d.id]??''};if(d.switchEntity!==''&&!/^switch\.[a-z0-9_]+$/.test(d.switchEntity))throw new Error('Wskaż encję switch urządzenia albo pozostaw puste pole.');
   const id=v=>typeof v==='string'&&/^[a-z_]+\.[a-z0-9_]+$/.test(v);
   if(!id(d.powerEntity)||(d.energyEntity!==''&&!id(d.energyEntity)))throw new Error('Wskaż encję mocy oraz opcjonalną encję energii.');
   d={...d,workType:d.workType||'cyclic',windowMinutes:d.windowMinutes??120,name:d.name.trim(),detection:{...detectionDefaults,...d.detection}};const s=d.detection;if(!['cyclic','continuous'].includes(d.workType)||!Number.isInteger(d.windowMinutes)||d.windowMinutes<15||d.windowMinutes>1440||d.windowMinutes%15)throw new Error('Okno pracy: 15–1440 minut, wielokrotność 15.');

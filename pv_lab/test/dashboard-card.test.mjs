@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 globalThis.HTMLElement=class {};
 globalThis.customElements={get:()=>true};
 globalThis.window={customCards:[]};
-const {energyShare,nextCycleCount,alternativeSummary,cardOptions}=await import('../../custom_components/pv_lab/www/pv-lab-plan-card.js');
+const {energyShare,nextCycleCount,alternativeSummary,cardOptions,nextExecutionMode,executionModes}=await import('../../custom_components/pv_lab/www/pv-lab-plan-card.js');
 test('dashboard bar reports 80/20 after settlement, not sum of independently planned cycles',()=>{assert.deepEqual(energyShare({cycles:[{energyKWh:1},{energyKWh:2}],importKWh:.6}),{green:80,orange:20});});
 test('dashboard bar handles full solar, full purchase, and missing values distinctly',()=>{assert.deepEqual(energyShare({cycles:[{energyKWh:1}],importKWh:0}),{green:100,orange:0});assert.deepEqual(energyShare({cycles:[{energyKWh:1}],importKWh:2}),{green:0,orange:100});for(const p of [{cycles:[],importKWh:0},{cycles:[{}],importKWh:0},{cycles:[{energyKWh:1}],importKWh:null}])assert.equal(energyShare(p),null);});
 
@@ -21,3 +21,5 @@ test('small purchases remain visible so the orange alternative arrow is not cont
   assert.equal(cardOptions({title:''}).title,'');assert.equal(cardOptions({layout:'full',show_header:false,max_plans:1,show_details:false,show_energy_bar:false}).show_header,false);
   for(const input of [{layout:'tiny'},{max_plans:0},{max_plans:4},{max_plans:1.5},{show_header:'false'},{show_details:0},{title:false},[]])assert.throws(()=>cardOptions(input));
  });
+
+test('execution mode cycle is explicit and keeps fixed as default',()=>{assert.equal(nextExecutionMode('fixed'),'flexible');assert.equal(nextExecutionMode('flexible'),'finish');assert.equal(nextExecutionMode('finish'),'fixed');assert.match(executionModes.finish.label,/późniejszego/);});

@@ -40,7 +40,10 @@ async def ws_entries(hass, connection, msg):
 @websocket_api.websocket_command({
     vol.Required("type"): "pv_lab/device_schedule",
     vol.Required("entry_id"): str,
-    vol.Required("action"): vol.In(["status", "preview", "approve", "cancel"]),
+    vol.Required("action"): vol.In(["status", "preview", "approve", "cancel", "mode", "auto"]),
+    vol.Optional("execution_schema"): vol.In([1]),
+    vol.Optional("mode"): vol.In(["fixed", "flexible", "finish"]),
+    vol.Optional("enabled"): bool,
     vol.Optional("counts"): {vol.Required("pralka"): vol.All(int, vol.Range(min=0, max=8)), vol.Required("zmywarka"): vol.All(int, vol.Range(min=0, max=8))},
     vol.Optional("goal"): vol.In(["pv", "cost"]),
     vol.Optional("range"): vol.In(["today", "tomorrow", "both", "custom"]),
@@ -57,9 +60,20 @@ async def ws_schedule(hass, connection, msg):
         return
     request = None if msg["action"] == "status" else {key: value for key, value in msg.items() if key not in ("type", "id", "entry_id")}
     try:
+        executor = getattr(coordinator, "executor", None)
+        if executor and (msg["action"] == "cancel" or msg["action"] == "auto" and msg.get("enabled") is False):
+            await executor.async_cancel()
         result = await device_schedule(async_get_clientsession(hass), coordinator.entry.data[CONF_URL], coordinator.entry.data[CONF_TOKEN], request)
+        if executor:
+            await executor.async_accept(result)
+            result = executor.present(result)
         if request is not None:
             await coordinator.async_request_refresh()
         connection.send_result(msg["id"], result)
     except (AuthenticationError, ClientError, TimeoutError, ValueError, HomeAssistantError) as err:
-        connection.send_error(msg["id"], "pv_lab_error", str(err) or "Nie można połączyć się z aplikacją PV Lab.")
+        if executor and (msg["action"] == "cancel" or msg["action"] == "auto" and msg.get("enabled") is False):
+            local = executor.present((getattr(coordinator, "data", None) or {}).get("devicePlanning", {}))
+            local.update(approved=False, phase="anulowany", cancelReason="Anulowano w HA; aplikacja chwilowo niedostępna.")
+            connection.send_result(msg["id"], local)
+        else:
+            connection.send_error(msg["id"], "pv_lab_error", str(err) or "Nie można połączyć się z aplikacją PV Lab.")

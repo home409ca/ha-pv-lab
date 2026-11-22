@@ -1,3 +1,7 @@
+# 0.9.0
+
+Zatwierdzanie na karcie uzbraja zapisane w HA polecenia switch.turn_on dla każdego cyklu. Trzy tryby: stałe godziny, elastyczny, elastyczny bez późniejszego końca. Kontrola co 30 minut, wspólna aktualna wycena, próg poprawy i blokada ostatnich 15 minut. Auto tworzy i zatwierdza jedną partię po jednym cyklu urządzeń z wyłączonym switchem. Konfigurowalne encje switch, lokalna historia prób, odporność na restart i anulowanie także bez aplikacji. Starsze zatwierdzenia nie są automatycznie uzbrajane; stara karta musi zostać odświeżona. Silnik prognozy i Gemini bez zmian.
+
 # 0.8.16
 
 Zmywarka jest pierwszym urządzeniem w aplikacji i na karcie. Domyślny wybór to jeden cykl dziś; jutro wybieramy, gdy dzisiejsze poprawne okna wymagają zakupu całej energii lub cykl już się nie zmieści. Brak prognozy nie udaje zera. Profile i ograniczenia pozostają zachowane. Przyspieszono przygotowanie historii domu i usunięto powtarzane oceny tych samych startów; bez ograniczania liczby alternatyw ani zmiany kosztów. Karta wykorzystuje świeży odczyt HA zamiast wymuszać ponowny import historii urządzeń. Moduł Gemini pozostaje bez zmian.

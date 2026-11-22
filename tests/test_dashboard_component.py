@@ -31,10 +31,14 @@ class DashboardComponentTests(unittest.IsolatedAsyncioTestCase):
         ws.async_register_command = Mock()
         self.js = modules["homeassistant.components.frontend"].add_extra_js_url = Mock()
         modules["homeassistant.components.http"].StaticPathConfig = lambda *args: args
+        modules["homeassistant.exceptions"].ConfigEntryNotReady = type("ConfigEntryNotReady", (Exception,), {})
         modules["homeassistant.exceptions"].HomeAssistantError = type("HomeAssistantError", (Exception,), {})
         modules["homeassistant.helpers.aiohttp_client"].async_get_clientsession = lambda hass: "private_session"
         modules["aiohttp"].ClientSession = object
         modules["aiohttp"].ClientError = type("ClientError", (Exception,), {})
+        executor_module = types.ModuleType("dashboard_component_test.executor")
+        executor_module.PlanExecutor = Mock(return_value=types.SimpleNamespace(async_setup=AsyncMock(), async_stop=AsyncMock(), data={}))
+        modules["dashboard_component_test.executor"] = executor_module
         self.modules = patch.dict(sys.modules, modules)
         self.modules.start()
         self.module = importlib.import_module("dashboard_component_test.dashboard")
@@ -53,7 +57,7 @@ class DashboardComponentTests(unittest.IsolatedAsyncioTestCase):
         await asyncio.gather(self.module.async_setup_dashboard(self.hass), self.module.async_setup_dashboard(self.hass))
         self.hass.http.async_register_static_paths.assert_awaited_once()
         self.js.assert_called_once()
-        self.assertIn("pv-lab-plan-card.js?v=0.8.16", self.js.call_args.args[1])
+        self.assertIn("pv-lab-plan-card.js?v=0.9.0", self.js.call_args.args[1])
         self.assertTrue((ROOT / "www/pv-lab-plan-card.js").is_file())
 
     async def test_card_is_registered_before_offline_app_aborts_entry_setup(self):
@@ -95,3 +99,33 @@ class DashboardComponentTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(self.contract.read_dashboard_plan(payload,"dashboard_start",0,now)[0])
         self.assertFalse(self.contract.read_dashboard_plan(payload,"dashboard_approved",now=now)[0])
         self.assertIsNone(self.contract.read_dashboard_plan(payload,"dashboard_approved",now=now+300000)[0])
+
+    async def test_offline_app_keeps_restored_executor_loaded(self):
+        setup = next(node for node in ast.parse((ROOT / '__init__.py').read_text(encoding='utf-8')).body if isinstance(node, ast.AsyncFunctionDef) and node.name == 'async_setup_entry')
+        error = sys.modules["homeassistant.exceptions"].ConfigEntryNotReady
+        coordinator = types.SimpleNamespace(async_config_entry_first_refresh=AsyncMock(side_effect=error()), async_set_updated_data=Mock())
+        platform = types.SimpleNamespace(**{key:key for key in ("SENSOR","BINARY_SENSOR","NUMBER","SELECT","DATETIME")})
+        self.coordinator.entry.entry_id="entry"
+        self.hass.config_entries=types.SimpleNamespace(async_forward_entry_setups=AsyncMock())
+        executor = sys.modules["dashboard_component_test.executor"].PlanExecutor.return_value
+        executor.data={"plan":{"planId":"saved"}}
+        namespace={'__package__':'dashboard_component_test','PVLabCoordinator':Mock(return_value=coordinator),'DOMAIN':'pv_lab','Platform':platform}
+        exec(compile(ast.Module(body=[setup],type_ignores=[]), str(ROOT/'__init__.py'),'exec'),namespace)
+        self.assertTrue(await namespace['async_setup_entry'](self.hass,self.coordinator.entry))
+        executor.async_stop.assert_not_awaited()
+        self.assertFalse(coordinator.last_update_success)
+        self.hass.config_entries.async_forward_entry_setups.assert_awaited_once()
+
+    async def test_platform_setup_failure_stops_timers_before_setup_retry(self):
+        setup = next(node for node in ast.parse((ROOT / '__init__.py').read_text(encoding='utf-8')).body if isinstance(node, ast.AsyncFunctionDef) and node.name == 'async_setup_entry')
+        coordinator=types.SimpleNamespace(async_config_entry_first_refresh=AsyncMock())
+        platform=types.SimpleNamespace(**{key:key for key in ("SENSOR","BINARY_SENSOR","NUMBER","SELECT","DATETIME")})
+        self.coordinator.entry.entry_id="entry"
+        self.hass.config_entries=types.SimpleNamespace(async_forward_entry_setups=AsyncMock(side_effect=RuntimeError("platform failed")))
+        executor=sys.modules["dashboard_component_test.executor"].PlanExecutor.return_value
+        namespace={'__package__':'dashboard_component_test','PVLabCoordinator':Mock(return_value=coordinator),'DOMAIN':'pv_lab','Platform':platform}
+        exec(compile(ast.Module(body=[setup],type_ignores=[]),str(ROOT/'__init__.py'),'exec'),namespace)
+        with self.assertRaisesRegex(RuntimeError,'platform failed'):
+            await namespace['async_setup_entry'](self.hass,self.coordinator.entry)
+        executor.async_stop.assert_awaited_once()
+        self.assertNotIn('entry',self.hass.data['pv_lab'])

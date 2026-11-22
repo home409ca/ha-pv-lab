@@ -1,3 +1,4 @@
+import {publicExecution} from './execution-plan.mjs';
 import {devicePriority} from '../public/device-order.js';
 import {randomUUID} from 'node:crypto';
 import {parseLocalInput} from '../public/presentation.js';
@@ -20,15 +21,16 @@ export function dashboardProposals(result,request,c,now=Date.now()){
 export function dashboardPublic(state,now=Date.now()){
  const selected=state.proposals.find(p=>p.id===state.approvedId)||null,ended=!!selected&&selected.end<=now;
  const approved=!!selected&&!!state.approvedAt&&!state.cancelledAt&&!ended;
- return {...state,readAt:now,approved,phase:state.cancelledAt?'anulowany':ended?'zakończony':approved?'zatwierdzony':state.id?(state.expiresAt<=now?'propozycje nieaktualne':'propozycje'):'brak planu',selected:approved?selected:null};
+ return {...state,execution:publicExecution(state.execution),readAt:now,approved,phase:state.cancelledAt?'anulowany':ended?'zakończony':approved?'zatwierdzony':state.id?(state.expiresAt<=now?'propozycje nieaktualne':'propozycje'):'brak planu',selected:approved?selected:null};
 }
-export function approveDashboard(state,id,previewId,activity,now=Date.now()){
+export function approveDashboard(state,id,previewId,activity,now=Date.now(),knownOff=new Set()){
  const proposal=state.proposals.find(p=>p.id===id);
  if(state.id!==previewId||!proposal?.complete||state.expiresAt<=now||proposal.cycles.some(c=>c.start<now+60000))throw new Error('Propozycja jest niepełna lub nieaktualna. Przelicz harmonogram.');
- for(const cycle of proposal.cycles){const device=activity.devices.find(d=>d.powerEntity===cycle.powerEntity);if(!device||device.status==='unknown'||device.status==='observing'||device.blockedUntil>cycle.start)throw new Error('Stan lub czas zakończenia urządzenia zmienił się. Odczytaj dane i przelicz plan.');}
+ for(const cycle of proposal.cycles){const device=activity.devices.find(d=>d.powerEntity===cycle.powerEntity);if(!knownOff.has(cycle.deviceId)&&(!device||device.status==='unknown'||device.status==='observing'||device.blockedUntil>cycle.start))throw new Error('Stan lub czas zakończenia urządzenia zmienił się. Odczytaj dane i przelicz plan.');}
  return {...state,approvedId:id,approvedAt:now,cancelledAt:null,cancelReason:null};
 }
 export function dashboardConflict(state,activity,now=Date.now()){
+ if(state.execution?.enabled)return null;
  const selected=dashboardPublic(state,now).selected;if(!selected)return null;
  for(const cycle of selected.cycles){if(cycle.end<=now)continue;const d=activity.devices.find(d=>d.powerEntity===cycle.powerEntity);if(!d||d.status==='unknown'||d.status==='observing')return 'Brak potwierdzonego stanu '+cycle.name;
   // While a confirmed planned cycle is already in its own window, being on is expected.

@@ -16,6 +16,7 @@ class PVLabCoordinator(DataUpdateCoordinator):
     def __init__(self, hass, entry):
         super().__init__(hass, LOGGER, name="PV Lab", config_entry=entry, update_interval=timedelta(seconds=60))
         self.entry = entry
+        self.executor = None
 
     async def async_set_plan(self, patch):
         await update_plan(async_get_clientsession(self.hass), self.entry.data[CONF_URL], self.entry.data[CONF_TOKEN], patch)
@@ -23,7 +24,11 @@ class PVLabCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self):
         try:
-            return await fetch_payload(async_get_clientsession(self.hass), self.entry.data[CONF_URL], self.entry.data[CONF_TOKEN])
+            payload = await fetch_payload(async_get_clientsession(self.hass), self.entry.data[CONF_URL], self.entry.data[CONF_TOKEN])
+            if self.executor:
+                await self.executor.async_accept(payload.get("devicePlanning", {}))
+                payload["devicePlanning"] = self.executor.present(payload.get("devicePlanning", {}))
+            return payload
         except AuthenticationError as err:
             raise ConfigEntryAuthFailed("PV Lab pairing key was rejected") from err
         except (ClientError, TimeoutError, ValueError) as err:
@@ -35,14 +40,36 @@ async def async_setup_entry(hass, entry):
     from .dashboard import async_setup_dashboard
     await async_setup_dashboard(hass)
     coordinator = PVLabCoordinator(hass, entry)
-    await coordinator.async_config_entry_first_refresh()
+    from .executor import PlanExecutor
+    from homeassistant.exceptions import ConfigEntryNotReady
+    coordinator.executor = PlanExecutor(hass, entry)
+    await coordinator.executor.async_setup()
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except ConfigEntryNotReady:
+        if not coordinator.executor.data.get("plan"):
+            await coordinator.executor.async_stop()
+            raise
+        # Keep locally stored approved commands alive while the app is offline.
+        coordinator.async_set_updated_data({"schema": 1, "days": [], "available": False})
+        coordinator.last_update_success = False
+    except Exception:
+        await coordinator.executor.async_stop()
+        raise
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
-    await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.DATETIME])
+    try:
+        await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.DATETIME])
+    except Exception:
+        hass.data[DOMAIN].pop(entry.entry_id, None)
+        await coordinator.executor.async_stop()
+        raise
     return True
 
 
 async def async_unload_entry(hass, entry):
     unloaded = await hass.config_entries.async_unload_platforms(entry, [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.DATETIME])
     if unloaded:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
+        coordinator = hass.data[DOMAIN].pop(entry.entry_id, None)
+        if coordinator and coordinator.executor:
+            await coordinator.executor.async_stop()
     return unloaded

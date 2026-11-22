@@ -95,7 +95,7 @@ export function validate(c) {
   if(!Array.isArray(c.optimizers)||c.optimizers.length>500) throw new Error('Nieprawidłowa lista optymalizatorów.');
   for(const o of c.optimizers) if(!id(o.power)||!id(o.energy)||!c.strings.some(s=>s.id===o.string)) throw new Error('Niepoprawny optymalizator.');
   if(!Array.isArray(c.appliances)||c.appliances.length>20)throw new Error('Lista urządzeń: maksymalnie 20.');
-  c.appliances=c.appliances.map(validateAppliance);if(new Set(c.appliances.map(d=>d.id)).size!==c.appliances.length)throw new Error('Powielony identyfikator urządzenia.');
+  c.appliances=c.appliances.map(validateAppliance);const switches=c.appliances.map(a=>a.switchEntity).filter(Boolean);if(new Set(switches).size!==switches.length)throw new Error('Każde urządzenie musi mieć osobny switch.');if(new Set(c.appliances.map(d=>d.id)).size!==c.appliances.length)throw new Error('Powielony identyfikator urządzenia.');
   validatePlan(c.planner);
   if(!c.grid||typeof c.grid.confirmed!=='boolean'||typeof c.grid.countersAreHourlyBalanced!=='boolean')throw new Error('Niepoprawne ustawienia bilansu.');
   for(const k of ['hourBalance','importEnergy','exportEnergy'])if(c.grid[k]!==''&&!id(c.grid[k]))throw new Error('Niepoprawna encja bilansu: '+k);
