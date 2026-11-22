@@ -1,3 +1,22 @@
+# 0.8.8
+
+- Natywna karta HA Zaplanuj uruchomienie: liczby prań i zmywań, daty, PV/koszt oraz 3 najlepsze znalezione wspólne harmonogramy. Jawne zatwierdzenie i anulowanie, flaga zatwierdzenia i osobne terminy cykli do późniejszych automatyzacji; bez fizycznego sterowania gniazdkami.
+- Integracja HACS: Pralka pracuje i Zmywarka pracuje jako binary_sensor z ikonami, atrybutami początku/końca oraz prawidłową niedostępnością przy braku danych, także niezależnie od nocnej prognozy PV.
+- Planowanie zużycia na telefonie: karty urządzeń zamiast szerokiego formularza, czytelne zaznaczenie celu i dat, większe pola oraz harmonogramy jako karty z podpisanymi wartościami.
+- Początek całego harmonogramu obok końca w obu analizach.
+- Bieżąca praca pralki i zmywarki rozpoznawana z istniejących encji mocy oraz krótkiej historii; widoczny start, szacowany koniec, pauzy i brak danych. Bez automatycznego sterowania i bez wymagania nowych encji HA.
+- Trwający cykl blokuje kolejne uruchomienia tego samego fizycznego urządzenia. Jego pozostałe zużycie jest dodawane raz do oczyszczonego bilansu domu, poza nowymi cyklami wybranymi w planie.
+- Kompaktowy stan detektora przetrwa restart; brak danych nie staje się zerowym zużyciem. Prognoza końca cyklu jest jawnym oszacowaniem, a przekroczony czas wydłuża blokadę.
+- Zaktualizowana instrukcja oraz testy pauz, restartów, blokady sprzętu i wspólnego bilansowania trwających cykli.
+
+# 0.8.7
+
+- Planowanie zużycia: domyślnie pięć propozycji oraz przycisk Pokaż do 10; rozwinięcie korzysta z gotowych wyników, bez ponownego wyszukiwania.
+- Pierwszy harmonogram pozostaje najlepszy według wybranego celu. Alternatywy dobieramy także według końca pracy, późniejszego startu, zapasu PV i innej kolejności urządzeń, z czytelnym opisem wariantu.
+- Pomijamy fizyczne duplikaty i niemal identyczne przesunięcia; gdy pełnych, wyraźnie różnych propozycji jest mniej, lista nie jest sztucznie uzupełniana. Niepełne plany nie wypierają pełnych.
+- Koszty G12w, bilansowanie, profile, terminy urządzeń i zapis wybranego wariantu pozostają zachowane. Starty nadal co 15 minut, profile w krokach 5 minut.
+- Zaktualizowana instrukcja, testy różnorodności, limitu listy, zachowania najlepszego planu i krótkich okien.
+
 # 0.8.6
 
 - Jeden moduł Planowanie zużycia: wspólny zakres dat, lista cykli, profile, zużycie domu i bilans; równoległa analiza wykorzystania PV oraz kosztu według zachowanej taryfy.

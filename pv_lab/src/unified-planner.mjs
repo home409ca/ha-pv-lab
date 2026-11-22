@@ -1,3 +1,5 @@
+import {applyRunningAppliances} from './appliance-live.mjs';
+import {selectDiverseSchedules} from './schedule-alternatives.mjs';
 import {buildContext,deviceCurve,rankDevice,reservations,candidate} from './optimizer.mjs';
 import {validateOptimizer} from './optimizer-settings.mjs';
 import {dayBounds,parseLocalInput} from '../public/presentation.js';
@@ -58,30 +60,36 @@ function search(ctx,prepared,objective){
  const cmp=(a,b)=>rounded(a[objective==='pv'?'additionalImportKWh':'objective'])-rounded(b[objective==='pv'?'additionalImportKWh':'objective'])||(a.additionalImportKWh<1e-8&&b.additionalImportKWh<1e-8?rounded(b.surplusKWh)-rounded(a.surplusKWh):0)||(objective==='pv'?rounded(a.physicalImportKWh)-rounded(b.physicalImportKWh):0)||a.start-b.start;
  const margin=(item,option,reserved)=>{const used=new Map(reserved.groups);item.curve.wh.forEach((wh,i)=>{const id=ctx.slots.get(option.start+i*STEP).group;used.set(id,(used.get(id)||0)+wh/1000);});return [...used].reduce((sum,[id,kWh])=>sum+Math.max(0,-ctx.groups.get(id).net[0]-kWh),0);};
  const rank=(item,assigned)=>{const reserved=reservations(ctx,assigned);return rankDevice(ctx,item.device,item.curve,reserved).map(r=>({...r,surplusKWh:margin(item,r,reserved)})).sort(cmp);};
- const compare=(a,b)=>{if(a.length!==b.length)return b.length-a.length;return cmp({...metrics(ctx,a),start:Math.max(0,...a.map(a=>a.start+a.curve.duration))},{...metrics(ctx,b),start:Math.max(0,...b.map(a=>a.start+a.curve.duration))});};
+ const evaluatedPlans=new WeakMap(),evaluate=p=>{if(!evaluatedPlans.has(p))evaluatedPlans.set(p,metrics(ctx,p));return evaluatedPlans.get(p);};
+ const compare=(a,b)=>{if(a.length!==b.length)return b.length-a.length;return cmp({...evaluate(a),start:Math.max(0,...a.map(a=>a.start+a.curve.duration))},{...evaluate(b),start:Math.max(0,...b.map(a=>a.start+a.curve.duration))});};
  const base=[...prepared].sort((a,b)=>a.device.deadline-b.device.deadline||b.curve.duration-a.curve.duration||a.device.id.localeCompare(b.device.id));
  const orders=[base,[...base].sort((a,b)=>b.device.priority-a.device.priority),[...base].reverse(),[...base].sort((a,b)=>b.curve.kWh-a.curve.kWh)];
  for(let i=1;i<Math.min(base.length,5);i++)orders.push([...base.slice(i),...base.slice(0,i)]);
- const found=new Map();let evaluated=0;
+ const found=new Map();let evaluated=0;const remember=plan=>{const copy=plan.map(a=>({...a})),signature=copy.map(a=>JSON.stringify([a.device._resource,a.curve.wh,a.start])).sort().join('|');if(!found.has(signature))found.set(signature,copy);};
  for(const order of orders)for(const seed of [0,1,2]){
   const assigned=[];
   for(const item of order){const choices=rank(item,assigned);evaluated+=choices.length;const best=choices[assigned.length===0?Math.min(seed,choices.length-1):0];if(best)assigned.push({...item,start:best.start});}
+  remember(assigned);
   for(let pass=0;pass<2;pass++)for(const item of order){const old=assigned.find(a=>a.device.id===item.device.id),others=assigned.filter(a=>a!==old),choices=rank(item,others);evaluated+=choices.length;const best=choices[0];if(!best)continue;if(!old)assigned.push({...item,start:best.start});else{const reserved=reservations(ctx,others),before=candidate(ctx,item.device,item.curve,old.start,reserved);before.surplusKWh=margin(item,before,reserved);if(cmp({...best,start:0},{...before,start:0})<0)old.start=best.start;}}
-  const signature=assigned.map(a=>JSON.stringify([a.device._resource,a.curve.wh,a.start])).sort().join('|');found.set(signature,assigned);
+  remember(assigned);
  }
- return {plans:[...found.values()].sort(compare).slice(0,3),evaluated,distinct:found.size};
+ // Two bounded timing preferences add convenient alternatives without enumerating combinations.
+ for(const order of [base,[...base].reverse()])for(const timing of ['early','late']){const assigned=[];for(const item of order){const choices=rank(item,assigned);evaluated+=choices.length;choices.sort((a,b)=>timing==='early'?a.start-b.start:b.start-a.start);if(choices[0])assigned.push({...item,start:choices[0].start});}remember(assigned);}
+ const ranked=[...found.values()].sort(compare);return {plans:selectDiverseSchedules([...found.values()],compare,evaluate,10),bestPlans:ranked.filter(p=>p.length===ranked[0]?.length).slice(0,3).map(plan=>({plan,reason:'Najlepszy według celu'})),evaluated,distinct:found.size};
 }
 function materialize(ctx,prepared,assignments,objective,stats,range){
  const total=metrics(ctx,assignments),{slots,groups,costs,resources,...summary}=total;
  const devices=prepared.map(p=>{const a=assignments.find(a=>a.device.id===p.device.id);return {id:p.device.id,name:p.device.name,powerEntity:p.device.powerEntity||null,curve:p.curve,energyKWh:p.curve.kWh,durationMinutes:p.curve.duration/60000,scheduled:a?candidate(ctx,p.device,p.curve,a.start,reservations(ctx,assignments,p.device.id)):null,status:a?'gotowe':'Brak pełnego okna: termin zakończenia, kolejność cykli, prognoza lub limit poboru.'};});
  const sequence=new Map();for(const d of devices.filter(d=>d.scheduled).sort((a,b)=>a.scheduled.start-b.scheduled.start||a.id.localeCompare(b.id))){const group=d.id.slice(0,d.id.lastIndexOf('_')),n=(sequence.get(group)||0)+1;sequence.set(group,n);d.name=d.name.replace(/ · cykl \d+$/,' · cykl '+n);}
  const assigned=[];for(const a of [...assignments].sort((a,b)=>a.start-b.start||a.device.id.localeCompare(b.device.id))){const d=devices.find(d=>d.id===a.device.id);d.accounting=candidate(ctx,a.device,a.curve,a.start,reservations(ctx,assigned));d.accounting.balancingKWh=ctx.s.balanceMode==='instant'?0:Math.max(0,d.accounting.physicalImportKWh-d.accounting.additionalImportKWh);assigned.push(a);}
- return {version:1,calculatedAt:ctx.now,validUntil:Math.floor(ctx.now/Q)*Q+Q,range,horizonHours:ctx.s.horizonHours,mode:ctx.s.balanceMode,objective,status:devices.length?(assignments.length===devices.length?'Pełny plan':'Plan niepełny — sprawdź brakujące cykle'):'Dodaj cykle urządzeń',devices,schedule:{...summary,scenarioCosts:costs,devices:assignments.length,requested:devices.length,finishesAt:assignments.length?Math.max(...assignments.map(a=>a.start+a.curve.duration)):null,method:'Różne kolejności, trzy punkty startowe i dwa przejścia poprawek; bez gwarancji globalnego minimum.',evaluated:stats.evaluated,distinct:stats.distinct},timeline:ctx.quarterRows.filter(r=>r.end>range.earliest&&r.start<range.latest).map(r=>{let deviceKWh=0;for(let at=r.start;at<r.end;at+=STEP)deviceKWh+=slots.get(at)||0;return {...r,deviceKWh,netWithDevicesKWh:r.netKWh===null?null:r.netKWh+deviceKWh};}),load:ctx.load.summary,prices:ctx.prices,errors:ctx.errors,warnings:ctx.warnings};
+ return {version:1,calculatedAt:ctx.now,validUntil:Math.floor(ctx.now/Q)*Q+Q,range,horizonHours:ctx.s.horizonHours,mode:ctx.s.balanceMode,objective,status:devices.length?(assignments.length===devices.length?'Pełny plan':'Plan niepełny — sprawdź brakujące cykle'):'Dodaj cykle urządzeń',devices,schedule:{...summary,scenarioCosts:costs,devices:assignments.length,requested:devices.length,startsAt:assignments.length?Math.min(...assignments.map(a=>a.start)):null,finishesAt:assignments.length?Math.max(...assignments.map(a=>a.start+a.curve.duration)):null,method:'Różne kolejności, trzy punkty startowe i dwa przejścia poprawek; bez gwarancji globalnego minimum.',evaluated:stats.evaluated,distinct:stats.distinct},timeline:ctx.quarterRows.filter(r=>r.end>range.earliest&&r.start<range.latest).map(r=>{let deviceKWh=0;for(let at=r.start;at<r.end;at+=STEP)deviceKWh+=slots.get(at)||0;return {...r,deviceKWh,netWithDevicesKWh:r.netKWh===null?null:r.netKWh+deviceKWh};}),load:ctx.load.summary,prices:ctx.prices,errors:ctx.errors,warnings:ctx.warnings};
 }
-export function planUnified(f,samples,c,input,optimizer,load,live,states,model,library,now=Date.now()){
+export function planUnified(f,samples,c,input,optimizer,load,live,states,model,library,now=Date.now(),activity=null,rankedOnly=false){
  input=validateUnified(input,c,library,optimizer);const {settings,range}=expandUnified(input,c,library,optimizer,now),ctx=buildContext(f,samples,c,settings,load,live,states,model,now);
+ applyRunningAppliances(ctx,activity);
+ for(const device of settings.devices){const running=activity?.devices.find(d=>d.powerEntity===device.powerEntity);if(running&&running.status!=='idle')device.earliest=Math.max(device.earliest??now,running.blockedUntil);}
  const prepared=settings.devices.map(device=>({device:{...device,_resource:device.powerEntity||input.entries.find(e=>e.id===device.id.slice(0,device.id.lastIndexOf('_')))?.id||device.id},curve:deviceCurve(device,library)}));
  if(settings.load.mode==='history')for(const entity of settings.load.excludeEntities)if(!prepared.some(p=>p.device.powerEntity===entity))ctx.warnings.push('Od bazy odjęto '+entity+', ale ten sprzęt nie ma cyklu we wspólnym planie. Jego niezaplanowana praca nie jest uwzględniona.');
- const analyses={};for(const objective of ['pv','cost']){const found=search(ctx,prepared,objective);analyses[objective]=found.plans.map((a,i)=>({...materialize(ctx,prepared,a,objective,found,range),id:objective+'_'+i}));}
- return {settings:input,expandedSettings:settings,calculatedAt:now,range,analyses};
+ const analyses={};for(const objective of ['pv','cost']){const found=search(ctx,prepared,objective);analyses[objective]=(rankedOnly?found.bestPlans:found.plans).map(({plan,reason},i)=>({...materialize(ctx,prepared,plan,objective,found,range),id:objective+'_'+i,alternativeReason:reason}));}
+ return {settings:input,expandedSettings:settings,calculatedAt:now,range,analyses,activity};
 }

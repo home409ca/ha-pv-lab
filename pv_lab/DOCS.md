@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.8.6 -->
+<!-- pv-lab-manual-version: 0.8.8 -->
 
-**Wersja aplikacji i instrukcji: 0.8.6.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.8.8.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -177,11 +177,72 @@ Dawne Planowanie urządzenia i Optymalizator są połączone pod pozycją **Plan
 
 ### Co chcesz uruchomić?
 
-Ustaw liczbę cykli każdego urządzenia, np. pralka 2 i zmywarka 1. Maksymalnie osiem cykli łącznie. Profil programu i wariant (typowy, średni, największy) narzucają rzeczywisty czas, energię i kształt poboru. Przy „Ręcznie” energia i czas znajdują się w rozwijanych parametrach. Przykład: 4 kWh przez 2 h to stałe 2 kW, dopóki nie wybierzesz profilu.
+Ustaw liczbę kolejnych cykli każdego urządzenia, np. pralka 2 i zmywarka 1. Cykl już trwający jest pokazywany osobno i nie odejmuje automatycznie liczby nowych uruchomień. Maksymalnie osiem cykli łącznie. Profil programu i wariant (typowy, średni, największy) narzucają rzeczywisty czas, energię i kształt poboru. Przy „Ręcznie” energia i czas znajdują się w rozwijanych parametrach. Przykład: 4 kWh przez 2 h to stałe 2 kW, dopóki nie wybierzesz profilu.
 
 W parametrach dodasz sprzęt, zmienisz nazwę, encję mocy oraz wartości ręczne. Aby zaplanować różne programy jednego fizycznego urządzenia, dodaj kolejny wiersz z tym samym identyfikatorem encji mocy i wybierz inny profil. Wiersze o tej samej encji mają wspólną blokadę i wspólny najwcześniejszy termin zakończenia. Bez encji blokujemy powtórzenia w obrębie jednego wiersza. Profile z historii budujesz w Profile urządzeń.
 
+Na telefonie każde urządzenie ma osobną kartę z pełnymi podpisami: liczba kolejnych cykli, profil, wariant, godzina i dzień terminu. Zaznaczone daty i cel mają wyraźne obramowanie, a pola mają większą czcionkę i obszar dotykowy. Pod kartą tekstowo widać pełną nazwę wybranego profilu, wariant i liczbę cykli; podsumowanie aktualizuje się przy zmianie pola, także gdy nazwa nie mieści się w natywnym selektorze telefonu. Tabele harmonogramów do szerokości 700 px zmieniają się w karty; każda wartość ma widoczny podpis. Na szerszym ekranie pozostają tabelami.
+
 Ten sam sprzęt pracuje kolejno; pralka i zmywarka mogą pracować równocześnie. Nie zakładamy czasu na wyjęcie prania i nie sterujemy urządzeniami.
+
+### Urządzenia teraz — bieżące pranie i zmywanie (0.8.8)
+
+PV Lab zna istniejące encje mocy sensor.gniazdkopomiarpralka_energy_power i sensor.gniazdkopomiarzmywarka_energy_power (W/kW). Korzysta z identyfikatorów zapisanych w konfiguracji urządzeń; po aktualizacji integracji HACS udostępnia też dwie encje binary_sensor: Pralka pracuje (ikona mdi:washing-machine) i Zmywarka pracuje (mdi:dishwasher). Stan pracy jest wyliczany raz w aplikacji i ten sam wynik trafia do planowania oraz encji HA. Inne urządzenia cykliczne z poprawną encją mocy mogą być obserwowane tak samo; urządzenia oznaczone jako praca ciągła nie są objęte tym detektorem cyklu.
+
+Karta pokazuje moc teraz, początek cyklu, szacowany koniec, granicę blokady kolejnego startu, źródło szacunku i czas odczytu. Dostępne stany: Nie pracuje, Pracuje, Możliwy początek cyklu, Pauza lub kończenie cyklu, Potwierdzanie bezczynności, Brak potwierdzonego stanu. Brak odczytu nie oznacza bezczynności ani 0 W.
+
+Przy uruchomieniu aplikacji, dłuższej luce, zmianie progów lub ręcznym odczycie pobierana jest krótka historia mocy. Obejmuje maksymalny czas cyklu z konfiguracji plus czas ciszy kończącej cykl (domyślnie 8 h + 20 min). Potem wystarczają bieżące odczyty HA. Brak historii jednego urządzenia nie odrzuca poprawnej historii drugiego. Nieudany odczyt historii jest ponawiany po 15 minutach; przycisk Odczytaj dane i przelicz ponawia go od razu. Brak historii pozwala rozpocząć obserwację od teraz, ale nie potwierdza dawnego początku cyklu.
+
+Progi pochodzą z Ustawienia → Urządzenia do analizy profilu. Domyślnie start to co najmniej 10 W; pierwsze dwie minuty są oznaczone jako możliwy początek. Koniec potwierdza dopiero co najmniej 20 minut przy mocy do 5 W. Wartości pomiędzy progami i krótkie pauzy nie kończą cyklu. Progi są zmienialne. Jeżeli rzeczywisty program ma dłuższe ciche pauzy, zwiększ czas ciszy — sama moc nie identyfikuje idealnie wszystkich programów.
+
+Wykryty start wymaga wcześniejszej zaobserwowanej bezczynności. Gdy obserwacja zaczyna się przy już pobieranym prądzie, początek pozostaje nieznany, a widoczny jest czas pierwszej obserwacji. Dokładność nowych przejść jest ograniczona częstością odczytów; historia HA może pozwolić ustalić wcześniejszy start.
+
+Szacowany koniec opiera się kolejno na wybranym profilu i wariancie tego sprzętu, ręcznym czasie cyklu, dostępnym profilu typowym, a bez nich na maksymalnym czasie z konfiguracji. Nie mamy potwierdzenia, jaki program został faktycznie włączony, więc jest to jawny szacunek. Pozostałą energię wyznaczamy z niewykonanej części wybranego 5-minutowego profilu; ręczny profil jest równomierny. Bez profilu energii zakładamy dalszy bieżący pobór do przyjętego końca i oznaczamy niepewność.
+
+Gdy urządzenie nadal pracuje po przewidywanym końcu, blokadę wydłużamy o co najmniej kolejne 15 minut i wyświetlamy ostrzeżenie o przekroczonym czasie. Potwierdzony wcześniej koniec zwalnia sprzęt przy następnym odczycie. Przy braku świeżych pomiarów stan jest nieznany, a niepewne najbliższe okresy są wyłączane z planowania. Nie zakładamy, że zniknięcie encji kończy pranie.
+
+**Wpływ na obliczenia:** stan zajętości blokuje wszystkie nowe cykle wskazujące tę samą encję mocy. Różne nazwy/programy tej samej pralki nie obchodzą blokady. Pozostała energia trwającego cyklu obciąża dom przed dodaniem nowych cykli; nie liczymy jej drugi raz jako nowego prania. Baza musi wykluczać to urządzenie (lista odejmowanych encji lub potwierdzony pomiar oczyszczony); przy historii bez tego warunku niepewne okresy są pomijane zamiast podwójnego dodania zużycia. Stała rezerwa ma znaczenie bazy bez nowych i trwających cykli.
+
+Wykres pokazuje osobną linię Trwające cykle. Podsumowany koszt nadal dotyczy dodatkowego uruchomienia cykli z formularza, względem domu z cyklem już trwającym. Nie jest rachunkiem za cały dom. Przy szacowanym saldzie bieżącej godziny uwzględniamy także minioną część trwającego cyklu; jeśli saldo pochodzi z pomiaru, nie dodajemy jej ponownie. Niepewny początek blokuje użycie wymyślonego kredytu bieżącej godziny. Zasady G12w i godzinowego bilansowania pozostają te same.
+
+W /data/appliance-live.json zapisujemy tylko kompaktowy bieżący stan, daty przejść i parametry detektora, bez pełnej historii mocy. Dzięki temu krótki restart zachowuje rozpoczęty cykl; po dłuższej przerwie ponownie odczytujemy historię. Plik jest częścią kopii danych i nie jest drugą bazą HA. Funkcja nie zmienia prognozy produkcji PV, nie steruje urządzeniami i nie potwierdza ich faktycznego zakończenia na podstawie samej prognozy.
+
+### Encje pracy w Home Assistant (0.8.8)
+
+Zaktualizuj aplikację oraz integrację PV Lab w HACS do 0.8.8. Następnie uruchom ponownie HA lub przeładuj integrację. Platforma binary_sensor doda dwie encje, z proponowanymi identyfikatorami binary_sensor.pv_lab_pralka_pracuje i binary_sensor.pv_lab_zmywarka_pracuje. HA może nadać sufiks, gdy taki identyfikator już istnieje. Nazwy znajdziesz przy urządzeniu PV Lab: Pralka pracuje oraz Zmywarka pracuje.
+
+Klasa running oznacza pracę on i potwierdzoną bezczynność off. Potencjalny start oraz krótka pauza pozostają on z atrybutem niepewności. Unknown, observing, nieaktualny pomiar, brak nowego pola w starszej aplikacji lub błąd połączenia powodują niedostępność, a nie off. Dostępność nie zależy od prognozy PV — encje działają także nocą. Wykrywanie pozostaje w aplikacji; integracja nie uruchamia drugiego, różniącego się algorytmu.
+
+Atrybuty podają encję i moc źródłową, status, wykryty start (cycle_started_at), szacowany koniec (estimated_end_at), blokadę kolejnego startu (blocked_until), źródło oszacowania i niepewność. Daty mają format ISO ze strefą UTC. Ikony pralki i zmywarki są ustawione w encjach. Nie ma usług sterujących sprzętem. Dokumentacja klasy encji: [Home Assistant — binary sensor entity](https://contributors.home-assistant.io/core/entities/binary-sensor/).
+
+### Karta HA „Zaplanuj uruchomienie” (0.8.8)
+
+Karta jest częścią tej samej integracji HACS PV Lab, nie wymaga osobnego repozytorium ani dodatkowej instalacji JavaScript. Po aktualizacji integracji i restarcie HA odśwież stronę lub aplikację mobilną. W edycji wybranego dashboardu dodaj kartę **Zaplanuj uruchomienie**. Można też użyć ręcznej konfiguracji: `type: custom:pv-lab-plan-card`. Integracja rejestruje zasób /pv_lab_frontend/pv-lab-plan-card.js z numerem wersji. Nie nadpisujemy istniejących dashboardów. Przy jednej integracji instalacja wybiera się sama; przy kilku wybierz ją z listy.
+
+Wskaż liczbę kolejnych prań i zmywań (0–8 na sprzęt, razem 1–8), zakres Dziś/Jutro/Dziś i jutro lub własne daty, a także cel PV albo koszt. Własne daty interpretujemy w strefie instalacji, nie przypadkowej strefie przeglądarki. Karta korzysta z zapisanych w Planowaniu zużycia profili i ograniczeń; przy kilku programach jednego sprzętu wybiera pierwszy pasujący wiersz. Profile i ograniczenia edytuje się w pełnej aplikacji. Nie zmienia zapisanej wspólnej listy cykli ani taryfy. Bieżące zajęcie i pozostała energia pracującego sprzętu są uwzględniane tak samo jak w pełnym module.
+
+Przycisk **Pokaż 3 najlepsze propozycje** wykonuje wspólne planowanie całej kombinacji. To trzy najlepsze znalezione, fizycznie różne harmonogramy według tego samego celu; nie jest to wybór trzech niezależnych startów dla jednego cyklu ani ranking wszystkich kombinacji. W odróżnieniu od różnorodnej listy 5/10 w aplikacji, karta porządkuje propozycje według wyniku celu. Może znaleźć mniej niż trzy pełne harmonogramy. Niepełny plan ma podane brakujące cykle i nie można go zatwierdzić. Powtarzające się prania tego samego sprzętu nie nakładają się; różne urządzenia mogą pracować równolegle.
+
+Każda propozycja podaje początek i koniec całego planu, dodatkowy zakup kWh, koszt według Twojej taryfy, margines nadwyżki PV, a poniżej godziny każdego cyklu i źródło profilu. Minimalny czas na wybór to dwie minuty przed startem; starty nadal są co 15 minut. Propozycja pozostaje aktualna najwyżej pięć minut, krócej przy granicy kwadransa. Jeżeli zdążyła się zdezaktualizować, ponownie ją przelicz.
+
+**Zatwierdź ten plan** jest jawnym zatwierdzeniem, nie fizycznym włączeniem urządzeń. Dopiero wtedy integracja publikuje flagę zatwierdzenia i terminy cykli do późniejszych automatyzacji. Nie tworzymy teraz automatyzacji ani wywołań switch.turn_on. Późniejsze sterowanie wymaga dodatkowego powiązania gniazdek, sprawdzenia, czy urządzenie potrafi wznowić cykl po podaniu zasilania, i sprawdzenia stanu pracy w chwili startu. Sam timestamp nie powinien włączać zajętego urządzenia.
+
+Encje przygotowane pod późniejsze automatyzacje:
+
+| Encja / proponowany identyfikator | Znaczenie |
+| --- | --- |
+| Plan urządzeń zatwierdzony — binary_sensor.pv_lab_plan_urzadzen_zatwierdzony | On tylko dla jawnie zatwierdzonego, niewygasłego planu. Anulowanie wycofuje zgodę. |
+| Zatwierdzony plan urządzeń — sensor.pv_lab_dashboard_plan_status | Status planu, plan_id, cel i lista cykli w atrybutach. |
+| Zatwierdzony cykl 1 początek — sensor.pv_lab_dashboard_cycle_1_start | Stały termin pierwszego cyklu; atrybuty wskazują sprzęt, koniec, energię i plan_id. |
+| Zatwierdzony cykl 2…8 początek | Osobny, stały termin każdego następnego cyklu, także drugiego prania. Pierwsze trzy encje są domyślnie włączone; pozostałe można włączyć w encjach integracji. |
+
+Nie przesuwamy automatycznie encji pierwszego cyklu na drugie pranie po upływie pierwszego startu — każdy cykl ma własną encję. Przy braku zatwierdzenia lub po anulowaniu terminy są niedostępne, nie są datą 1970 ani godziną 00:00. Po zakończeniu planu flaga gaśnie. Brak świeżych danych aplikacji nie jest zgodą na uruchomienie. Nazwy identyfikatorów mogą dostać sufiks HA przy kolizji; odnajdziesz je przy urządzeniu PV Lab.
+
+Zmiana pól karty wymaga ponownego przeliczenia przed zatwierdzeniem; stary wynik nie dostaje nowych liczb cykli. Udane nowe przeliczenie zastępuje propozycje i cofa wcześniejsze zatwierdzenie. Zatwierdzony plan można anulować. Opóźniony wynik starszego przeliczenia nie nadpisuje późniejszego anulowania. Gdy zmieni się zajętość sprzętu i dojdzie do konfliktu przed jego przyszłym startem, aplikacja anuluje plan i podaje przyczynę. To dodatkowy bezpiecznik, nie kompletny mechanizm uruchamiania urządzeń.
+
+Najnowsze propozycje i stan zatwierdzenia są przechowywane w kompaktowym /data/dashboard-plan.json oraz kopii danych. Zatwierdzony wariant trafia także do niezmiennej historii planów i weryfikacji; zatwierdzenie nie oznacza jeszcze potwierdzenia rzeczywistego wykonania. Zmiana propozycji nie kasuje tej historii. Po restarcie aplikacji niezatwierdzone propozycje trzeba przeliczyć przed zatwierdzeniem; wcześniej zatwierdzone przyszłe terminy są zachowane i nadal podlegają kontroli danych oraz zajętości.
+
+Komunikacja karty przechodzi przez uwierzytelnione połączenie WebSocket HA i ograniczony interfejs planowania aplikacji. Klucz parowania i adres aplikacji pozostają po stronie HA, nie są przekazywane do JavaScript karty. Źródła interfejsu HA: [rejestracja zasobów statycznych](https://contributors.home-assistant.io/blog/2024/06/18/async_register_static_paths/), [API frontend HA](https://github.com/home-assistant/core/blob/dev/homeassistant/components/frontend/__init__.py).
 
 ### Daty i terminy
 
@@ -207,17 +268,25 @@ W obu analizach pokazujemy prawdziwą skonfigurowaną taryfę. Tryb PV nie udaje
 
 ### Alternatywne harmonogramy i margines nadwyżki
 
-Tabela zawiera do trzech różnych znalezionych wariantów całego planu: liczbę cykli, dokupione kWh, pokrycie bilansem, margines nadwyżki PV, koniec całego planu, koszt i rozrzut scenariuszy. Wybierz wariant, aby zobaczyć jego pełne godziny i wykres. Alternatywy mogą mieć tę samą cenę, lecz inne zakończenie. Przy ciasnym terminie mogą istnieć tylko jeden lub dwa znalezione warianty.
+Od 0.8.7 tabela pokazuje domyślnie do **5 propozycji** całego planu. Przycisk **Pokaż do 10** rozwija gotowe wyniki, a **Pokaż 5 propozycji** zwija listę. Przy mniej niż sześciu wariantach przycisku nie ma. Gdy chowasz wybrany wariant spoza pierwszej piątki, podgląd wraca do pierwszego planu. Dla każdego celu dostępna jest osobna lista; przełączenie celu przywraca pięć widocznych pozycji.
+
+Pierwsza pozycja jest najlepsza według wybranego celu. Kolejne to różnorodne alternatywy, a nie ranking kolejnych miejsc. Szukamy również większego zapasu PV, wcześniejszego zakończenia, późniejszego startu i innej kolejności urządzeń. Opis pod przyciskiem wyjaśnia powód doboru. Opis „Wcześniejszy koniec” lub „Późniejszy start” oznacza rzeczywistą zmianę względem pierwszego planu, a nie obietnicę globalnie najwcześniejszego/najpóźniejszego harmonogramu.
+
+Każdy wiersz pokazuje liczbę cykli, dokupione kWh, pokrycie bilansem, margines nadwyżki PV, początek i koniec całego planu, koszt i rozrzut scenariuszy. Wygodniejszy termin może kosztować więcej albo wymagać większego importu — te wartości nie są ukrywane. Wybierz wariant, aby zobaczyć jego godziny i wykres, a następnie możesz utrwalić dokładnie ten plan. Używamy zapisanych cen G12w i tego samego modelu domu, profili i bilansowania w obu analizach. Nie zmieniamy cen ani zasad rozliczenia.
+
+Przy ciasnym terminie może istnieć mniej propozycji. Nie dopisujemy fikcyjnych wyników, nie powielamy planu przez zamianę numerów takich samych cykli i nie uzupełniamy listy samymi kosmetycznymi przesunięciami. Dla tej samej kolejności wymagamy co najmniej 30 minut różnicy któregoś porównywalnego cyklu lub końca całego planu; inna kolejność fizycznych urządzeń także może uzasadnić osobny wariant. To filtr prezentowanych możliwości, nie zmiana kroku startów: nadal wynosi 15 minut.
+
+Gdy znaleziono pełne plany, częściowe nie wchodzą do listy. Jeśli żadnego pełnego planu nie znaleziono, pokazujemy wyraźnie oznaczone propozycje z największą znalezioną liczbą cykli. Maksymalnie pokazujemy dziesięć wyraźnie różnych rozwiązań — nie wszystkie kombinacje startów. Rozwijanie i zwijanie nie pobiera danych ani nie uruchamia ponownego przeliczania. Nie zapisuje też dodatkowej historii; dopiero przycisk zapisu utrwala wybrany wariant.
 
 Przy zerowym dodatkowym imporcie i remisie podstawowej oceny preferujemy **większy margines nadwyżki**. To suma dodatnich sald po odjęciu domu i wszystkich zaplanowanych cykli wyłącznie w okresach rozliczeniowych, w których pracuje przynajmniej jeden cykl. Każdą godzinę/kwadrans liczymy raz; nie dodajemy nadwyżki z pozostałej części dnia. Przykład: w godzinach pracy PV daje 5 kWh, baza 1 kWh, cykle 2 kWh — margines 2 kWh. Przy bilansowaniu uwzględnia odpowiedni bieżący pomiar salda. W trybie bez bilansowania używamy kroków 5 minut.
 
 Margines ułatwia ocenę zapasu względem prognozy, ale nie jest prawdopodobieństwem, fizycznym magazynem ani gwarancją. Suma może ukrywać słabszy pojedynczy okres; zweryfikuj też godziny i scenariusze. Zerowy import **po bilansowaniu** nie oznacza braku fizycznego importu w każdej minucie. Ceny i scenariusze pozostają widoczne również przy zerowym wyniku.
 
-Planer sprawdza kilka kolejności (m.in. terminy, czas, priorytety, odwrotność i rotacje), trzy punkty startowe i dwa przejścia poprawek po cyklach. Ponawia próbę wstawienia brakujących cykli. Najpierw preferuje pełniejsze plany, następnie ocenę celu; nie promuje taniego planu pomijającego urządzenia. Usuwa powtórzenia identycznego fizycznego harmonogramu. Licznik opisuje ocenione dopuszczalne terminy w przebiegach, a nie wszystkie matematycznie możliwe kombinacje. To **najlepszy znaleziony plan**, bez gwarancji globalnego minimum; nie używamy zewnętrznego solvera.
+Planer sprawdza kilka kolejności (m.in. terminy, czas, priorytety, odwrotność i rotacje), trzy punkty startowe i dwa przejścia poprawek po cyklach. Ponawia próbę wstawienia brakujących cykli. Najpierw preferuje pełniejsze plany, następnie ocenę celu; nie promuje taniego planu pomijającego urządzenia. Zachowuje też poprawne plany sprzed lokalnych ulepszeń oraz sprawdza cztery dodatkowe, ograniczone przebiegi z preferencją wczesnych i późnych startów. Wszystkie używają tych samych ograniczeń sprzętu, terminów i kompletności danych. Usuwa powtórzenia identycznego fizycznego harmonogramu; z puli dobiera do dziesięciu zróżnicowanych propozycji, bez przeszukiwania wszystkich kombinacji. Licznik opisuje ocenione dopuszczalne terminy w przebiegach, a nie wszystkie matematycznie możliwe kombinacje. To **najlepszy znaleziony plan**, bez gwarancji globalnego minimum; nie używamy zewnętrznego solvera.
 
 ### Rekomendacja — wspólny plan
 
-Tabela pokazuje cykl, start, koniec, energię, dodatkowy import fizyczny, pokrycie bilansowaniem i energię do dokupienia. Wiersze przypisują przyrosty według kolejności startów; podsumowanie oblicza wspólną pulę raz. Nie sumujemy niezależnych rekomendacji zużywających tę samą nadwyżkę. Wykres przedstawia kwadransową energię PV, bazy domu i wszystkich cykli, przed bilansowaniem godzinowym.
+Tabela pokazuje cykl, start, koniec, energię, dodatkowy import fizyczny, pokrycie bilansowaniem i energię do dokupienia. Wiersze przypisują przyrosty według kolejności startów; podsumowanie oblicza wspólną pulę raz. Nie sumujemy niezależnych rekomendacji zużywających tę samą nadwyżkę. Wykres przedstawia kwadransową energię PV, oczyszczonej bazy domu, nowych cykli i osobno pozostałej części trwających cykli, przed bilansowaniem godzinowym.
 
 Bilans godzinowy kompensuje import i eksport tylko w tej samej pełnej godzinie, 15-minutowy w kwadransie, a brak czasowego to przybliżenie przepływów co 5 minut. Bieżący pomiar salda jest uwzględniany raz; plus oznacza eksport. Saldo nie przechodzi na kolejny okres. Liczniki narastające nie stają się automatycznie godzinowo zbilansowane.
 
@@ -464,6 +533,8 @@ Brak nowej bazy. Dane to JSON i JSONL w `/data` dodatku; ta ścieżka nie musi b
 | energy-forecast-archive.json | Prognozy do Energii, bez automatycznej retencji. |
 | reports.json | Porównania agregowane godzinowo/dobowo/miesięcznie/rocznie. |
 | batch-plan.json | Zachowana konfiguracja dawnego planera, nie nowa wspólna lista. |
+| dashboard-plan.json | Najnowsze propozycje karty HA oraz stan jawnego zatwierdzenia; bez sterowania sprzętem. |
+| appliance-live.json | Kompaktowy bieżący stan pracy urządzeń cyklicznych; bez surowej historii mocy. |
 | unified-plan.json | Wspólna lista cykli, daty, bilans i terminy zakończenia urządzeń; trwałe ustawienia od 0.8.6. |
 | panel-layout.json | Pozycje i orientacja paneli; wyłącznie prezentacja, trwały zapis. |
 | appliance-profiles.json | Cykle i profile. |

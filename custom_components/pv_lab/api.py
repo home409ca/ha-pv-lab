@@ -33,3 +33,16 @@ async def update_plan(session: ClientSession, url: str, token: str, patch: dict)
                 from homeassistant.exceptions import HomeAssistantError
                 raise HomeAssistantError(data.get("error", "Nie udało się zapisać planu"))
             return data
+
+
+async def device_schedule(session: ClientSession, url: str, token: str, request=None):
+    """Restricted planner surface. Does not call a switch or expose credentials to the card."""
+    async with asyncio.timeout(60):
+        async with session.request("GET" if request is None else "POST", url.rstrip("/") + "/api/device-schedule", headers={"Authorization": "Bearer " + token}, json=request) as response:
+            if response.status in (401, 403):
+                raise AuthenticationError
+            data = await response.json()
+            if response.status >= 400:
+                from homeassistant.exceptions import HomeAssistantError
+                raise HomeAssistantError(data.get("error", "Nie udało się przeliczyć planu"))
+            return data

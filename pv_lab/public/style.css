@@ -40,3 +40,25 @@ td.forecast-best{background:#243d28;color:#c3f98a;font-weight:650;box-shadow:ins
 
 tr.plan-selected td{background:#243b25}tr.plan-selected td:first-child{box-shadow:inset 3px 0 #bcf46b}
 #unified-form fieldset{border:1px solid #344756;border-radius:9px;margin:15px 0;padding:14px}#unified-form fieldset legend{padding:0 8px}
+
+/* Planning controls remain legible on narrow touch screens. */
+.plan-device-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:16px;margin:18px 0}
+#unified-form .plan-device-card,.plan-live-card{min-width:0;border:1px solid #3c5262;border-radius:12px;padding:16px;margin:0;background:#111d27}
+#unified-form .plan-device-card legend{color:#eff8ff;font-size:17px;font-weight:650;padding:0 8px}
+#unified-form .plan-device-card .form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+#unified-form input,#unified-form select{color-scheme:dark;color:#f2f7fc;background:#0b151e;min-height:44px;font-size:16px;max-width:100%;box-sizing:border-box}
+#unified-form option{color:#f2f7fc;background:#15232f}#unified-form label{min-width:0;color:#c9d9e5}
+.plan-presets [aria-pressed=true],.plan-objectives [aria-pressed=true]{background:#bcf46b;color:#101c12;border:2px solid #e0ffb3;font-weight:700;box-shadow:0 0 0 2px #607e3a}
+.plan-state{display:inline-block;border:1px solid #887049;border-radius:7px;padding:5px 8px;font-size:14px;color:#ffe1a1;background:#34291a}.plan-state.idle{color:#ceefb8;background:#203026;border-color:#607b55}
+.plan-live-card h3{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:17px}.plan-live-card dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:15px}.plan-live-card dt{color:#a9c0d2}.plan-live-card dd{margin:0;overflow-wrap:anywhere}.plan-live-card p{overflow-wrap:anywhere}
+@media(max-width:700px){
+ .plan-presets,.plan-objectives{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.plan-presets button,.plan-objectives button{width:100%;min-height:48px;font-size:15px;white-space:normal;margin:0;padding:10px}
+ #unified-form .plan-device-card .form-grid{grid-template-columns:1fr}.plan-device-grid{grid-template-columns:1fr}.plan-live-card dl{grid-template-columns:1fr}.plan-live-card dd{margin-bottom:6px}
+ .table-scroll:has(.plan-responsive-table){overflow:visible}.plan-responsive-table,.plan-responsive-table tbody{display:block;width:100%;min-width:0!important}.plan-responsive-table thead{display:none}
+ .plan-responsive-table tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border:1px solid #3b5263;border-radius:12px;padding:14px;margin-bottom:14px;background:#101c26}
+ .plan-responsive-table tbody td{display:block;min-width:0;border:0!important;padding:0!important;font-size:15px;line-height:1.45;overflow-wrap:anywhere;background:transparent!important;box-shadow:none!important}
+ .plan-responsive-table tbody td::before{content:attr(data-label);display:block;color:#a9c0d2;font-size:12px;margin-bottom:5px}.plan-responsive-table tbody td:first-child{grid-column:1/-1}.plan-responsive-table tbody td:first-child::before{display:none}
+ .plan-responsive-table .plan-selected{border:2px solid #bcf46b;background:#203325}.plan-responsive-table td button{min-height:44px;font-size:15px}.plan-responsive-table td small{display:block;line-height:1.4}.plan-selection{font-size:15px;color:#cbdbe8}
+}
+
+.plan-choice-summary{overflow-wrap:anywhere;color:#d4e5f2;font-size:14px;line-height:1.5}

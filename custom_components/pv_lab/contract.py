@@ -1,5 +1,54 @@
 """Pure payload mapping, kept independent of Home Assistant for verification."""
 from datetime import datetime, timezone
+from math import isfinite
+
+
+def read_dashboard_plan(payload, kind, index=None, now=None):
+    now = datetime.now(timezone.utc).timestamp() * 1000 if now is None else now
+    plan = payload.get("devicePlanning") or {}
+    if not isinstance(plan, dict):
+        return None, {}
+    read_at = plan.get("readAt")
+    if type(read_at) not in (int, float) or not isfinite(read_at) or not -60000 <= now-read_at <= 180000:
+        return None, {}
+    selected = plan.get("selected") or {}
+    approved = plan.get("approved") is True and isinstance(selected.get("end"), (int, float)) and selected["end"] > now
+    attrs = {"plan_id": plan.get("id"), "approved": approved, "approved_at": plan.get("approvedAt"), "cancel_reason": plan.get("cancelReason"), "goal": (plan.get("request") or {}).get("goal"), "cycles": selected.get("cycles", [])}
+    if kind == "dashboard_status":
+        return plan.get("phase", "brak planu"), attrs
+    if kind == "dashboard_approved":
+        return approved, attrs
+    cycles = selected.get("cycles") or []
+    if not approved or type(index) is not int or index < 0 or index >= len(cycles):
+        return None, attrs
+    cycle = cycles[index]
+    return cycle.get("start"), {**attrs, "cycle_id": cycle.get("id"), "device_id": cycle.get("deviceId"), "device_name": cycle.get("name"), "power_entity": cycle.get("powerEntity"), "end": cycle.get("end"), "energy_kwh": cycle.get("energyKWh")}
+
+
+def read_appliance_running(payload, appliance_id, now=None):
+    """Unknown and stale are never converted into a false/off appliance state."""
+    now = datetime.now(timezone.utc).timestamp() * 1000 if now is None else now
+    activity = payload.get("applianceActivity") or {}
+    if not isinstance(activity, dict) or not isinstance(activity.get("devices", []), list):
+        return None, {}
+    row = next((d for d in activity.get("devices", []) if isinstance(d, dict) and d.get("id") == appliance_id), None)
+    if not row:
+        return None, {}
+
+    def iso(value):
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            return None
+        try:
+            return datetime.fromtimestamp(value / 1000, timezone.utc).isoformat()
+        except (ValueError, OverflowError, OSError):
+            return None
+
+    attrs = {"status": row.get("status"), "power_entity": row.get("powerEntity"), "power_w": row.get("powerW"), "cycle_started_at": iso(row.get("startedAt")), "observed_since": iso(row.get("observedSince")), "estimated_end_at": iso(row.get("predictedEnd")), "blocked_until": iso(row.get("blockedUntil")) if row.get("status") != "idle" else None, "estimate_source": row.get("estimateSource"), "uncertain": row.get("uncertain", True), "overrun": row.get("overrun", False)}
+    read_at, expires = row.get("readAt"), row.get("validUntil")
+    if type(read_at) not in (int, float) or type(expires) not in (int, float) or not isfinite(read_at) or not isfinite(expires) or not read_at <= now + 60000 or not now < expires or row.get("status") not in ("idle", "running", "starting", "pause"):
+        return None, attrs
+    value = row.get("running")
+    return value if type(value) is bool and value == (row["status"] != "idle") else None, attrs
 
 
 def sensor_specs():
@@ -40,6 +89,9 @@ def sensor_specs():
     for index in range(8):
         for kind, label in (("optimizer_start", "start"), ("optimizer_cost", "koszt marginalny"), ("optimizer_device_status", "status")):
             specs.append({"key": f"optimizer_device_{index+1}_{label.replace(' ', '_')}", "name": f"Optymalizator urządzenie {index+1} {label}", "kind": kind, "device_index": index, "enabled": index < 2})
+    specs.append({"key": "dashboard_plan_status", "name": "Zatwierdzony plan urządzeń", "kind": "dashboard_status"})
+    for index in range(8):
+        specs.append({"key": f"dashboard_cycle_{index+1}_start", "name": f"Zatwierdzony cykl {index+1} początek", "kind": "dashboard_start", "cycle_index": index, "enabled": index < 3})
     return specs
 
 
@@ -47,6 +99,8 @@ def read_sensor(payload, spec):
     day = next((d for d in payload.get("days", []) if d.get("offset") == spec.get("offset")), {})
     attrs = {"forecast_date": day.get("date"), "coverage_complete": day.get("complete"), "calculated_at": payload.get("calculatedAt")}
     kind = spec["kind"]
+    if kind.startswith("dashboard_"):
+        return read_dashboard_plan(payload, kind, spec.get("cycle_index"))
     if kind.startswith("optimizer_"):
         optimizer = payload.get("energyOptimizer") or {}
         from time import time
