@@ -1,3 +1,7 @@
+# 0.8.12
+
+Karta HA wybiera do trzech pełnych harmonogramów z udziałem PV lub bilansu, filtrując przed ograniczeniem listy. Gdy takich planów nie znaleziono, pokazuje jeden najtańszy znaleziony i najwcześniejszy przy tej samej cenie. Pełne porównanie kosztów pozostaje w PV Lab. Dla jednego urządzenia sprawdzane są wszystkie dopuszczalne starty co 15 minut. Zatwierdzenie zapisuje dokładnie wybraną propozycję. Historia, taryfa i ustawienia pozostają zachowane.
+
 # 0.8.11
 
 Karta HA i PV Lab używają tej samej listy różnorodnych harmonogramów i wspólnego wyniku obliczeń przy tych samych ustawieniach. Karta pokazuje pierwsze trzy plany, aplikacja dalsze alternatywy. Usunięto odmienny ranking i dodatkowy bufor startu karty. Wybór cykli przechodzi 0–1–2–3–0; aktywne urządzenie jest zielone, liczba ma mały zapis bez plakietki. Zatwierdzanie jest w nagłówku, godziny przy nazwach cykli, szczegóły pod przyciskiem ?. Dane i ustawienia zachowane.

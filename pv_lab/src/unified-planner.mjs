@@ -1,5 +1,5 @@
 import {applyRunningAppliances} from './appliance-live.mjs';
-import {selectDiverseSchedules} from './schedule-alternatives.mjs';
+import {selectDiverseSchedules,selectDashboardSchedules} from './schedule-alternatives.mjs';
 import {buildContext,deviceCurve,rankDevice,reservations,candidate} from './optimizer.mjs';
 import {validateOptimizer} from './optimizer-settings.mjs';
 import {dayBounds,parseLocalInput} from '../public/presentation.js';
@@ -79,12 +79,14 @@ function search(ctx,prepared,objective){
   for(let pass=0;pass<2;pass++)for(const item of order){const old=assigned.find(a=>a.device.id===item.device.id),others=assigned.filter(a=>a!==old),choices=rank(item,others);evaluated+=choices.length;const best=choices[0];if(!best)continue;if(!old)assigned.push({...item,start:best.start});else{const reserved=reservations(ctx,others),before=candidate(ctx,item.device,item.curve,old.start,reserved);before.surplusKWh=margin(item,before,reserved);if(cmp({...best,start:0},{...before,start:0})<0)old.start=best.start;}}
   remember(assigned);
  }
+ // A single appliance is cheap to scan exhaustively: keep every legal 15-minute start.
+ if(prepared.length===1){const item=prepared[0],choices=rank(item,[]);evaluated+=choices.length;for(const option of choices)remember([{...item,start:option.start}]);}
  // Two bounded timing preferences add convenient alternatives without enumerating combinations.
  for(const order of [base,[...base].reverse()])for(const timing of ['early','late']){const assigned=[];for(const item of order){const choices=rank(item,assigned);evaluated+=choices.length;choices.sort((a,b)=>timing==='early'?a.start-b.start:b.start-a.start);if(choices[0])assigned.push({...item,start:choices[0].start});}remember(assigned);}
  const pool=[...found.values()],complete=Math.max(0,...pool.map(p=>p.length)),cheapest=Math.min(...pool.filter(p=>p.length===complete).map(p=>evaluate(p).cost));
  // Anchor the tolerance to one cheapest complete plan; pairwise tolerances are not transitive.
  const finalCompare=objective==='cost'?(a,b)=>b.length-a.length||compareCostPlans({...evaluate(a),start:Math.max(0,...a.map(x=>x.start+x.curve.duration))},{...evaluate(b),start:Math.max(0,...b.map(x=>x.start+x.curve.duration))},cheapest):compare;
- const plans=selectDiverseSchedules(pool,finalCompare,evaluate,10);return {plans,evaluated,distinct:found.size,cheapestFoundCost:cheapest};
+ const plans=selectDiverseSchedules(pool,finalCompare,evaluate,10);return {plans,pool,evaluate,compare:finalCompare,evaluated,distinct:found.size,cheapestFoundCost:cheapest};
 }
 function materialize(ctx,prepared,assignments,objective,stats,range){
  const total=metrics(ctx,assignments),{slots,groups,costs,resources,...summary}=total;
@@ -99,6 +101,13 @@ export function planUnified(f,samples,c,input,optimizer,load,live,states,model,l
  for(const device of settings.devices){const running=activity?.devices.find(d=>d.powerEntity===device.powerEntity);if(running&&running.status!=='idle')device.earliest=Math.max(device.earliest??now,running.blockedUntil);}
  const prepared=settings.devices.map(device=>({device:{...device,_resource:device.powerEntity||input.entries.find(e=>e.id===device.id.slice(0,device.id.lastIndexOf('_')))?.id||device.id},curve:deviceCurve(device,library)}));
  if(settings.load.mode==='history')for(const entity of settings.load.excludeEntities)if(!prepared.some(p=>p.device.powerEntity===entity))ctx.warnings.push('Od bazy odjęto '+entity+', ale ten sprzęt nie ma cyklu we wspólnym planie. Jego niezaplanowana praca nie jest uwzględniona.');
- const analyses={};for(const objective of ['pv','cost']){const found=search(ctx,prepared,objective);analyses[objective]=found.plans.map(({plan,reason},i)=>({...materialize(ctx,prepared,plan,objective,found,range),id:objective+'_'+i,alternativeReason:reason}));}
- return {settings:input,expandedSettings:settings,calculatedAt:now,range,analyses,activity};
+ const searches=Object.fromEntries(['pv','cost'].map(goal=>[goal,search(ctx,prepared,goal)])),analyses={},dashboardAnalyses={},dashboardSelection={};
+ for(const objective of ['pv','cost']){const found=searches[objective];analyses[objective]=found.plans.map(({plan,reason},i)=>({...materialize(ctx,prepared,plan,objective,found,range),id:objective+'_'+i,alternativeReason:reason}));
+  const pool=[...searches.cost.pool,...searches.pv.pool],full=pool.filter(p=>p.length===prepared.length),cheapest=Math.min(...full.map(p=>found.evaluate(p).cost));
+  const compare=objective==='cost'?(a,b)=>b.length-a.length||compareCostPlans({...found.evaluate(a),start:Math.min(...a.map(x=>x.start))},{...found.evaluate(b),start:Math.min(...b.map(x=>x.start))},cheapest):found.compare;
+  const selection=selectDashboardSchedules(pool,compare,found.evaluate,prepared.length);
+  dashboardSelection[objective]={mode:selection.mode,omittedGrid:selection.omittedGrid};
+  dashboardAnalyses[objective]=selection.plans.map(({plan,reason},i)=>({...materialize(ctx,prepared,plan,objective,found,range),id:'dashboard_'+objective+'_'+i,alternativeReason:reason}));
+ }
+ return {settings:input,expandedSettings:settings,calculatedAt:now,range,analyses,dashboardAnalyses,dashboardSelection,activity};
 }

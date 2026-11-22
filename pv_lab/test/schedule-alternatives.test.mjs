@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {selectDiverseSchedules} from '../src/schedule-alternatives.mjs';
+import {selectDiverseSchedules,selectDashboardSchedules} from '../src/schedule-alternatives.mjs';
 import {visibleScheduleOptions,costDifference} from '../public/unified-planning.js';
 const M=60000;
 function item(resource,start){return {device:{id:resource,_resource:resource},start,curve:{wh:[50,50,50],duration:15*M}};}
@@ -13,3 +13,11 @@ test('empty pool stays empty; expansion is a pure slice of ready results',()=>{a
 
 test('diverse options are finally sorted by cost, not convenience labels',()=>{const pool=[1.12,1.54,1.28,1.91,1.34].map((cost,i)=>Object.assign([item('washer',i*60*M)],{cost})),cmp=(a,b)=>a.cost-b.cost;const rows=selectDiverseSchedules(pool,cmp,evaluate);assert.deepEqual(rows.map(x=>x.plan.cost),[1.12,1.28,1.34,1.54,1.91]);});
 test('cost difference reports rounded ties without minus zero',()=>{assert.equal(costDifference(1.12-1e-15,1.12),'Ten sam koszt');assert.equal(costDifference(1.28,1.12),'+0,16 zł względem planu 1');assert.equal(costDifference(.90,1.12),'-0,22 zł względem planu 1');});
+
+function dashboardItem(start,imported,cost){const p=[item('washer',start)];p[0].curve.kWh=1;p.score={additionalImportKWh:imported,cost,surplusKWh:0};return p;}
+test('card filters all-grid before limiting; later solar candidates survive an early cheap grid option',()=>{const pool=[dashboardItem(0,1,.1),dashboardItem(60*M,.2,.2),dashboardItem(120*M,.3,.3),dashboardItem(180*M,.4,.4)],cmp=(a,b)=>a.score.cost-b.score.cost,read=p=>p.score,selected=selectDashboardSchedules(pool,cmp,read,1);assert.equal(selected.mode,'solar');assert.equal(selected.plans.length,3);assert.ok(selected.plans.every(p=>p.plan.score.additionalImportKWh<1));assert.equal(selected.omittedGrid,1);});
+test('card shows only one solar choice instead of padding with grid choices',()=>{const rows=[dashboardItem(0,1,.1),dashboardItem(60*M,.9,.5),dashboardItem(120*M,1,.2)];const selected=selectDashboardSchedules(rows,(a,b)=>a.score.cost-b.score.cost,p=>p.score,1);assert.equal(selected.plans.length,1);assert.equal(selected.plans[0].plan,rows[1]);});
+test('all-grid card chooses exact cheapest then earliest start, not latest convenient alternative',()=>{const rows=[dashboardItem(22*60*M,1,.64),dashboardItem(13*60*M,1,.64),dashboardItem(8*60*M,1,.66),dashboardItem(9*60*M,1,.64)];const selected=selectDashboardSchedules(rows,(a,b)=>a.score.cost-b.score.cost,p=>p.score,1);assert.equal(selected.mode,'grid');assert.equal(selected.plans.length,1);assert.equal(selected.plans[0].plan,rows[3]);assert.equal(rows.length,4);});
+test('incomplete forecasts are not presented as a full all-grid fallback',()=>{const selected=selectDashboardSchedules([dashboardItem(0,1,.1)],()=>0,p=>p.score,2);assert.equal(selected.mode,'incomplete');assert.notEqual(selected.mode,'grid');assert.equal(selectDashboardSchedules([],()=>0,()=>({}),0).plans.length,0);});
+
+test('solar card chooses ranked distinct options instead of a costly extreme for variety',()=>{const rows=[dashboardItem(0,.9,1.23),dashboardItem(60*M,.1,.19),dashboardItem(120*M,.2,.21),dashboardItem(180*M,.3,.25),dashboardItem(22*60*M,1,.64)],selected=selectDashboardSchedules(rows,(a,b)=>a.score.cost-b.score.cost,p=>p.score,1);assert.deepEqual(selected.plans.map(p=>p.plan.score.cost),[.19,.21,.25]);});
