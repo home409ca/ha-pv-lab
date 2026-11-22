@@ -1,12 +1,12 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.8.13 -->
+<!-- pv-lab-manual-version: 0.8.14 -->
 
-**Wersja aplikacji i instrukcji: 0.8.13.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.8.14.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
-PV Lab tworzy jedną prognozę produkcji AC z prognoz dostawców, pomiarów i historii. Używa reguł i statystyk, bez AI. Wynik trafia do wykresów, planowania, optymalizatora i integracji HA. Aplikacja nie steruje urządzeniami ani zabezpieczeniami. Nie prognozuje napięcia w woltach.
+PV Lab tworzy jedną prognozę produkcji AC z prognoz dostawców, pomiarów i historii. Silnik prognoz używa reguł i statystyk, bez AI. Opcjonalna Analiza AI jest osobnym doradcą i nie zmienia wyników. Wynik trafia do wykresów, planowania, optymalizatora i integracji HA. Aplikacja nie steruje urządzeniami ani zabezpieczeniami. Nie prognozuje napięcia w woltach.
 
 | Element | Wpływ na końcową prognozę PV |
 | --- | --- |
@@ -20,6 +20,7 @@ PV Lab tworzy jedną prognozę produkcji AC z prognoz dostawców, pomiarów i hi
 | Historia i trendy | Widok opisowy; te same dane mogą zasilać kwalifikowany potencjał. |
 | Raport porównań | Ocenia wcześniejsze wyniki, nie zmienia przeszłości. |
 | Profile urządzeń, zużycie domu, ceny | Zmieniają rekomendacje uruchomienia, nie produkcję PV. |
+| Analiza AI | Wyłącznie raport doradczy; nie zmienia żadnych obliczeń ani urządzeń. |
 | Ukrycie linii wykresu | Tylko wygląd, bez wyłączenia źródła z obliczeń. |
 
 **Historia produkcji** to pomiary. **Historia prognoz** to zapowiedzi znane przed produkcją. **Historia ocen** to ich porównania. Import lat produkcji nie tworzy lat ocen prognoz. Data aktualizacji pliku dostawcy nie zawsze potwierdza czas wydania każdej historycznej wartości.
@@ -185,7 +186,7 @@ Na telefonie każde urządzenie ma osobną kartę z pełnymi podpisami: liczba k
 
 Ten sam sprzęt pracuje kolejno; pralka i zmywarka mogą pracować równocześnie. Nie zakładamy czasu na wyjęcie prania i nie sterujemy urządzeniami.
 
-### Urządzenia teraz — bieżące pranie i zmywanie (0.8.13)
+### Urządzenia teraz — bieżące pranie i zmywanie (0.8.14)
 
 PV Lab zna istniejące encje mocy sensor.gniazdkopomiarpralka_energy_power i sensor.gniazdkopomiarzmywarka_energy_power (W/kW). Korzysta z identyfikatorów zapisanych w konfiguracji urządzeń; po aktualizacji integracji HACS udostępnia też dwie encje binary_sensor: Pralka pracuje (ikona mdi:washing-machine) i Zmywarka pracuje (mdi:dishwasher). Stan pracy jest wyliczany raz w aplikacji i ten sam wynik trafia do planowania oraz encji HA. Inne urządzenia cykliczne z poprawną encją mocy mogą być obserwowane tak samo; urządzenia oznaczone jako praca ciągła nie są objęte tym detektorem cyklu.
 
@@ -207,15 +208,15 @@ Wykres pokazuje osobną linię Trwające cykle. Podsumowany koszt nadal dotyczy 
 
 W /data/appliance-live.json zapisujemy tylko kompaktowy bieżący stan, daty przejść i parametry detektora, bez pełnej historii mocy. Dzięki temu krótki restart zachowuje rozpoczęty cykl; po dłuższej przerwie ponownie odczytujemy historię. Plik jest częścią kopii danych i nie jest drugą bazą HA. Funkcja nie zmienia prognozy produkcji PV, nie steruje urządzeniami i nie potwierdza ich faktycznego zakończenia na podstawie samej prognozy.
 
-### Encje pracy w Home Assistant (0.8.13)
+### Encje pracy w Home Assistant (0.8.14)
 
-Zaktualizuj aplikację oraz integrację PV Lab w HACS do 0.8.13. Następnie uruchom ponownie HA lub przeładuj integrację. Platforma binary_sensor doda dwie encje, z proponowanymi identyfikatorami binary_sensor.pv_lab_pralka_pracuje i binary_sensor.pv_lab_zmywarka_pracuje. HA może nadać sufiks, gdy taki identyfikator już istnieje. Nazwy znajdziesz przy urządzeniu PV Lab: Pralka pracuje oraz Zmywarka pracuje.
+Zaktualizuj aplikację oraz integrację PV Lab w HACS do 0.8.14. Następnie uruchom ponownie HA lub przeładuj integrację. Platforma binary_sensor doda dwie encje, z proponowanymi identyfikatorami binary_sensor.pv_lab_pralka_pracuje i binary_sensor.pv_lab_zmywarka_pracuje. HA może nadać sufiks, gdy taki identyfikator już istnieje. Nazwy znajdziesz przy urządzeniu PV Lab: Pralka pracuje oraz Zmywarka pracuje.
 
 Klasa running oznacza pracę on i potwierdzoną bezczynność off. Potencjalny start oraz krótka pauza pozostają on z atrybutem niepewności. Unknown, observing, nieaktualny pomiar, brak nowego pola w starszej aplikacji lub błąd połączenia powodują niedostępność, a nie off. Dostępność nie zależy od prognozy PV — encje działają także nocą. Wykrywanie pozostaje w aplikacji; integracja nie uruchamia drugiego, różniącego się algorytmu.
 
 Atrybuty podają encję i moc źródłową, status, wykryty start (cycle_started_at), szacowany koniec (estimated_end_at), blokadę kolejnego startu (blocked_until), źródło oszacowania i niepewność. Daty mają format ISO ze strefą UTC. Ikony pralki i zmywarki są ustawione w encjach. Nie ma usług sterujących sprzętem. Dokumentacja klasy encji: [Home Assistant — binary sensor entity](https://contributors.home-assistant.io/core/entities/binary-sensor/).
 
-### Karta HA „Zaplanuj uruchomienie” (0.8.13)
+### Karta HA „Zaplanuj uruchomienie” (0.8.14)
 
 Karta jest częścią tej samej integracji HACS PV Lab, nie wymaga osobnego repozytorium ani dodatkowej instalacji JavaScript. Po aktualizacji integracji i restarcie HA odśwież stronę lub aplikację mobilną. W edycji wybranego dashboardu dodaj kartę **Zaplanuj uruchomienie**. Można też użyć ręcznej konfiguracji: `type: custom:pv-lab-plan-card`. Integracja rejestruje zasób /pv_lab_frontend/pv-lab-plan-card.js z numerem wersji. Nie nadpisujemy istniejących dashboardów. Przy jednej integracji instalacja wybiera się sama; przy kilku wybierz ją z listy.
 
@@ -257,7 +258,7 @@ Presety przesuwają się wraz z datą, a zakres własny pozostaje stały. Zakres
 
 **Wszystkie cykle zakończ do:** przykładowo wpisz 15:00 przy pralce. Przy dwóch praniach oba muszą być zakończone do tej godziny. Pusta godzina przy zmywarce oznacza wyłącznie wspólny koniec zakresu. Pusta data oznacza ostatni dzień wybranego zakresu. Dla „Dziś i jutro”, gdy prania mają być gotowe już dziś o 15:00, wpisz również dzisiejszą datę. Termin nie oznacza startu; cały cykl musi się zmieścić. Jawnie podana data nie przesuwa się automatycznie. Dawne dodatkowe ograniczenia dat i dozwolonych godzin przejętych urządzeń pozostają zachowane.
 
-### Proponowane harmonogramy — jedna główna rekomendacja (0.8.13)
+### Proponowane harmonogramy — jedna główna rekomendacja (0.8.14)
 
 Główny cel to mały szacowany dodatkowy koszt wszystkich cykli po uwzględnieniu domu, prognozy PV, bilansowania i taryfy. Wśród pełnych znalezionych planów wyznaczamy najtańszy. Dopuszczamy maksymalnie 0,05 zł dopłaty za cały plan względem tej jednej kwoty. W tej grupie sortujemy najpierw według większego zapasu PV w okresach pracy, potem niższego kosztu przy mniej korzystnej pogodzie, niższego kosztu centralnego, mniej dokupionej energii i wcześniejszego końca. Pozostałe plany sortujemy według kosztu. Próg jest odniesiony zawsze do najtańszego pełnego planu; nie narasta przez porównywanie kolejnych par. Tolerancja liczbowa wynosi 10⁻⁸ zł. Większy zapas to wskaźnik odporności, a nie gwarancja ani prawdopodobieństwo. Nie ma uniwersalnego progu wystarczalności 1–2 kWh: zależy ona od całego cyklu i rozkładu energii. Nie uśredniamy kWh ze złotówkami. W tym wspólnym planerze waga ostrożności nie podwyższa niewidocznie wyniku rankingu ponad pokazaną kwotę. Parametr pozostaje zachowany dla starszego API optymalizatora; porównania kosztów historycznych nie są zmieniane.
 
@@ -354,7 +355,7 @@ Widać liczby kwadransów/godzin, dni, postęp, brakujące encje i niezgodności
 
 Trzy scenariusze zmieniają PV i zużycie domu. Margines PV korzysta z wcześniejszych błędów przy odpowiedniej liczbie ocen; wcześniej jest robocze 25%. Rozrzut bazy wynika z historii lub ustawienia.
 
-Starsze API optymalizatora zachowuje ranking: koszt centralny + waga ostrożności × różnica między najgorszym a centralnym scenariuszem (domyślnie 0,25). Główny wspólny planer od 0.8.13 sortuje według centralnego szacowanego kosztu z opisaną wyżej kolejnością rozstrzygania remisów. Zakres scenariuszy nie jest przedziałem ufności ani gwarantowanym kosztem.
+Starsze API optymalizatora zachowuje ranking: koszt centralny + waga ostrożności × różnica między najgorszym a centralnym scenariuszem (domyślnie 0,25). Główny wspólny planer od 0.8.14 sortuje według centralnego szacowanego kosztu z opisaną wyżej kolejnością rozstrzygania remisów. Zakres scenariuszy nie jest przedziałem ufności ani gwarantowanym kosztem.
 
 Zapis planu utrwala prognozę, ceny i założenia. Po rzeczywistym wykonaniu zaznacz potwierdzenie, a po zakończeniu okresów uruchom weryfikację. Odczytywane są pomiary domu, PV i urządzeń. Braki nie są zastępowane planem jako rzekomą rzeczywistością. Ocena korzysta z utrwalonych cen, nie faktury. Nie zmienia automatycznie cen ani profilu pralki. Wynik można wyeksportować.
 
@@ -514,7 +515,7 @@ Historia jest trwała po ponownym wejściu. Przy włączonym automatycznym uzupe
 <!-- tab:storage -->
 ## 15. Pliki i retencja
 
-Na wejściu automatycznie odczytujemy listę plików i rozmiary. „PV Lab — kod i dane” to suma plików kodu aplikacji oraz jej katalogu danych, w MiB (1 MiB = 1 048 576 bajtów). Osobno pokazujemy kod i dane, w tym rozmiar prywatnej konfiguracji. Nie jest to rozmiar całego kontenera, bazy HA, InfluxDB ani kopii HA. Rozmiary są buforowane przez 30 sekund. Przy pliku „Podejrzyj” pokazuje pierwsze 32 kB, a „Pobierz” zapisuje cały plik. Duże pliki są przesyłane strumieniowo. Klucz parowania, hasło InfluxDB, katalogi i dowiązania nie są udostępniane do pobrania. Archiwum Energii nadal nie ma automatycznej retencji.
+Na wejściu automatycznie odczytujemy listę plików i rozmiary. „PV Lab — kod i dane” to suma plików kodu aplikacji oraz jej katalogu danych, w MiB (1 MiB = 1 048 576 bajtów). Osobno pokazujemy kod i dane, w tym rozmiar prywatnej konfiguracji. Nie jest to rozmiar całego kontenera, bazy HA, InfluxDB ani kopii HA. Rozmiary są buforowane przez 30 sekund. Przy pliku „Podejrzyj” pokazuje pierwsze 32 kB, a „Pobierz” zapisuje cały plik. Duże pliki są przesyłane strumieniowo. Klucz API Gemini, klucz parowania, hasło InfluxDB, katalogi i dowiązania nie są udostępniane do pobrania. Archiwum Energii nadal nie ma automatycznej retencji.
 
 Brak nowej bazy. Dane to JSON i JSONL w `/data` dodatku; ta ścieżka nie musi być dostępna w File Editorze.
 
@@ -673,19 +674,19 @@ Jeżeli brak odpowiednich liczników, używamy całki z mocy AC, tylko przy co n
 Raport zapisuje dodatkowy wariant without_tomorrow. Karta „Czy korekta na jutro poprawia wynik?” porównuje go z końcowym PV Lab dopiero po zakończeniu godzin. Brak wcześniejszego wariantu nie jest rekonstruowany dzisiejszym modelem. Aby nie przypisywać tej zmiany historii lub napięciu, ocena historii korzysta z wariantu sprzed korekty na jutro, jeśli jest dostępny, a wspólna ocena ryzyka sieci kończy się przed nią. Historyczne oceny i prognozy pozostają zapisami swoich wydań.
 
 
-## Naprawa niekompletnej aktualizacji (0.8.13)
+## Naprawa niekompletnej aktualizacji
 
-ERR_MODULE_NOT_FOUND z nazwą schedule-alternatives.mjs oznacza brak wymaganego pliku kodu, a nie uszkodzenie historii. Pakiet naprawczy 0.8.13 zawiera zmiany od 0.8.6, także elementy z 0.8.7, których nie zawierał przyrostowy pakiet 0.8.8. Wgraj zawartość do głównego katalogu repozytorium z zachowaniem podkatalogów, następnie odśwież repozytorium aplikacji i zaktualizuj PV Lab do 0.8.13. Aktualizacja przebuduje obraz aplikacji; sam restart starego obrazu nie doda brakujących plików. Nie odinstalowuj aplikacji i nie kasuj /data. Historia, modele, ceny i profile pozostają bez zmian; ponowny import nie jest potrzebny. Przed wydaniem kontrolujemy lokalne importy w katalogach src i public oraz uruchamiamy testy aplikacji. To kontrola kodu, nie prognozy; nie zmienia obliczeń ani retencji.
+ERR_MODULE_NOT_FOUND z nazwą schedule-alternatives.mjs oznacza brak wymaganego pliku kodu, a nie uszkodzenie historii. Porównaj katalog repozytorium z pełnym wydaniem tej samej wersji i uzupełnij brakujący plik z zachowaniem podkatalogów. Pakiet przyrostowy 0.8.14 zawiera tylko zmiany względem 0.8.13; nie zastępuje pełnej instalacji starszego, niekompletnego wydania. Odśwież repozytorium aplikacji i wykonaj aktualizację, która przebuduje obraz. Sam restart starego obrazu nie doda brakujących plików. Nie odinstalowuj aplikacji i nie kasuj /data. Historia, modele, ceny i profile pozostają bez zmian; ponowny import nie jest potrzebny. Przed wydaniem kontrolujemy lokalne importy w src i public oraz uruchamiamy testy. To kontrola kodu, nie zmiana obliczeń ani retencji.
 
 Rejestracja pliku karty HA następuje przed pierwszym odczytem aplikacji. Niedostępna aplikacja nie blokuje już udostępnienia /pv_lab_frontend/pv-lab-plan-card.js. Planowanie wymaga jednak działającej i sparowanej aplikacji. Po aktualizacji HACS uruchom ponownie HA. Gdy adres pliku nadal zwraca 404, sprawdź obecność pliku /config/custom_components/pv_lab/www/pv-lab-plan-card.js i log uruchomienia integracji PV Lab. Sama instalacja HACS bez skonfigurowanej integracji PV Lab nie rejestruje pliku.
 
 Na karcie pod ceną znajduje się cienki pasek udziałów energii: zielony PV i bilans, pomarańczowy Do dokupienia. Procent zakupu = dodatkowa energia do dokupienia po bilansowaniu / suma energii cykli, ograniczony do 0–100%; zielony jest dopełnieniem. To udział po rozliczeniu okresów, a nie fizyczny pobór w każdej minucie. Baza domu i trwające cykle są już uwzględnione przed nowymi cyklami. Przy brakującej energii lub niepoprawnym wyniku pasek jest pomijany, nie pokazuje fikcyjnego 100% PV. Gdy miniona część bieżącego okresu miała saldo importu, dodatkowy zakup może być większy niż energia cykli; udział jest wtedy ograniczony do 100%, a wyliczony koszt nie jest obcinany. Procenty zaokrąglamy do pełnych liczb.
 
-### Minimalistyczny układ karty (0.8.13)
+### Minimalistyczny układ karty (0.8.14)
 
 Usunięto opisową ramkę Stan: propozycje. Numer planu, kwota, przycisk ? i Zatwierdź są w jednym nagłówku. Po zatwierdzeniu przy wybranym planie widać Zatwierdzony i zielone obramowanie; nad listą pojawia się Anuluj zatwierdzony plan. Ewentualne błędy i przyczyny wycofania pozostają czytelne, nie są ukrywane. Nazwa cyklu i jego przedział czasowy są w jednym wierszu, z datą oraz godziną początku i końca; długie nazwy są skracane wizualnie z pełną nazwą w opisie. Cienki zielono-pomarańczowy pasek udziałów energii pozostaje bez zmian. Przycisk ? otwiera szczegóły danego planu: zakup kWh, zapas PV, wariant kosztu przy innej pogodzie, czas obliczenia i źródła profili. Przycisk działa na telefonie bez najeżdżania kursorem. Rozwinięcie jest lokalnym stanem widoku, nie zapisuje nowej historii. Zmiana liczby cykli lub dni blokuje zatwierdzenie starych wyników do ponownego przeliczenia. Żaden z tych przycisków nie steruje gniazdkami. Zmiana doboru alternatyw nie zmienia zasad energii, taryfy, reguły dopłaty 5 gr, danych historycznych ani retencji.
 
-### Dobór słonecznych propozycji i wariant bez PV (0.8.13)
+### Dobór słonecznych propozycji i wariant bez PV (0.8.14)
 
 Pokrycie = suma energii nowych cykli minus dodatkowy zakup po bilansowaniu, z tolerancją liczbową 0,000001 kWh. Dlatego nie chodzi o fizyczny brak poboru z sieci w każdej minucie. Baza i pracujące już urządzenia są uwzględnione przed nowymi cyklami. Bardzo mały dodatni udział poniżej 1% pokazujemy na pasku do dwóch miejsc po przecinku, zamiast zaokrąglać go do 0%; pozostałe udziały pozostają całkowite.
 
@@ -693,11 +694,11 @@ Dla pojedynczego urządzenia analizujemy wszystkie dopuszczalne starty co 15 min
 
 Wśród pełnych kandydatów z PV/bilansem karta przechodzi po rankingu kosztu i zapasu, wybierając kolejne wyraźnie różne plany (jak dotąd co najmniej 30 minut zmiany lub inna kolejność sprzętu). Nie wymusza skrajnie wczesnego lub późnego wariantu wyłącznie dla różnorodności. Pełny widok aplikacji nadal pokazuje szersze porównanie alternatyw.
 
-### Jedna rekomendacja i rozwijane alternatywy (0.8.13)
+### Jedna rekomendacja i rozwijane alternatywy (0.8.14)
 
 Karta domyślnie pokazuje jeden polecany plan. Strzałka Pozostałe plany rozwija pozostałe przygotowane propozycje, a Ukryj je zwija. Zielona strzałka oznacza, że wszystkie ukryte plany mają zerowy zakup po bilansowaniu (tolerancja 0,000001 kWh). Pomarańczowa oznacza, że co najmniej jeden ukryty plan wymaga dokupienia energii. Kolor dotyczy całej ukrytej grupy, nie planu widocznego. Podpowiedź i opis dostępności wyjaśniają znaczenie koloru; przy brakującym pomiarze nie deklarujemy pełnego PV i używamy szarego oznaczenia. Przy jednej propozycji nie ma strzałki. Nowe przeliczenie ponownie zwija listę. Jeśli zatwierdzono inny plan, po zwinięciu widoczny pozostaje zatwierdzony, a pozostałe są pod strzałką. Jest to wyłącznie lokalny stan widoku — nie zapisuje kolejnej historii i nie zmienia obliczeń. Bardzo małe udziały zakupu oraz PV poniżej 1% pokazujemy do dwóch miejsc po przecinku, zamiast mylącego 100%/0%.
 
-### Start taniej strefy i godzina szczytu PV (0.8.13)
+### Start taniej strefy i godzina szczytu PV (0.8.14)
 
 Pod główną listą Proponowane harmonogramy jest tabela dodatkowych porównań. Dla każdej doby wybranego zakresu wyliczamy dwa warianty całej kombinacji urządzeń: start w dziennej taniej strefie i start na początku godziny o największej prognozowanej energii PV Lab. Domyślna taryfa daje 13:00 zimą i 15:00 latem, ale używamy zapisanych okien i miesięcy letnich, a nie stałych godzin w kodzie. Jako dzienne wybieramy najwcześniejsze skonfigurowane okno zaczynające się między 06:00 a 18:00. Brak takiego okna jest opisany; nie wymyślamy stawki. W dzień całkowicie objęty tanią strefą, np. weekend G12w, przy porównaniu widnieje informacja, że o tej godzinie nie występuje dodatkowa obniżka ceny. Godziny są w strefie instalacji, z uwzględnieniem czasu letniego.
 
@@ -706,3 +707,53 @@ Szczyt to pełna godzina z największą sumą czterech kwadransów aktualnej pro
 Dla kilku urządzeń co najmniej jeden cykl musi rozpocząć się dokładnie w wskazanej godzinie. Pozostałe rozpoczynają się najwcześniej wtedy, gdy pozwalają ograniczenia; ten sam sprzęt działa kolejno. Próby różnych pierwszych urządzeń uwzględniają zajętość, terminy zakończenia, dozwolone godziny, prognozę, bazę domu, ceny i limit poboru. Nie uruchamiamy dwóch prań równocześnie. Jeśli nie mieści się pełna kombinacja, tabela podaje powód i nie umożliwia zapisania niepełnego wariantu.
 
 Koszt porównania dotyczy całego planu i jest liczony tym samym mechanizmem bilansowania oraz taryf co rekomendacja. Dopuszczalne pełne porównania trafiają też do puli poszukiwania rekomendacji; nie wypierają automatycznie najlepszego planu. Jeżeli identyczny harmonogram już jest na głównej liście, tabela wskazuje numer planu zamiast udawać nową alternatywę. Pokaż ten plan otwiera jego cykle, koszt i wykres; można zapisać go do późniejszej weryfikacji. Zapis jest świadomą czynnością, a nie sterowaniem sprzętem. Obliczanie porównań nie zapisuje surowych kandydatów na dysku i nie zmienia prognozy PV, taryfy ani dotychczasowej historii.
+
+
+## Wygląd karty — opcje YAML
+
+Widok kompaktowy jest domyślny. Istniejąca karta po aktualizacji nie wymaga zmiany YAML. Wariant pełny przywraca większe odstępy i opisy.
+
+```yaml
+type: custom:pv-lab-plan-card
+layout: compact
+title: Moje urządzenia
+show_header: true
+max_plans: 3
+show_energy_bar: true
+show_details: true
+```
+
+| Opcja | Domyślnie | Działanie |
+| --- | --- | --- |
+| `layout` | `compact` | `compact`: mniejsze odstępy, Dziś/Jutro/Zaplanuj w jednym wierszu, bez opisu i powtórzenia wyboru. `full`: dotychczasowy obszerniejszy układ. |
+| `title` | `Zaplanuj uruchomienie` | Dowolna nazwa. `title: ""` ukrywa nagłówek. |
+| `show_header` | `true` | `false` ukrywa nagłówek, zachowując wpisaną nazwę w konfiguracji. |
+| `max_plans` | `3` | Liczba dostępnych na karcie planów: 1, 2 lub 3. Domyślnie widoczny jest jeden, pozostałe rozwija strzałka. |
+| `show_energy_bar` | `true` | `false` ukrywa pasek i procenty PV/bilans–sieć. |
+| `show_details` | `true` | `false` ukrywa przycisk `?` oraz szczegóły. Zatwierdzenie pozostaje dostępne. |
+| `entry_id` | automatycznie | Identyfikator integracji przy kilku instalacjach; dotychczasowe działanie pozostaje. |
+
+Najmniejsza karta: `show_header: false`, `max_plans: 1`, `show_details: false`. Wersja pełna: `layout: full`. Zachęcamy do pozostawienia paska energii — szybko pokazuje zakup z sieci. Wszystkie te parametry zmieniają tylko wygląd, nigdy model, taryfę, liczbę cykli ani ranking. Zatwierdzony plan pozostaje widoczny także wtedy, gdy po zmniejszeniu `max_plans` znalazłby się poza zakresem. Pełne alternatywy nadal są w aplikacji.
+
+W kompaktowej karcie przyciski `?` i zatwierdzenia są mniejsze, a przycisk pozostałych planów jest blisko rekomendacji, po prawej. Urządzenia nadal wybierasz dotykiem 0 → 1 → 2 → 3 → 0, z zielonym zaznaczeniem i małą liczbą przy wybranym sprzęcie.
+
+<!-- tab:ai -->
+## Analiza AI — opcjonalne testy Gemini
+
+Moduł znajduje się w menu „Analiza AI”. Domyślnie jest wyłączony. W demonstracji nie odczytuje prawdziwych ustawień ani raportów AI; najpierw wróć do danych rzeczywistych. Nie wymaga nowej integracji HA. Prognozy, korekty, bilansowanie i planowanie nadal działają lokalnie według dotychczasowych reguł. AI jest doradcą opisującym przygotowane liczby; nie steruje urządzeniami, nie zmienia ustawień i nie staje się dodatkowym dostawcą prognozy.
+
+1. Otwórz „Analiza AI”. Klucz z Google AI Studio wpisz w pole hasła, wybierz model, włącz ręczne analizy i zapisz. Puste pole klucza przy kolejnym zapisie zachowuje poprzedni. „Usuń zapisany klucz” wyłącza moduł i czyści klucz, pozostawiając raporty.
+2. Wybierz temat: trafność prognozy, planowanie urządzeń lub jakość danych. „Przygotuj podgląd danych” wykonuje wyłącznie lokalne obliczenia, także przy wyłączonym AI. Sam zapis konfiguracji również niczego nie wysyła.
+3. Przejrzyj dokładny JSON. Podgląd jest ważny 10 minut; zmiana ustawień AI lub restart wymaga przygotowania go ponownie.
+4. Dopiero „Wyślij do Gemini i przeanalizuj” wysyła widoczny zestaw do Google. Zablokowano równoległe analizy i automatyczne ponawianie. Nie ma zadań cyklicznych AI.
+5. Raport odczytasz poniżej, wraz z czasem, modelem i danymi, na których powstał. Zachowujemy 10 ostatnich raportów; starsze raporty AI są zastępowane. Historia produkcji i prognoz pozostaje bez zmian.
+
+**Dane i obliczenia:** podgląd zawiera do 8 sum dobowych aktualnego oczekiwanego wyniku (dziś: pomiar + pozostała prognoza), osobno energię pozostałą i do 48 najnowszych zakończonych wierszy ocen z ostatnich 7 dni. To prognozy wcześniej zapisane w raporcie, nie dzisiejsze przeliczenie przeszłości. Oceny bieżącej i jutrzejszej prognozy liczymy oddzielnie, na wspólnych kompletnych godzinach dostępnych źródeł. MAE to średni błąd bezwzględny w kWh; błąd ostrożności waży zawyżenie 100%, niedoszacowanie 50%; bias to średnia (prognoza − pomiar). Nie ma danych = brak oceny, nie 0. W temacie planowania dołączamy do 3 planów kosztowych: wspólny koszt, zakup, zapas i anonimowe cykle wraz z czasami. Brak planu pozostaje brakiem. Podgląd nie zawiera kluczy, identyfikatorów encji, numerów paneli, lokalizacji, adresów HA ani pełnych historii. Liczby mają kWh/PLN, czasy Unix ms oraz strefę czasową. Moduł nie pobiera historii ponownie z HA ani InfluxDB.
+
+**Parametry:** domyślny model `gemini-3.5-flash-lite` można zmienić na identyfikator Gemini dostępny w swoim projekcie. Domyślny lokalny limit to 5 prób dziennie (zakres 1–20, dzień Europe/Warsaw). Próba wysłana do usługi zużywa limit także przy błędzie. Limit jest trwały po restarcie, ale nie zastępuje limitu wydatków Google. Oczekiwanie trwa maksymalnie 45 sekund; odpowiedź tekstowa ma lokalny limit 12 000 znaków. Niepełna odpowiedź jest zgłaszana jako błąd. Model nie dostaje narzędzi ani możliwości uruchamiania poleceń. Tekst raportu jest wyświetlany jako tekst, bez wykonywania HTML.
+
+**Koszty i prywatność:** potrzebny jest własny klucz projektu Google. Dostępność, bezpłatne limity, rozliczenia i warunki zależą od projektu, kraju i modelu — PV Lab nie gwarantuje bezpłatności. Linki do aktualnych [cen](https://ai.google.dev/gemini-api/docs/pricing), [limitów](https://ai.google.dev/gemini-api/docs/rate-limits) i [warunków](https://ai.google.dev/gemini-api/terms) są dostępne w module. Interactions API wysyła `store: false`; dotyczy to przechowywania interakcji w tym API, nie oznacza gwarancji braku wszelkich logów lub innego przetwarzania przez Google.
+
+**Pliki:** `ai-private.json` zawiera ustawienia i klucz wyłącznie po stronie serwera; jest wyłączony z przeglądarki plików, podglądu, pobierania oraz eksportu JSON/GZIP. Klucz nie wraca do formularza. `ai-usage.json` przechowuje licznik prób, `ai-reports.json` ostatnie 10 raportów i ich wejścia. Eksport PV Lab zawiera publiczny stan AI i raporty, bez klucza. Pełna kopia dodatku w Home Assistant obejmuje katalog `/data`, więc może zawierać także prywatny plik klucza — taką kopię należy chronić. Uszkodzona opcjonalna konfiguracja AI wyłącza moduł z komunikatem, nie zatrzymuje prognoz PV i nie kasuje plików.
+
+Odpowiedzi AI są opisem i hipotezami, nie dowodem przyczyny ani gwarancją oszczędności. Rzeczywistą poprawę prognozy należy nadal potwierdzać zapisanymi prognozami i późniejszymi pomiarami.

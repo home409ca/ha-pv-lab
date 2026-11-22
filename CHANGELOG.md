@@ -1,3 +1,7 @@
+# 0.8.14
+
+Domyślny kompaktowy widok karty HA, nagłówek zmieniany/ukrywany w YAML, wspólny wiersz Dziś/Jutro/Zaplanuj i mniejsze odstępy. Opcje layout, title, show_header, max_plans, show_energy_bar, show_details. Opcjonalny moduł Analiza AI z Gemini: ręczny podgląd wysyłanych podsumowań, limit wywołań i klucz przechowywany wyłącznie po stronie serwera. AI nie zmienia obliczeń ani nie steruje urządzeniami.
+
 # 0.8.13
 
 Karta HA pokazuje jeden polecany plan; strzałka rozwija pozostałe, zielona przy pełnym pokryciu wszystkich ukrytych planów przez PV/bilans, pomarańczowa przy koniecznym zakupie. W aplikacji dodatkowo porównujemy start w dziennej taniej strefie według konfiguracji taryfy oraz początek godziny największej prognozowanej produkcji PV. Ograniczenia czasu, sprzętu i kompletność danych są zachowane.
