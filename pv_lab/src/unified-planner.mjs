@@ -84,7 +84,7 @@ function search(ctx,prepared,objective){
  const pool=[...found.values()],complete=Math.max(0,...pool.map(p=>p.length)),cheapest=Math.min(...pool.filter(p=>p.length===complete).map(p=>evaluate(p).cost));
  // Anchor the tolerance to one cheapest complete plan; pairwise tolerances are not transitive.
  const finalCompare=objective==='cost'?(a,b)=>b.length-a.length||compareCostPlans({...evaluate(a),start:Math.max(0,...a.map(x=>x.start+x.curve.duration))},{...evaluate(b),start:Math.max(0,...b.map(x=>x.start+x.curve.duration))},cheapest):compare;
- const ranked=pool.sort(finalCompare);return {plans:selectDiverseSchedules(pool,finalCompare,evaluate,10),bestPlans:ranked.filter(p=>p.length===ranked[0]?.length).slice(0,3).map(plan=>({plan,reason:'Koszt, zapas PV i wariant pogodowy'})),evaluated,distinct:found.size,cheapestFoundCost:cheapest};
+ const plans=selectDiverseSchedules(pool,finalCompare,evaluate,10);return {plans,evaluated,distinct:found.size,cheapestFoundCost:cheapest};
 }
 function materialize(ctx,prepared,assignments,objective,stats,range){
  const total=metrics(ctx,assignments),{slots,groups,costs,resources,...summary}=total;
@@ -93,12 +93,12 @@ function materialize(ctx,prepared,assignments,objective,stats,range){
  const assigned=[];for(const a of [...assignments].sort((a,b)=>a.start-b.start||a.device.id.localeCompare(b.device.id))){const d=devices.find(d=>d.id===a.device.id);d.accounting=candidate(ctx,a.device,a.curve,a.start,reservations(ctx,assigned));d.accounting.balancingKWh=ctx.s.balanceMode==='instant'?0:Math.max(0,d.accounting.physicalImportKWh-d.accounting.additionalImportKWh);assigned.push(a);}
  return {version:1,calculatedAt:ctx.now,validUntil:Math.floor(ctx.now/Q)*Q+Q,range,horizonHours:ctx.s.horizonHours,mode:ctx.s.balanceMode,objective,status:devices.length?(assignments.length===devices.length?'Pełny plan':'Plan niepełny — sprawdź brakujące cykle'):'Dodaj cykle urządzeń',devices,schedule:{...summary,cheapestFoundCost:stats.cheapestFoundCost,surchargeLimit:objective==='cost'?PLAN_COST_TOLERANCE:0,scenarioCosts:costs,devices:assignments.length,requested:devices.length,startsAt:assignments.length?Math.min(...assignments.map(a=>a.start)):null,finishesAt:assignments.length?Math.max(...assignments.map(a=>a.start+a.curve.duration)):null,method:'Różne kolejności, trzy punkty startowe i dwa przejścia poprawek; bez gwarancji globalnego minimum.',evaluated:stats.evaluated,distinct:stats.distinct},timeline:ctx.quarterRows.filter(r=>r.end>range.earliest&&r.start<range.latest).map(r=>{let deviceKWh=0;for(let at=r.start;at<r.end;at+=STEP)deviceKWh+=slots.get(at)||0;return {...r,deviceKWh,netWithDevicesKWh:r.netKWh===null?null:r.netKWh+deviceKWh};}),load:ctx.load.summary,prices:ctx.prices,errors:ctx.errors,warnings:ctx.warnings};
 }
-export function planUnified(f,samples,c,input,optimizer,load,live,states,model,library,now=Date.now(),activity=null,rankedOnly=false){
+export function planUnified(f,samples,c,input,optimizer,load,live,states,model,library,now=Date.now(),activity=null){
  input=validateUnified(input,c,library,optimizer);const {settings,range}=expandUnified(input,c,library,optimizer,now),ctx=buildContext(f,samples,c,settings,load,live,states,model,now);
  applyRunningAppliances(ctx,activity);
  for(const device of settings.devices){const running=activity?.devices.find(d=>d.powerEntity===device.powerEntity);if(running&&running.status!=='idle')device.earliest=Math.max(device.earliest??now,running.blockedUntil);}
  const prepared=settings.devices.map(device=>({device:{...device,_resource:device.powerEntity||input.entries.find(e=>e.id===device.id.slice(0,device.id.lastIndexOf('_')))?.id||device.id},curve:deviceCurve(device,library)}));
  if(settings.load.mode==='history')for(const entity of settings.load.excludeEntities)if(!prepared.some(p=>p.device.powerEntity===entity))ctx.warnings.push('Od bazy odjęto '+entity+', ale ten sprzęt nie ma cyklu we wspólnym planie. Jego niezaplanowana praca nie jest uwzględniona.');
- const analyses={};for(const objective of ['pv','cost']){const found=search(ctx,prepared,objective);analyses[objective]=(rankedOnly?found.bestPlans:found.plans).map(({plan,reason},i)=>({...materialize(ctx,prepared,plan,objective,found,range),id:objective+'_'+i,alternativeReason:reason}));}
+ const analyses={};for(const objective of ['pv','cost']){const found=search(ctx,prepared,objective);analyses[objective]=found.plans.map(({plan,reason},i)=>({...materialize(ctx,prepared,plan,objective,found,range),id:objective+'_'+i,alternativeReason:reason}));}
  return {settings:input,expandedSettings:settings,calculatedAt:now,range,analyses,activity};
 }

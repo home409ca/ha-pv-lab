@@ -1,3 +1,7 @@
+# 0.8.11
+
+Karta HA i PV Lab używają tej samej listy różnorodnych harmonogramów i wspólnego wyniku obliczeń przy tych samych ustawieniach. Karta pokazuje pierwsze trzy plany, aplikacja dalsze alternatywy. Usunięto odmienny ranking i dodatkowy bufor startu karty. Wybór cykli przechodzi 0–1–2–3–0; aktywne urządzenie jest zielone, liczba ma mały zapis bez plakietki. Zatwierdzanie jest w nagłówku, godziny przy nazwach cykli, szczegóły pod przyciskiem ?. Dane i ustawienia zachowane.
+
 # 0.8.10
 
 Planowanie zużycia: przyciski liczby cykli 0–3, jedna główna rekomendacja według szacowanego kosztu z PV i bilansowaniem. Różne propozycje są uporządkowane według kryterium; do 5 gr dopłaty preferowany jest zapas PV, potem niższy koszt wariantu z mniej korzystną pogodą. Kolumna Koszt przy innej pogodzie pozostaje z objaśnieniem. Rozwinięcie do 10 jest dostępne także w porównaniu PV. Karta HA ma dwa dni do zaznaczenia, liczniki urządzeń i krótkie propozycje bez wyboru celu. Historia i ustawienia zachowane.

@@ -1,5 +1,4 @@
 import {randomUUID} from 'node:crypto';
-import {planRange} from './unified-planner.mjs';
 import {parseLocalInput} from '../public/presentation.js';
 const IDS=['pralka','zmywarka'];
 export const emptyDashboardPlan=()=>({version:1,id:null,createdAt:null,expiresAt:null,request:null,proposals:[],approvedId:null,approvedAt:null,cancelledAt:null,cancelReason:null});
@@ -10,8 +9,6 @@ export function dashboardInput(raw,settings,c,now=Date.now()){
  else{input.earliest=null;input.latest=null;}
  input.entries.forEach(e=>e.count=0);
  for(const id of IDS){if(!raw.counts[id])continue;const appliance=c.appliances.find(a=>a.id===id);const entry=input.entries.find(e=>e.deviceId===id)||input.entries.find(e=>appliance?.powerEntity&&e.powerEntity===appliance.powerEntity);if(!entry)throw new Error('Najpierw skonfiguruj profil '+id+' w Planowaniu zużycia.');entry.count=raw.counts[id];}
- // Leave time to explicitly choose and approve; never publish an immediate start in the past.
- const range=planRange(input,c,now);input.preset='custom';input.earliest=Math.max(range.earliest,now+120000);input.latest=range.latest;
  return input;
 }
 export function dashboardProposals(result,request,c,now=Date.now()){
