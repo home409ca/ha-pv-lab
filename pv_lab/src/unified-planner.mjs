@@ -66,7 +66,7 @@ function metrics(ctx,assignments){
 function search(ctx,prepared,objective,comparisons=[]){
  const cmp=(a,b)=>rounded(a[objective==='pv'?'additionalImportKWh':'cost'])-rounded(b[objective==='pv'?'additionalImportKWh':'cost'])||(objective==='cost'||a.additionalImportKWh<1e-8&&b.additionalImportKWh<1e-8?rounded(b.surplusKWh)-rounded(a.surplusKWh):0)||rounded(a.additionalImportKWh)-rounded(b.additionalImportKWh)||rounded((a.pessimisticCost??a.cost)) - rounded((b.pessimisticCost??b.cost))||(objective==='pv'?rounded(a.physicalImportKWh)-rounded(b.physicalImportKWh):0)||a.start-b.start;
  const margin=(item,option,reserved)=>{const used=new Map(reserved.groups);item.curve.wh.forEach((wh,i)=>{const id=ctx.slots.get(option.start+i*STEP).group;used.set(id,(used.get(id)||0)+wh/1000);});return [...used].reduce((sum,[id,kWh])=>sum+Math.max(0,-ctx.groups.get(id).net[0]-kWh),0);};
- const rank=(item,assigned)=>{const reserved=reservations(ctx,assigned);return rankDevice(ctx,item.device,item.curve,reserved).map(r=>({...r,surplusKWh:margin(item,r,reserved)})).sort(cmp);};
+ const rank=(item,assigned)=>{ctx.unifiedRanks??=new Map();const key=item.device.id+'|'+assigned.map(a=>a.device.id+':'+a.start).sort().join(','),cached=ctx.unifiedRanks.get(key);if(cached)return [...cached].sort(cmp);const reserved=reservations(ctx,assigned),rows=rankDevice(ctx,item.device,item.curve,reserved).map(r=>({...r,surplusKWh:margin(item,r,reserved)}));if(ctx.unifiedRanks.size<32)ctx.unifiedRanks.set(key,rows);return [...rows].sort(cmp);};
  const evaluatedPlans=new WeakMap(),evaluate=p=>{if(!evaluatedPlans.has(p))evaluatedPlans.set(p,metrics(ctx,p));return evaluatedPlans.get(p);};
  const compare=(a,b)=>{if(a.length!==b.length)return b.length-a.length;return cmp({...evaluate(a),start:Math.max(0,...a.map(a=>a.start+a.curve.duration))},{...evaluate(b),start:Math.max(0,...b.map(a=>a.start+a.curve.duration))});};
  const base=[...prepared].sort((a,b)=>a.device.deadline-b.device.deadline||b.curve.duration-a.curve.duration||a.device.id.localeCompare(b.device.id));
@@ -74,7 +74,8 @@ function search(ctx,prepared,objective,comparisons=[]){
  for(let i=1;i<Math.min(base.length,5);i++)orders.push([...base.slice(i),...base.slice(0,i)]);
  const found=new Map();let evaluated=0;const remember=plan=>{const copy=plan.map(a=>({...a})),signature=copy.map(a=>JSON.stringify([a.device._resource,a.curve.wh,a.start])).sort().join('|');if(!found.has(signature))found.set(signature,copy);};
  for(const row of comparisons)if(row.plan.length===prepared.length&&prepared.length)remember(row.plan);
- for(const order of orders)for(const seed of [0,1,2]){
+ const uniqueOrders=[...new Map(orders.map(order=>[order.map(a=>a.device.id).join('|'),order])).values()];
+ for(const order of prepared.length===1?[]:uniqueOrders)for(const seed of [0,1,2]){
   const assigned=[];
   for(const item of order){const choices=rank(item,assigned);evaluated+=choices.length;const best=choices[assigned.length===0?Math.min(seed,choices.length-1):0];if(best)assigned.push({...item,start:best.start});}
   remember(assigned);
@@ -84,7 +85,7 @@ function search(ctx,prepared,objective,comparisons=[]){
  // A single appliance is cheap to scan exhaustively: keep every legal 15-minute start.
  if(prepared.length===1){const item=prepared[0],choices=rank(item,[]);evaluated+=choices.length;for(const option of choices)remember([{...item,start:option.start}]);}
  // Two bounded timing preferences add convenient alternatives without enumerating combinations.
- for(const order of [base,[...base].reverse()])for(const timing of ['early','late']){const assigned=[];for(const item of order){const choices=rank(item,assigned);evaluated+=choices.length;choices.sort((a,b)=>timing==='early'?a.start-b.start:b.start-a.start);if(choices[0])assigned.push({...item,start:choices[0].start});}remember(assigned);}
+ for(const order of prepared.length===1?[]:[base,[...base].reverse()])for(const timing of ['early','late']){const assigned=[];for(const item of order){const choices=rank(item,assigned);evaluated+=choices.length;choices.sort((a,b)=>timing==='early'?a.start-b.start:b.start-a.start);if(choices[0])assigned.push({...item,start:choices[0].start});}remember(assigned);}
  const pool=[...found.values()],complete=Math.max(0,...pool.map(p=>p.length)),cheapest=Math.min(...pool.filter(p=>p.length===complete).map(p=>evaluate(p).cost));
  // Anchor the tolerance to one cheapest complete plan; pairwise tolerances are not transitive.
  const finalCompare=objective==='cost'?(a,b)=>b.length-a.length||compareCostPlans({...evaluate(a),start:Math.max(0,...a.map(x=>x.start+x.curve.duration))},{...evaluate(b),start:Math.max(0,...b.map(x=>x.start+x.curve.duration))},cheapest):compare;

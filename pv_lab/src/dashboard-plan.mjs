@@ -1,6 +1,7 @@
+import {devicePriority} from '../public/device-order.js';
 import {randomUUID} from 'node:crypto';
 import {parseLocalInput} from '../public/presentation.js';
-const IDS=['pralka','zmywarka'];
+const IDS=['zmywarka','pralka'];
 export const emptyDashboardPlan=()=>({version:1,id:null,createdAt:null,expiresAt:null,request:null,proposals:[],approvedId:null,approvedAt:null,cancelledAt:null,cancelReason:null});
 export function dashboardInput(raw,settings,c,now=Date.now()){
  if(!raw||!IDS.every(id=>Number.isInteger(raw.counts?.[id])&&raw.counts[id]>=0&&raw.counts[id]<=8)||Object.values(raw.counts).reduce((a,b)=>a+b,0)<1||Object.values(raw.counts).reduce((a,b)=>a+b,0)>8||Object.keys(raw.counts).some(k=>!IDS.includes(k))||!['pv','cost'].includes(raw.goal)||!['today','tomorrow','both','custom'].includes(raw.range))throw new Error('Wybierz 1–8 cykli, zakres dat i cel analizy.');
@@ -13,7 +14,7 @@ export function dashboardInput(raw,settings,c,now=Date.now()){
 }
 export function dashboardProposals(result,request,c,now=Date.now()){
  const rows=result.dashboardAnalyses?.[request.goal]||result.analyses[request.goal];
- const proposals=rows.slice(0,3).map((r,i)=>({id:'p'+i,sourcePlanId:r.id,complete:r.schedule.devices===r.schedule.requested&&r.schedule.requested>0,status:r.status,start:r.schedule.startsAt,end:r.schedule.finishesAt,importKWh:r.schedule.additionalImportKWh,cost:r.schedule.cost,surplusKWh:r.schedule.surplusKWh,optimisticCost:r.schedule.optimisticCost,pessimisticCost:r.schedule.pessimisticCost,cycles:r.devices.filter(d=>d.scheduled).sort((a,b)=>a.scheduled.start-b.scheduled.start).map(d=>({id:d.id,deviceId:c.appliances.find(a=>a.powerEntity===d.powerEntity)?.id||d.id.slice(0,d.id.lastIndexOf('_')),name:d.name,powerEntity:d.powerEntity,start:d.scheduled.start,end:d.scheduled.end,energyKWh:d.energyKWh,profileSource:d.curve?.source||null})),missing:r.devices.filter(d=>!d.scheduled).map(d=>({name:d.name,reason:d.status}))}));
+ const proposals=rows.slice(0,3).map((r,i)=>({id:'p'+i,sourcePlanId:r.id,complete:r.schedule.devices===r.schedule.requested&&r.schedule.requested>0,status:r.status,start:r.schedule.startsAt,end:r.schedule.finishesAt,importKWh:r.schedule.additionalImportKWh,cost:r.schedule.cost,surplusKWh:r.schedule.surplusKWh,optimisticCost:r.schedule.optimisticCost,pessimisticCost:r.schedule.pessimisticCost,cycles:r.devices.filter(d=>d.scheduled).sort((a,b)=>a.scheduled.start-b.scheduled.start||devicePriority(a)-devicePriority(b)).map(d=>({id:d.id,deviceId:c.appliances.find(a=>a.powerEntity===d.powerEntity)?.id||d.id.slice(0,d.id.lastIndexOf('_')),name:d.name,powerEntity:d.powerEntity,start:d.scheduled.start,end:d.scheduled.end,energyKWh:d.energyKWh,profileSource:d.curve?.source||null})),missing:r.devices.filter(d=>!d.scheduled).map(d=>({name:d.name,reason:d.status}))}));
  return {...emptyDashboardPlan(),selection:result.dashboardSelection?.[request.goal]||null,id:randomUUID(),createdAt:now,expiresAt:Math.min(now+300000,...rows.map(r=>r.validUntil),...proposals.map(p=>p.start||now+300000)),timezone:c.timezone,request:structuredClone(request),proposals};
 }
 export function dashboardPublic(state,now=Date.now()){

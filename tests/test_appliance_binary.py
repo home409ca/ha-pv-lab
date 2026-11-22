@@ -41,7 +41,7 @@ class ApplianceBinaryTests(unittest.IsolatedAsyncioTestCase):
         self.row = {"id": "pralka", "status": "running", "running": True, "readAt": self.now, "validUntil": self.now + 180000, "powerEntity": "sensor.washer", "powerW": 700, "startedAt": self.now - 1200000, "predictedEnd": self.now + 1800000, "blockedUntil": self.now + 1800000, "uncertain": True}
         self.coordinator = types.SimpleNamespace(data={"available": False, "applianceActivity": {"devices": [self.row]}}, last_update_success=True)
         self.entry = types.SimpleNamespace(entry_id="stable-entry")
-        self.entity = self.binary.PVLabApplianceRunning(self.coordinator, self.entry, *self.binary.SPECS[0])
+        self.entity = self.binary.PVLabApplianceRunning(self.coordinator, self.entry, *next(spec for spec in self.binary.SPECS if spec[0] == "pralka"))
 
     async def asyncTearDown(self):
         self.modules.stop()
@@ -53,7 +53,7 @@ class ApplianceBinaryTests(unittest.IsolatedAsyncioTestCase):
         entities = []
         await self.binary.async_setup_entry(types.SimpleNamespace(data={"pv_lab": {self.entry.entry_id: self.coordinator}}), self.entry, lambda values: entities.extend(values))
         self.assertEqual(len(entities), 3)
-        self.assertEqual([e._attr_icon for e in entities[:2]], ["mdi:washing-machine", "mdi:dishwasher"])
+        self.assertEqual([e._attr_icon for e in entities[:2]], ["mdi:dishwasher", "mdi:washing-machine"])
         self.assertEqual(self.entity._attr_device_class, "running")
         self.assertEqual(self.entity.suggested_object_id, "pv_lab_pralka_pracuje")
         self.assertIn("stable-entry", self.entity._attr_unique_id)

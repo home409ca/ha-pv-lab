@@ -1,3 +1,4 @@
+import {orderedDevices} from '../public/device-order.js';
 import {SLOT,DAY,localParts,sunPosition} from './time.mjs';
 import {selectProfile,emptyProfiles} from './appliances.mjs';
 import {dayBounds} from '../public/presentation.js';
@@ -38,7 +39,7 @@ export function planDevice(f,samples,c,plan=defaultPlan,now=Date.now(),library=e
   const [periodStart,periodEnd]=periodBounds(now,p.mode,c),measured=measuredBalance(samples,periodStart,now,{...c,planner:p}),pastPV=pvEnergy(map,periodStart,now,c),futurePV=pvEnergy(map,now,periodEnd,c);
   const estimatedPast=pastPV===null?null:p.baseW*(now-periodStart)/3600000-pastPV,pastNet=measured?.netWh??estimatedPast;
   const balance={start:periodStart,end:periodEnd,source:measured?'measured':'estimated',importKWh:measured?.importWh===null||!measured?null:measured.importWh/1000,exportKWh:measured?.exportWh===null||!measured?null:measured.exportWh/1000,netKWh:pastNet===null?null:-pastNet/1000,forecastNetKWh:pastNet===null||futurePV===null?null:-(pastNet+p.baseW*(periodEnd-now)/3600000-futurePV)/1000,afterDeviceKWh:null,secondsLeft:Math.max(0,(periodEnd-now)/1000)};
-  const result={settings:p,profile:profile?{id:profile.id,name:profile.name,variant:profile.variant,stepMinutes:5,wh:profile.wh}:null,profiles:library.profiles.map(p=>({id:p.id,name:p.name,variants:Object.keys(p.variants)})),calculatedAt:now,status:'brak kompletnej prognozy',best:null,alternatives:[],balance,assumption:(profile?'Przebieg urządzenia z wybranego profilu 5-minutowego i stała rezerwa dla domu.':'Równomierny pobór urządzenia i stała rezerwa dla domu.')+' Pokrycie po bilansowaniu nie oznacza równoczesnego zasilania wyłącznie przez PV.'};
+  const result={settings:p,profile:profile?{id:profile.id,name:profile.name,variant:profile.variant,stepMinutes:5,wh:profile.wh}:null,profiles:orderedDevices(library.profiles).map(p=>({id:p.id,name:p.name,variants:Object.keys(p.variants)})),calculatedAt:now,status:'brak kompletnej prognozy',best:null,alternatives:[],balance,assumption:(profile?'Przebieg urządzenia z wybranego profilu 5-minutowego i stała rezerwa dla domu.':'Równomierny pobór urządzenia i stała rezerwa dla domu.')+' Pokrycie po bilansowaniu nie oznacza równoczesnego zasilania wyłącznie przez PV.'};
   if(first+duration>last){result.status='brak okna w zadanym zakresie';return result;}
   const options=[];
   for(let start=first;start+duration<=last;start+=SLOT){const end=start+duration;let incremental=0,physical=0,ok=true,estimated=false;

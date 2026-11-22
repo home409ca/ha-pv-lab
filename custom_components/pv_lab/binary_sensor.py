@@ -5,8 +5,8 @@ from .const import DOMAIN, VERSION
 from .contract import read_appliance_running, read_dashboard_plan
 
 SPECS = (
-    ("pralka", "Pralka pracuje", "mdi:washing-machine"),
     ("zmywarka", "Zmywarka pracuje", "mdi:dishwasher"),
+    ("pralka", "Pralka pracuje", "mdi:washing-machine"),
 )
 
 

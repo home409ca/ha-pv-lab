@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.8.15 -->
+<!-- pv-lab-manual-version: 0.8.16 -->
 
-**Wersja aplikacji i instrukcji: 0.8.15.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.8.16.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -220,7 +220,7 @@ Atrybuty podają encję i moc źródłową, status, wykryty start (cycle_started
 
 Karta jest częścią tej samej integracji HACS PV Lab, nie wymaga osobnego repozytorium ani dodatkowej instalacji JavaScript. Po aktualizacji integracji i restarcie HA odśwież stronę lub aplikację mobilną. W edycji wybranego dashboardu dodaj kartę **Zaplanuj uruchomienie**. Można też użyć ręcznej konfiguracji: `type: custom:pv-lab-plan-card`. Integracja rejestruje zasób /pv_lab_frontend/pv-lab-plan-card.js z numerem wersji. Nie nadpisujemy istniejących dashboardów. Przy jednej integracji instalacja wybiera się sama; przy kilku wybierz ją z listy.
 
-Naciśnięcia Pralka lub Zmywarka zmieniają liczbę cykli kolejno 0 → 1 → 2 → 3 → 0. Nie ma osobnego przycisku Wyzeruj. Przy zerze nie pokazujemy liczby; aktywne urządzenie ma zielone tło i ikonę oraz małą cyfrę bez kolorowego kółka. Karta zaczyna od 0; wcześniejszy zapis może zostać odczytany. Nie obcinamy odczytanego starego planu powyżej 3; po kliknięciu nowy wybór mieści się w limicie 3. Dziś i Jutro zaznaczasz niezależnie: oba oznaczają zakres od teraz do końca jutra. Bez dnia lub bez cykli nie można przeliczyć. Własne daty i ograniczenia edytuje się w pełnym PV Lab, a nie na krótkiej karcie.
+Naciśnięcia Pralka lub Zmywarka zmieniają liczbę cykli kolejno 0 → 1 → 2 → 3 → 0. Nie ma osobnego przycisku Wyzeruj. Przy zerze nie pokazujemy liczby; aktywne urządzenie ma zielone tło i ikonę oraz małą cyfrę bez kolorowego kółka. Karta domyślnie wybiera jeden cykl zmywarki; zakres dziś/jutro wynika z dostępnego udziału PV. Zatwierdzony plan zachowuje pierwszeństwo. Nie obcinamy odczytanego starego planu powyżej 3; po kliknięciu nowy wybór mieści się w limicie 3. Dziś i Jutro zaznaczasz niezależnie: oba oznaczają zakres od teraz do końca jutra. Bez dnia lub bez cykli nie można przeliczyć. Własne daty i ograniczenia edytuje się w pełnym PV Lab, a nie na krótkiej karcie.
 
 Karta używa głównego celu kosztowego: szacowany koszt planu z uwzględnieniem PV i bilansowania, w grupie do 5 gr dopłaty większy zapas PV, potem niższy koszt przy gorszej pogodzie. Nie ma selektora celu. Profile i ograniczenia urządzeń pochodzą z Planowania zużycia; przy kilku programach jednego sprzętu wybierany jest pierwszy pasujący wiersz. Karta nie nadpisuje zapisanej listy cykli ani cen. Bieżąca zajętość jest uwzględniana tak samo jak w pełnym module.
 
@@ -759,3 +759,20 @@ Moduł znajduje się w menu „Analiza AI”. Domyślnie jest wyłączony. W dem
 Odpowiedzi AI są opisem i hipotezami, nie dowodem przyczyny ani gwarancją oszczędności. Rzeczywistą poprawę prognozy należy nadal potwierdzać zapisanymi prognozami i późniejszymi pomiarami.
 
 Od wersji 0.8.15 przyciski Dziś/Jutro mają neutralne tło; zaznaczony dzień wyróżnia delikatne niebieskie podświetlenie i niebieskie obramowanie. Zaplanuj zachowuje pełne wypełnienie kolorem akcji motywu Home Assistant. Dzięki temu wybór zakresu jest wizualnie oddzielony od uruchomienia obliczeń. Dotyczy obu układów oraz jasnych i ciemnych motywów. Nie zmienia to wybranych dni, rankingu, obliczeń ani przechowywanych danych.
+
+
+## Domyślny wybór i kolejność urządzeń — 0.8.16
+
+Zmywarka jest pierwsza, pralka druga, a pozostałe urządzenia dalej, z zachowaniem ich wzajemnej kolejności. Dotyczy kart urządzeń, profili, konfiguracji oraz karty dashboardu. Harmonogram wykonania nadal pokazuje czas pracy; przy jednoczesnym starcie pierwsza jest zmywarka. Kolejność wyświetlania nie jest priorytetem obliczeń i nie zmienia blokady kolejnych cykli tego samego sprzętu.
+
+Po świeżym otwarciu karty lub aplikacji domyślny wybór to zmywarka ×1 i pralka ×0. System sprawdza dopuszczalne starty dzisiaj, korzystając z tego samego profilu programu, ograniczeń, bazy domu, stanu pracy i bilansowania co planer. Nawet częściowy udział PV lub dostępnego bilansu pozostawia dziś. Gdy wszystkie poprawne dzisiejsze okna wymagają zakupu całej energii, automatycznie wybiera jutro. Tak samo, jeśli cykl nie zmieści się już przed końcem doby. Nie wybieramy jutra tylko dlatego, że jutro jest taniej. Przy brakujących dziennych prognozach zostawiamy dziś i podajemy powód — brak nie oznacza zerowej produkcji. Jutro to tylko proponowany zakres, nie obietnica dostępności PV ani kompletnej prognozy.
+
+Profile, warianty, encje, terminy zakończenia oraz zapisane ustawienia nie są kasowane. Domyślny wybór jest propozycją formularza, nie automatycznym zapisem ustawień ani zatwierdzeniem harmonogramu. Zmienione liczby cykli i dni pozostają w bieżącej sesji, a po zapisaniu formularza obowiązują zapisane wybory. Na karcie zatwierdzony plan ma pierwszeństwo i nie jest zastępowany domyślną zmywarką. Wybór możesz dowolnie zmienić przed przeliczeniem. Rozpoczęcie nowej sesji ponownie proponuje jeden cykl zmywarki. Zasada dziś/jutro jest obliczana na serwerze raz i udostępniana obu widokom.
+
+## Szybkość planowania — 0.8.16
+
+Przygotowane statystyki wieloletniego zużycia domu są buforowane w pamięci zamiast ponownie przeglądać wszystkie godziny przy każdym przeliczeniu. Bufor dotyczy wyłącznie zagregowanych statystyk; świeży pomiar domu, wiek danych i bieżący czas nadal są uwzględniane na nowo. Import, zmiana danych lub źródeł, strefy oraz nadejście przyszłej próbki unieważniają bufor. Restart przygotowuje go ponownie. Historia na dysku i jej retencja nie zmieniają się.
+
+W obrębie jednego obliczenia ponownie wykorzystujemy oceny tych samych startów przy identycznych rezerwacjach, najwyżej 32 zestawy. Identyczne kolejności urządzeń są sprawdzane raz. Dla jednego cyklu nadal sprawdzamy wszystkie dopuszczalne starty co 15 minut, bez powtarzania wielourządzeniowych przejść. Pozostają dwie analizy, scenariusze pogodowe, porównania taniej taryfy/szczytu PV i dotychczasowa liczba alternatyw. Nie zmniejszono dokładności ani zakresu poszukiwania.
+
+Karta może wykorzystać wspólny odczyt HA młodszy niż 10 sekund. Starszy odczyt jest pobierany ponownie; krótka historia urządzeń jest odświeżana według dotychczasowych warunków świeżości, zamiast wymuszania jej przy każdym kliknięciu. Ręczne „Odczytaj dane i przelicz” zachowuje wymuszenie odczytu. Zmiana bieżącego pomiaru lub stanu urządzenia unieważnia wynik planu. Pierwsze obliczenie po starcie/importowaniu dużej historii może trwać dłużej; problem z HA lub siecią nadal może wydłużyć oczekiwanie.

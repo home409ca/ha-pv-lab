@@ -1,3 +1,7 @@
+# 0.8.16
+
+Zmywarka jest pierwszym urządzeniem w aplikacji i na karcie. Domyślny wybór to jeden cykl dziś; jutro wybieramy, gdy dzisiejsze poprawne okna wymagają zakupu całej energii lub cykl już się nie zmieści. Brak prognozy nie udaje zera. Profile i ograniczenia pozostają zachowane. Przyspieszono przygotowanie historii domu i usunięto powtarzane oceny tych samych startów; bez ograniczania liczby alternatyw ani zmiany kosztów. Karta wykorzystuje świeży odczyt HA zamiast wymuszać ponowny import historii urządzeń. Moduł Gemini pozostaje bez zmian.
+
 # 0.8.15
 
 Karta HA rozróżnia wybór dnia od działania: Dziś/Jutro mają neutralne tło, po wybraniu delikatne niebieskie podświetlenie i obramowanie. Zaplanuj zachowuje pełny kolor akcji z motywu HA. Zmiana obejmuje układ kompaktowy i pełny; obliczenia, ustawienia i moduł Gemini pozostają bez zmian.

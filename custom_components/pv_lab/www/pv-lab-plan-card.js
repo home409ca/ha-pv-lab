@@ -18,7 +18,7 @@ export function cardOptions(config={}){
  return q;
 }
 export class PVLabPlanCard extends HTMLElement {
- constructor(){super();this.attachShadow({mode:'open'});this._request={counts:{pralka:0,zmywarka:0},range:'today',goal:'cost',earliest:'',latest:''};this._state=null;this._busy=false;this._error='';this._entry='';this._ready=false;this._entries=[];this._dirty=false;this._hasRequest=false;this._sequence=0;this._showAlternatives=false;}
+ constructor(){super();this.attachShadow({mode:'open'});this._request={counts:{zmywarka:1,pralka:0},range:'today',goal:'cost',earliest:'',latest:''};this._state=null;this._busy=false;this._error='';this._entry='';this._ready=false;this._entries=[];this._dirty=false;this._hasRequest=false;this._usingDefaults=true;this._sequence=0;this._showAlternatives=false;}
  setConfig(config){this._config=cardOptions(config);if(config.entry_id)this._entry=config.entry_id;this.render();}
  static getStubConfig(){return {title:'Zaplanuj uruchomienie'};}
  getCardSize(){return 7;}
@@ -28,7 +28,11 @@ export class PVLabPlanCard extends HTMLElement {
  disconnectedCallback(){clearInterval(this._timer);}
  async initialize(){try{this._entries=await this._hass.callWS({type:'pv_lab/planner_entries'});if(!this._entry&&this._entries.length===1)this._entry=this._entries[0].entry_id;if(this._entry)await this.status();else this.render();}catch(e){this._error=e.message||String(e);this.render();}}
  async call(action,extra={}){return this._hass.callWS({type:'pv_lab/device_schedule',entry_id:this._entry,action,...extra});}
- async status(){const sequence=this._sequence;try{const result=await this.call('status');if(sequence!==this._sequence||this._busy)return;this._state=result;this._error='';if(!this._dirty&&this._state.request){this._request={...this._state.request,counts:{...this._state.request.counts},earliest:this._state.request.earliest||'',latest:this._state.request.latest||''};this._hasRequest=true;if(this._request.goal!=='cost'||this._request.range==='custom'){this._dirty=true;this._request.goal='cost';if(this._request.range==='custom')this._request.range='today';}}this.render();}catch(e){if(sequence!==this._sequence||this._busy)return;this._error=e.message||String(e);this.render();}}
+ async status(){const sequence=this._sequence;try{const result=await this.call('status');if(sequence!==this._sequence||this._busy)return;this._state=result;this._error='';
+  if(!this._dirty&&this._usingDefaults&&!result.approved&&result.defaults){this._request={...result.defaults,counts:{...result.defaults.counts},earliest:'',latest:''};this._state={...result,proposals:[],selection:null};}
+  else if(!this._dirty&&result.request){this._request={...result.request,counts:{...result.request.counts},earliest:result.request.earliest||'',latest:result.request.latest||''};this._hasRequest=true;this._usingDefaults=false;if(this._request.goal!=='cost'||this._request.range==='custom'){this._dirty=true;this._request.goal='cost';if(this._request.range==='custom')this._request.range='today';}}
+  this.render();}catch(e){if(sequence!==this._sequence||this._busy)return;this._error=e.message||String(e);this.render();}}
+
  cycleTime(start,end){const zone=this._state?.timezone||this._hass?.config?.time_zone||'Europe/Warsaw',time=new Intl.DateTimeFormat('pl-PL',{timeZone:zone,hour:'2-digit',minute:'2-digit'}),day=new Intl.DateTimeFormat('pl-PL',{timeZone:zone,day:'2-digit',month:'2-digit'});return day.format(start)===day.format(end)?day.format(start)+' · '+time.format(start)+'–'+time.format(end):this.fmt(start)+'–'+this.fmt(end);}
  fmt(at){if(!Number.isFinite(at))return '—';return new Intl.DateTimeFormat('pl-PL',{timeZone:this._state?.timezone||this._hass?.config?.time_zone||'Europe/Warsaw',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(at);}
  money(n){return Number.isFinite(n)?n.toLocaleString('pl-PL',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
@@ -37,7 +41,7 @@ export class PVLabPlanCard extends HTMLElement {
   if(this._busy&&action!=='cancel')return;
   if(!this._entry){this._error='Wybierz integrację PV Lab.';this.render();return;}
   const sequence=++this._sequence;this._busy=true;this._error='';this.render();
-  try{const result=await this.call(action,extra);if(sequence===this._sequence){this._state=result;if(action==='preview'){this._dirty=false;this._hasRequest=true;this._showAlternatives=false;this._expanded=null;}}}catch(e){if(sequence===this._sequence)this._error=e.message||String(e);}finally{if(sequence===this._sequence){this._busy=false;this.render();}}
+  try{const result=await this.call(action,extra);if(sequence===this._sequence){this._state=result;if(action==='preview'){this._usingDefaults=false;this._dirty=false;this._hasRequest=true;this._showAlternatives=false;this._expanded=null;}}}catch(e){if(sequence===this._sequence)this._error=e.message||String(e);}finally{if(sequence===this._sequence){this._busy=false;this.render();}}
  }
  render(){
   const options=this._config||cardOptions(),compact=options.layout==='compact',q=this._request,s=this._state,e=escapeHTML,disabled=this._busy?'disabled':'',ranges={today:'Dziś',tomorrow:'Jutro',both:'Dziś i jutro'};
@@ -50,8 +54,8 @@ export class PVLabPlanCard extends HTMLElement {
   .compact{padding:12px}.compact h2{margin-bottom:6px}.compact .grid{margin:6px 0;gap:8px}.controls-row{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:6px;margin:6px 0}.controls-row button{min-height:32px;padding:5px;font-size:13px}.compact #changed:empty{display:none}.compact #changed{font-size:11px;margin:4px 0}.compact article{margin:7px 0 0;padding:10px}.compact .hint{font-size:11px;margin:5px 0}.compact .plan-heading .info{min-width:27px;width:27px;min-height:30px;padding:3px}.compact .plan-heading .approve{min-height:30px;padding:4px 7px;font-size:11px}.compact .alternative-toggle{width:auto;display:block;margin:0 0 0 auto;min-height:28px;padding:2px 4px;font-size:11px}.compact .cycle{padding:6px 0}
   button[data-range]{background:var(--input-fill-color,var(--card-background-color,#fff));color:var(--primary-text-color,#172635);border:1px solid var(--divider-color,#93a4b0)}button[data-range][aria-pressed=true]{background:color-mix(in srgb,#509bea 18%,var(--card-background-color,#fff));color:var(--primary-text-color,#172635);border:2px solid #679dd1}
   </style><ha-card class="${compact?'compact':'full'}">${options.show_header&&options.title.trim()?`<h2>${e(options.title)}</h2>`:''}${compact?'':'<p class="hint">Wybierz urządzenia i dzień.</p>'}${entry}
-  <div class="grid">${[['pralka','Pralka','mdi:washing-machine'],['zmywarka','Zmywarka','mdi:dishwasher']].map(([id,name,icon])=>`<button data-increment="${id}" aria-pressed="${q.counts[id]>0}" aria-label="${name}: ${q.counts[id]} cykli. Naciśnij, aby zmienić" class="appliance"><ha-icon icon="${icon}"></ha-icon><span>${name}</span>${q.counts[id]>0?`<small class="cycle-count">${q.counts[id]}</small>`:''}</button>`).join('')}</div>
-  ${compact?`<div class="controls-row">${dayButtons}${planButton}</div>`:`<div class="actions">${dayButtons}</div><p class="summary">${ranges[q.range]||'Zaznacz dzień'} · pralka ×${q.counts.pralka}, zmywarka ×${q.counts.zmywarka}</p>${planButton}`}
+  <div class="grid">${[['zmywarka','Zmywarka','mdi:dishwasher'],['pralka','Pralka','mdi:washing-machine']].map(([id,name,icon])=>`<button data-increment="${id}" aria-pressed="${q.counts[id]>0}" aria-label="${name}: ${q.counts[id]} cykli. Naciśnij, aby zmienić" class="appliance"><ha-icon icon="${icon}"></ha-icon><span>${name}</span>${q.counts[id]>0?`<small class="cycle-count">${q.counts[id]}</small>`:''}</button>`).join('')}</div>
+  ${compact?`<div class="controls-row">${dayButtons}${planButton}</div>`:`<div class="actions">${dayButtons}</div><p class="summary">${ranges[q.range]||'Zaznacz dzień'} · zmywarka ×${q.counts.zmywarka}, pralka ×${q.counts.pralka}</p>${planButton}`}
   <p id="changed" class="hint">${this._dirty?'Zmieniono wybór — przelicz propozycje.':''}</p>${this._error?`<p class="error" role="alert">${e(this._error)}</p>`:''}
   ${s?.approved?'<button id="cancel" class="cancel">Anuluj zatwierdzony plan</button>':''}${s?.cancelReason?`<p class="hint">${e(s.cancelReason)}</p>`:''}
   ${s?.selection?.mode==='grid'?'<p class="hint">Brak pokrycia z PV lub bilansu. Najtańszy wariant, najwcześniejszy przy tej samej cenie.</p>':s?.selection?.mode==='solar'&&s.selection.omittedGrid?'<p class="hint">Pominięto warianty wymagające zakupu całej energii.</p>':''}
@@ -62,7 +66,7 @@ export class PVLabPlanCard extends HTMLElement {
   root.querySelectorAll('[data-increment]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.increment;q.counts[id]=nextCycleCount(q.counts[id]);this._dirty=true;this.render();}));
 
   root.querySelectorAll('[data-range]').forEach(b=>b.addEventListener('click',()=>{const days=new Set(q.range==='both'?['today','tomorrow']:q.range?[q.range]:[]),v=b.dataset.range;if(days.has(v))days.delete(v);else days.add(v);q.range=days.size===2?'both':[...days][0]||'';this._dirty=true;this.render();}));
-  root.querySelector('#entry')?.addEventListener('change',ev=>{this._entry=ev.target.value;this._state=null;this._hasRequest=false;this._dirty=false;this.status();});
+  root.querySelector('#entry')?.addEventListener('change',ev=>{this._entry=ev.target.value;this._state=null;this._hasRequest=false;this._usingDefaults=true;this._dirty=false;this.status();});
   root.querySelector('#preview')?.addEventListener('click',()=>{const request={...q,goal:'cost',counts:{...q.counts}};if(q.range!=='custom'){delete request.earliest;delete request.latest;}this.action('preview',request);});
   root.querySelector('#alternatives')?.addEventListener('click',()=>{this._showAlternatives=!this._showAlternatives;this.render();});
   root.querySelectorAll('[data-info]').forEach(b=>b.addEventListener('click',()=>{this._expanded=this._expanded===b.dataset.info?null:b.dataset.info;this.render();}));
@@ -72,4 +76,4 @@ export class PVLabPlanCard extends HTMLElement {
 }
 if(!customElements.get('pv-lab-plan-card'))customElements.define('pv-lab-plan-card',PVLabPlanCard);
 window.customCards=window.customCards||[];
-if(!window.customCards.some(c=>c.type==='pv-lab-plan-card'))window.customCards.push({type:'pv-lab-plan-card',name:'Zaplanuj uruchomienie',description:'Pralka i zmywarka: trzy harmonogramy według kosztu z PV i bilansowaniem.',preview:true});
+if(!window.customCards.some(c=>c.type==='pv-lab-plan-card'))window.customCards.push({type:'pv-lab-plan-card',name:'Zaplanuj uruchomienie',description:'Zmywarka i pralka: trzy harmonogramy według kosztu z PV i bilansowaniem.',preview:true});
