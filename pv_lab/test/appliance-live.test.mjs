@@ -23,3 +23,25 @@ test('elapsed running energy completes estimated hourly credit exactly once; mea
 test('fresh off switch confirms idle even with unavailable or stale high power; on switch alone does not mean running',async()=>{const x=fixture(),tracker=new ApplianceLive(),a=x.c.appliances[0],states=new Map([[a.switchEntity,{state:'off'}],[a.powerEntity,{state:'999',attributes:{unit_of_measurement:'W'}}]]),ha={request:async()=>[]};await tracker.refresh(ha,states,x.c,x.input,x.library,x.now);assert.equal(tracker.snapshot(x.c,x.input,x.library,x.now).devices[0].running,false);states.set(a.switchEntity,{state:'on'});states.set(a.powerEntity,{state:'unavailable'});await tracker.refresh(ha,states,x.c,x.input,x.library,x.now+M);assert.equal(tracker.snapshot(x.c,x.input,x.library,x.now+M).devices[0].running,null);});
 
 test('tracked idle appliance omitted from new tasks does not produce misleading untracked-load warning',()=>{const x=fixture();x.optimizer.load.mode='history';x.input.entries[0].count=0;x.input.entries[1].count=1;const devices=x.c.appliances.map(a=>({id:a.id,powerEntity:a.powerEntity,status:'idle',running:false,blockedUntil:x.now}));const r=planUnified(x.f,[],x.c,x.input,x.optimizer,emptyLoad(),null,new Map(),{},x.library,x.now,{devices});assert.ok(!r.analyses.cost[0].warnings.some(w=>w.includes('niezaplanowana praca nie jest uwzględniona')));});
+
+
+test('held zero history uses last_changed rather than a recent attribute update and confirms earlier idle immediately',async()=>{
+ const x=fixture(),a=x.c.appliances[0],row={entity_id:a.powerEntity,state:'0',last_updated:new Date(x.now-1000).toISOString(),last_changed:new Date(x.now-2*H).toISOString(),attributes:{unit_of_measurement:'W'}},states=new Map([[a.powerEntity,row]]),tracker=new ApplianceLive();let calls=0;const ha={request:async()=>{calls++;return [[row]];}};
+ await tracker.refresh(ha,states,x.c,x.input,x.library,x.now);let d=tracker.snapshot(x.c,x.input,x.library,x.now).devices.find(d=>d.id===a.id);assert.equal(d.status,'idle');assert.equal(d.idleSince,x.now-2*H);assert.equal(d.blockedUntil,x.now);assert.equal(row.last_updated,new Date(x.now-1000).toISOString());await tracker.refresh(ha,states,x.c,x.input,x.library,x.now+M);assert.equal(calls,1);
+});
+
+test('failed initial history retries after a minute for low unconfirmed power and recovers earlier quiet time',async()=>{
+ const x=fixture(),a=x.c.appliances[0],row={entity_id:a.powerEntity,state:'0',last_updated:new Date(x.now-1000).toISOString(),last_changed:new Date(x.now-H).toISOString(),attributes:{unit_of_measurement:'W'}},states=new Map([[a.powerEntity,row]]),tracker=new ApplianceLive();let calls=0;const ha={request:async()=>{calls++;return calls===1?[]:[[row]];}};
+ await tracker.refresh(ha,states,x.c,x.input,x.library,x.now);assert.equal(tracker.snapshot(x.c,x.input,x.library,x.now).devices[0].status,'observing');await tracker.refresh(ha,states,x.c,x.input,x.library,x.now+30000);assert.equal(calls,1);await tracker.refresh(ha,states,x.c,x.input,x.library,x.now+M);assert.equal(calls,2);assert.equal(tracker.snapshot(x.c,x.input,x.library,x.now+M).devices[0].status,'idle');
+});
+
+test('recent pause, an unavailable gap and nonzero unit changes cannot fabricate earlier idle',async()=>{
+ const x=fixture(),a=x.c.appliances[0],raw=(at,state,changed=at)=>({entity_id:a.powerEntity,state:String(state),last_updated:new Date(at).toISOString(),last_changed:new Date(changed).toISOString(),attributes:{unit_of_measurement:'W'}});
+ for(const [rows,current,expected] of [ [[raw(x.now-H,1000),raw(x.now-5*M,0)],0,'pause'],[[raw(x.now-H,0),raw(x.now-5*M,'unavailable'),raw(x.now-2*M,0)],0,'observing'],[[raw(x.now-1000,2,x.now-H)],2,'observing'] ]){const tracker=new ApplianceLive();await tracker.refresh({request:async()=>[rows]},new Map([[a.powerEntity,raw(x.now,current)]]),x.c,x.input,x.library,x.now);assert.equal(tracker.snapshot(x.c,x.input,x.library,x.now).devices[0].status,expected);}
+});
+
+test('re-reading recent sparse history never restarts the elapsed live quiet interval',async()=>{
+ const x=fixture(),a=x.c.appliances[0],tracker=new ApplianceLive();let now=x.now;const row=()=>({entity_id:a.powerEntity,state:'0',last_updated:new Date(now-1000).toISOString(),attributes:{unit_of_measurement:'W'}}),ha={request:async()=>[[row()]]};
+ for(let i=0;i<=20;i++){now=x.now+i*M;await tracker.refresh(ha,new Map([[a.powerEntity,row()]]),x.c,x.input,x.library,now);}
+ const d=tracker.snapshot(x.c,x.input,x.library,now).devices[0];assert.equal(d.status,'idle');assert.equal(d.idleSince,x.now-1000);
+});

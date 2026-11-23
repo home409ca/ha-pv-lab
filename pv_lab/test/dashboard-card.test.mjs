@@ -65,3 +65,9 @@ test('elapsed cheap and peak references disappear, active windows and approved e
  assert.deepEqual(visibleCardPlans(state,3,now).map(p=>p.id),['cheap']);assert.equal(visibleCardPlans(state,3,13.5*H).length,1);assert.equal(visibleCardPlans(state,3,15*H).length,0);
  state.approved=true;state.approvedId='peak';assert.equal(visibleCardPlans(state,3,now)[0].id,'peak');
 });
+
+
+test('unavailable reference details do not present fabricated zero cost, zero energy or device chart',async()=>{
+ const {PVLabPlanCard}=await import('../../custom_components/pv_lab/www/pv-lab-plan-card.js'),now=Date.now(),p={id:'r',kind:'cheap',complete:false,referenceStart:now+900000,windowEnd:now+3600000,status:'Trwa potwierdzanie bezczynności do 13:19:20.',cost:null,importKWh:null,cycles:[],missing:[{name:'Zmywarka',reason:'Trwa potwierdzanie bezczynności do 13:19:20.'}]},card=Object.create(PVLabPlanCard.prototype),root={innerHTML:'',querySelectorAll:()=>[],querySelector:()=>null};
+ Object.assign(card,{_config:cardOptions(),_entry:'test',_entries:[],_request:{counts:{zmywarka:1,pralka:0},range:'today'},_state:{proposals:[],references:[p],createdAt:now,expiresAt:now+300000},_expanded:'r',_hasRequest:true,shadowRoot:root,_mode:'fixed'});card.render();assert.match(root.innerHTML,/Nie obliczono kosztu/);assert.ok(!root.innerHTML.includes('Zakup energii:'));assert.ok(!root.innerHTML.includes('Do dokupienia:'));assert.ok(!root.innerHTML.includes('<svg'));assert.equal(root.innerHTML.split('Trwa potwierdzanie bezczynności do 13:19:20.').length-1,1);
+});

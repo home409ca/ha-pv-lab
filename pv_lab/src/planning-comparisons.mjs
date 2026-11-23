@@ -39,6 +39,16 @@ export function buildComparisonPlans(ctx,prepared,requests,range){
   }
   attempts.sort((a,b)=>b.length-a.length||reservations(ctx,a).costs[0]-reservations(ctx,b).costs[0]||Math.max(0,...a.map(x=>x.start+x.curve.duration))-Math.max(0,...b.map(x=>x.start+x.curve.duration)));
   const plan=attempts[0]||[],complete=plan.length===prepared.length;
-  return {...request,plan,status:complete?'Pełny plan':'Nie mieści się pełny plan: ograniczenia sprzętu, terminy, prognoza lub limit poboru.'};
+  return {...request,plan,status:complete?'Pełny plan':comparisonBlockReason(ctx,prepared,request,range)};
  });
+}
+
+export function comparisonBlockReason(ctx,prepared,request,range){
+ const period=ctx.s.balanceMode==='hourly'?H:ctx.s.balanceMode==='quarterly'?Q:300000,format=t=>new Intl.DateTimeFormat('pl-PL',{timeZone:ctx.c.timezone,hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(t);
+ const uncertain=(ctx.activity?.devices||[]).filter(d=>['observing','unknown'].includes(d.status)&&d.blockedUntil>ctx.now&&request.at<Math.ceil(d.blockedUntil/period)*period);
+ if(uncertain.length){const until=Math.max(...uncertain.map(d=>d.blockedUntil)),boundary=Math.ceil(until/period)*period,observing=uncertain.every(d=>d.status==='observing');return uncertain.map(d=>d.name||d.id).join(', ')+': '+(observing?'trwa potwierdzanie bezczynności':'brak potwierdzonego stanu pracy')+' do '+format(until)+'. '+(ctx.s.balanceMode==='hourly'?'Niepewność obejmuje bilans tej godziny; najbliższy okres bez niej zaczyna się o '+format(boundary)+'. ':'')+'Po potwierdzeniu stanu odczytaj dane i przelicz plan.';}
+ const blocked=prepared.filter(p=>p.device.earliest>request.at);if(blocked.length===prepared.length)return blocked.map(p=>p.device.name+': najwcześniejszy dopuszczalny start '+format(p.device.earliest)).join('; ')+'.';
+ if(prepared.some(p=>request.at+p.curve.duration>Math.min(range.latest,p.device.deadline??Infinity)))return 'Cykl rozpoczęty o '+format(request.at)+' nie zmieści się przed wymaganym zakończeniem.';
+ if([...ctx.groups.values()].some(g=>!g.valid&&g.start<=request.at&&g.start+period>request.at))return 'Brak kompletnych danych prognozy, ceny lub bilansu dla okresu startu. Nie przyjmujemy brakujących danych jako zera.';
+ return 'Nie mieści się pełny plan dla tej kombinacji: sprawdź dozwolone godziny, kolejność cykli i limit poboru.';
 }

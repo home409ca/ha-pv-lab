@@ -100,7 +100,7 @@ function materialize(ctx,prepared,assignments,objective,stats,range){
 }
 export function planUnified(f,samples,c,input,optimizer,load,live,states,model,library,now=Date.now(),activity=null){
  input=validateUnified(input,c,library,optimizer);const {settings,range}=expandUnified(input,c,library,optimizer,now),ctx=buildContext(f,samples,c,settings,load,live,states,model,now);
- applyRunningAppliances(ctx,activity);
+ applyRunningAppliances(ctx,activity);ctx.activity=activity;
  for(const device of settings.devices){const running=activity?.devices.find(d=>d.powerEntity===device.powerEntity);if(running&&running.status!=='idle')device.earliest=Math.max(device.earliest??now,running.blockedUntil);}
  const prepared=settings.devices.map(device=>({device:{...device,_resource:device.powerEntity||input.entries.find(e=>e.id===device.id.slice(0,device.id.lastIndexOf('_')))?.id||device.id},curve:deviceCurve(device,library)}));
  if(settings.load.mode==='history')for(const entity of settings.load.excludeEntities)if(!prepared.some(p=>p.device.powerEntity===entity)&&!activity?.devices.some(d=>d.powerEntity===entity))ctx.warnings.push('Od bazy odjęto '+entity+', ale ten sprzęt nie ma cyklu we wspólnym planie. Jego niezaplanowana praca nie jest uwzględniona.');
@@ -114,6 +114,6 @@ export function planUnified(f,samples,c,input,optimizer,load,live,states,model,l
   dashboardAnalyses[objective]=selection.plans.map(({plan,reason},i)=>({...materialize(ctx,prepared,plan,objective,found,range),id:'dashboard_'+objective+'_'+i,alternativeReason:reason}));
  }
  const signature=p=>p.devices.filter(d=>d.scheduled).map(d=>JSON.stringify([d.powerEntity||d.id,d.curve.wh,d.scheduled.start])).sort().join('|');
- const comparisons=references.map(row=>{const {plan,...info}=row,result=materialize(ctx,prepared,plan,'cost',searches.cost,range),id='comparison_'+row.kind+'_'+row.day;result.id=id;result.comparisonLabel=row.label;result.schedule.method='Wariant ze wskazanym startem; kolejne cykle najwcześniej po zwolnieniu sprzętu, z zachowaniem ograniczeń.';const match=Object.fromEntries(['cost','pv'].map(goal=>[goal,result.schedule.devices===result.schedule.requested&&result.schedule.requested?analyses[goal].find(r=>signature(r)===signature(result))?.id||null:null]));return {...info,id,result,matchedPlan:match};});
+ const comparisons=references.map(row=>{const {plan,...info}=row,result=materialize(ctx,prepared,plan,'cost',searches.cost,range),id='comparison_'+row.kind+'_'+row.day;result.id=id;if(result.schedule.devices<result.schedule.requested)for(const d of result.devices)if(!d.scheduled)d.status=row.status;result.comparisonLabel=row.label;result.schedule.method='Wariant ze wskazanym startem; kolejne cykle najwcześniej po zwolnieniu sprzętu, z zachowaniem ograniczeń.';const match=Object.fromEntries(['cost','pv'].map(goal=>[goal,result.schedule.devices===result.schedule.requested&&result.schedule.requested?analyses[goal].find(r=>signature(r)===signature(result))?.id||null:null]));return {...info,id,result,matchedPlan:match};});
  return {settings:input,expandedSettings:settings,calculatedAt:now,range,analyses,dashboardAnalyses,dashboardSelection,comparisons,activity,dashboardTimeline:ctx.quarterRows.filter(r=>r.end>now&&r.start<range.latest)};
 }

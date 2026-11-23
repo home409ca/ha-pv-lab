@@ -29,3 +29,12 @@ test('ongoing cheap zone and PV peak recalculate exact future quarter instead of
  x.now=now;x.s.earliest=now;x.s.latest=range.latest;x.s.entries.forEach(e=>e.count=e.deviceId==='zmywarka'?1:0);const result=run(x);for(const ref of result.comparisons){assert.equal(ref.result.schedule.startsAt,Date.parse('2026-01-12T12:30:00Z'));assert.equal(ref.result.schedule.devices,1);}
  const ended=comparisonRequests(x.f,{earliest:Date.parse('2026-01-12T14:00:00Z'),latest:range.latest},x.c,x.os);assert.ok(ended.every(r=>r.windowEnd<=Date.parse('2026-01-12T14:00:00Z')));
 });
+
+
+test('13:15 is blocked during idle confirmation until 13:19:20; full hourly plan starts at 14, then 13:15 becomes legal once idle is confirmed',async()=>{
+ const {dashboardProposals}=await import('../src/dashboard-plan.mjs');const x=fixture('2026-11-23'),now=Date.parse('2026-11-23T12:04:22Z'),blockedUntil=Date.parse('2026-11-23T12:19:20Z');x.s.earliest=now;x.s.latest=now+4*H;x.s.entries.forEach(e=>{e.count=e.deviceId==='zmywarka'?1:0;e.durationMinutes=60;});
+ const activity={key:'observing',devices:x.c.appliances.map(d=>({id:d.id,name:d.name,powerEntity:d.powerEntity,status:'observing',powerW:0,blockedUntil}))};
+ const run=a=>planUnified(x.f,[],x.c,x.s,x.os,emptyLoad(),null,new Map(),{}, {profiles:[]},now,a),result=run(activity),ref=result.comparisons.find(r=>r.kind==='cheap');assert.equal(ref.result.schedule.devices,0);assert.match(ref.status,/13:19:20/);assert.match(ref.status,/14:00:00/);assert.ok(result.analyses.cost[0].schedule.startsAt>=Date.parse('2026-11-23T13:00:00Z'));
+ const view=dashboardProposals(result,{goal:'cost',range:'today',counts:{zmywarka:1,pralka:0}},x.c,now),p=view.references.find(p=>p.kind==='cheap');assert.equal(p.cost,null);assert.equal(p.importKWh,null);assert.equal(p.missing[0].reason,p.status);
+ const idle=run({key:'idle',devices:activity.devices.map(d=>({...d,status:'idle',blockedUntil:now}))}).comparisons.find(r=>r.kind==='cheap');assert.equal(idle.result.schedule.devices,1);assert.equal(idle.result.schedule.startsAt,Date.parse('2026-11-23T12:15:00Z'));
+});

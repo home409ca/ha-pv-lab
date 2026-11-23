@@ -1,3 +1,11 @@
+# 0.9.7
+
+Wcześniejsza historia mocy potwierdza bezczynność bez ponownego czekania 20 minut. Niezmienione 0 W w początkowym wpisie HA uwzględnia czas ostatniej zmiany stanu, nie późniejszego odświeżenia atrybutów. Ponowienie niepełnego odczytu przy niskiej mocy najwyżej raz na minutę. Zawiera również poprawki komunikatów i pozornych zer z 0.9.6.
+
+# 0.9.6
+
+Wyjaśnienie blokady planu podczas potwierdzania bezczynności urządzeń: rzeczywisty czas blokady i wpływ bilansowania godzinowego. Niedostępne warianty nie pokazują fikcyjnych 0 zł/0 kWh ani wykresu bez cyklu. Zachowane zabezpieczenia wykrywania pracy i zapisane plany.
+
 # 0.9.5
 
 Ukrywanie minionych wariantów taniej strefy i szczytu PV. Jeśli okno jeszcze trwa, porównanie liczy nowy start od najbliższego kwadransa po teraz; po końcu okna znika z karty. Zatwierdzony plan pozostaje widoczny. Bez zmiany zapisanych godzin, historii i zasad kosztu.
