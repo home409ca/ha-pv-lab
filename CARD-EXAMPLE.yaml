@@ -1,0 +1,37 @@
+type: custom:pv-lab-plan-card
+# Puste = automatyczny wybór, jeśli jest jedna integracja PV Lab.
+# Przy kilku instancjach wpisz ich entry_id albo wybierz instalację na karcie.
+entry_id: ""
+
+# Nagłówek: false go ukrywa; title zmienia jego nazwę.
+title: "Zaplanuj uruchomienie"
+show_header: true
+
+# compact lub full
+layout: compact
+
+# Liczba głównych propozycji: 1–3.
+# Nazwane porównania są dodatkowe i zawsze dostępne po rozwinięciu.
+max_plans: 3
+# Zgodność ze starszym YAML; false też nie ukrywa porównań.
+show_reference_plans: true
+
+show_energy_bar: true
+show_details: true
+
+# Własne profile i warianty Typowy / Średni / Największy.
+show_program_variants: true
+program_variants_style: buttons
+show_program_duration: true
+show_program_energy: true
+# below_devices = pod urządzeniami; details = sekcja rozwijana.
+program_variants_position: below_devices
+# Wykres pojawia się po zatwierdzeniu planu.
+show_plan_chart: true
+
+# Wysokość przycisków Zmywarka/Pralka: 28–60 px.
+device_button_height: 34
+# Kolory zapisuj jako #RRGGBB w cudzysłowach.
+device_color: "#85b866"
+auto_color: "#b992df"
+auto_active_color: "#83c9af"

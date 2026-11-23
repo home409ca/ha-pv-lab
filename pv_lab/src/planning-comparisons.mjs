@@ -11,11 +11,11 @@ export function comparisonRequests(f,range,c,settings){
   const minute=windows.map(w=>w[0]).filter(v=>v>=360&&v<1080).sort((a,b)=>a-b)[0];
   let at=Number.isFinite(minute)?parseLocalInput(day+'T'+String(Math.floor(minute/60)).padStart(2,'0')+':'+String(minute%60).padStart(2,'0'),c.timezone):null;
   if(at!==null)at=Math.ceil(at/Q)*Q;
-  requests.push({kind:'cheap',day,label:'Start dziennej taniej strefy',at,note:at!==null&&tariffZone(at,settings.tariff,c.timezone).holiday?'Cały dzień w taniej strefie — bez dodatkowej zmiany ceny.':'',reason:at===null?'Brak dziennego okna taniej strefy w konfiguracji.':null});
+  requests.push({kind:'cheap',day,label:'Start tania strefa',at,note:at!==null&&tariffZone(at,settings.tariff,c.timezone).holiday?'Cały dzień w taniej strefie — bez dodatkowej zmiany ceny.':'',reason:at===null?'Brak dziennego okna taniej strefy w konfiguracji.':null});
   const hours=new Map();
   for(const row of f.fullRows||[]){if(row.start<start||row.start>=end||!Number.isFinite(row.wh)||row.wh<0)continue;const p=localParts(row.start,c.timezone),hour=row.start-Number(p.minute)*60000;const quarters=hours.get(hour)||new Map();quarters.set(row.start,row.wh);hours.set(hour,quarters);}
   const peak=[...hours].filter(([,rows])=>rows.size===4).map(([at,rows])=>({at,wh:[...rows.values()].reduce((n,w)=>n+w,0)})).filter(r=>r.wh>1).sort((a,b)=>b.wh-a.wh||a.at-b.at)[0];
-  requests.push({kind:'peak',day,label:'Start w godzinie szczytu PV',at:peak?.at??null,peakKWh:peak?peak.wh/1000:null,note:'',reason:peak?null:'Brak pełnej godzinowej prognozy z dodatnią produkcją PV.'});
+  requests.push({kind:'peak',day,label:'Start szczyt PV',at:peak?.at??null,peakKWh:peak?peak.wh/1000:null,note:'',reason:peak?null:'Brak pełnej godzinowej prognozy z dodatnią produkcją PV.'});
  }
  return requests;
 }

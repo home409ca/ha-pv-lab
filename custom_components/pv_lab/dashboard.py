@@ -45,6 +45,8 @@ async def ws_entries(hass, connection, msg):
     vol.Optional("mode"): vol.In(["fixed", "flexible", "finish"]),
     vol.Optional("enabled"): bool,
     vol.Optional("counts"): {vol.Required("pralka"): vol.All(int, vol.Range(min=0, max=8)), vol.Required("zmywarka"): vol.All(int, vol.Range(min=0, max=8))},
+    vol.Optional("profile_ids"): {vol.Optional("pralka"): vol.Any(None, str), vol.Optional("zmywarka"): vol.Any(None, str)},
+    vol.Optional("variants"): {vol.Optional("pralka"): vol.In(["typical", "mean", "maximum"]), vol.Optional("zmywarka"): vol.In(["typical", "mean", "maximum"])},
     vol.Optional("goal"): vol.In(["pv", "cost"]),
     vol.Optional("range"): vol.In(["today", "tomorrow", "both", "custom"]),
     vol.Optional("earliest"): str,

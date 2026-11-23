@@ -1,3 +1,12 @@
+# 0.9.2
+
+- Karta: przyciski programów pod urządzeniami, własne profile jako pierwsze oraz warianty Typowy / Średni / Największy. Konfigurowalne położenie, widoczność, lista lub przyciski oraz osobne przełączniki czasu i kWh. Wybór działa również w Auto i nie nadpisuje ustawień aplikacji.
+- Skrócono nazwy porównań do „Start tania strefa” i „Start szczyt PV”. Zawsze pozostają na rozwijanej liście karty, niezależnie od limitu głównych propozycji.
+- Identyczne całe harmonogramy pokazujemy raz, pod nazwą porównania. Zatwierdzony wariant zachowuje swoją tożsamość. Dwa identyczne porównania mają wspólną nazwę.
+- Zatwierdzenie odczytuje aktualne stany HA i używa tych samych profili co wybrana propozycja. Ujednolicono konserwatywne okresy dostępności planera i zatwierdzania; niepewność uwzględniona już przy obliczeniu nie odrzuca automatycznie przyszłego terminu.
+- Faktyczna kolizja lub utrata danych nadal blokuje zatwierdzenie, z nazwą urządzenia i konkretną przyczyną. Nie przesuwamy po cichu wybranych godzin.
+- Dodano kompletny przykład YAML i zaktualizowano instrukcję. Dane, ceny, ustawienia i historia pozostają zachowane.
+
 # 0.9.1
 
 - Karta: szczyt PV i początek dziennej taniej strefy jako dodatkowe rozwijane warianty, opcjonalny wykres zatwierdzonego planu i konfigurowalne niższe przyciski oraz kolory.

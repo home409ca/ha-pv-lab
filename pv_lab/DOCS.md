@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.9.1 -->
+<!-- pv-lab-manual-version: 0.9.2 -->
 
-**Wersja aplikacji i instrukcji: 0.9.1.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.9.2.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -226,7 +226,7 @@ Karta używa głównego celu kosztowego: szacowany koszt planu z uwzględnieniem
 
 Przycisk Zaplanuj wybiera do trzech pełnych harmonogramów z dodatnim pokryciem energii z PV lub bilansu. Filtr działa na znalezionych kandydatach przed doborem różnorodności i ograniczeniem do trzech, a nie na samej trójce z poprzedniego widoku. Korzysta z kandydatów obu analiz, żeby nie przeoczyć słonecznego terminu, gdy najtańsze rozwiązania przypadają nocą. Domyślnie widoczny jest jeden polecany plan; strzałka rozwija pozostałe z maksymalnie trzech przygotowanych propozycji. Karta nie jest prostym odwzorowaniem pierwszych trzech wierszy aplikacji: pełne porównanie kosztów w aplikacji pozostaje dostępne, także dla planów wymagających zakupu całej energii. Oba widoki korzystają z tych samych danych, profili, taryf i zasad energii. Jeżeli tylko jeden lub dwa znalezione plany korzystają z PV/bilansu, pokazujemy tyle, bez uzupełniania listy planami całkowicie płatnymi. Informacja brzmi: Pominięto warianty wymagające zakupu całej energii. Jeśli nie znaleziono pełnego planu z PV/bilansem, karta pokazuje jeden najtańszy znaleziony pełny plan; przy tej samej cenie wybiera najwcześniejszy start, potem najwcześniejszy koniec. Nie stosujemy tu dopłaty 5 gr za zapas, którego nie ma. Komunikat wyjaśnia brak pokrycia z PV/bilansu. Brak pełnego planu z powodu prognozy lub ograniczeń jest nadal opisany jako niepełny, a nie jako poprawny plan całkowicie płatny. Zmiana dotyczy doboru propozycji, nie wartości produkcji i cen. Po przeliczeniu karty aplikacja przy kolejnym odczycie może użyć tego samego wyniku; wcześniej otwarty widok trzeba odświeżyć. Przy innym wyborze cykli, profilu, terminów lub nowych pomiarach wyniki mogą się prawidłowo zmienić. Karta nie nadpisuje zapisanych ustawień aplikacji. Brakujący cykl jest opisany, a niepełnego planu nie można zatwierdzić. To heurystycznie znalezione propozycje, bez gwarancji minimum wszystkich kombinacji. Starty nadal są co 15 minut. Zatwierdzenie jest blokowane, gdy do startu zostało mniej niż 60 sekund; to nie przesuwa harmonogramu ani nie zmienia wspólnej listy. Propozycja pozostaje aktualna najwyżej pięć minut, krócej przy granicy kwadransa. Jeżeli zdążyła się zdezaktualizować, ponownie ją przelicz.
 
-**Zatwierdź ten plan** od wersji 0.9.0 uzbraja zapisany w HA harmonogram poleceń `switch.turn_on` dla skonfigurowanych urządzeń. Samo „Zaplanuj” przygotowuje wyłącznie propozycje. Ikona kłódki wybiera tryb stały, elastyczny lub elastyczny bez późniejszego końca; Auto po 10 minutach na przygotowanie zatwierdza jedną partię wyłączonych switchy. Szczegóły wykonania, restartów, anulowania i rejestru poleceń znajdują się w sekcji „Włączanie urządzeń i automatyczna aktualizacja planu — 0.9.1”.
+**Zatwierdź ten plan** od wersji 0.9.0 uzbraja zapisany w HA harmonogram poleceń `switch.turn_on` dla skonfigurowanych urządzeń. Samo „Zaplanuj” przygotowuje wyłącznie propozycje. Ikona kłódki wybiera tryb stały, elastyczny lub elastyczny bez późniejszego końca; Auto po 10 minutach na przygotowanie zatwierdza jedną partię wyłączonych switchy. Szczegóły wykonania, restartów, anulowania i rejestru poleceń znajdują się w sekcji „Włączanie urządzeń i automatyczna aktualizacja planu — 0.9.2”.
 
 Encje przygotowane pod późniejsze automatyzacje:
 
@@ -684,13 +684,13 @@ Na karcie pod ceną znajduje się cienki pasek udziałów energii: zielony PV i 
 
 ### Minimalistyczny układ karty (0.8.14)
 
-Usunięto opisową ramkę Stan: propozycje. Numer planu, kwota, przycisk ? i Zatwierdź są w jednym nagłówku. Po zatwierdzeniu przy wybranym planie widać Zatwierdzony i zielone obramowanie; nad listą pojawia się Anuluj zatwierdzony plan. Ewentualne błędy i przyczyny wycofania pozostają czytelne, nie są ukrywane. Nazwa cyklu i jego przedział czasowy są w jednym wierszu, z datą oraz godziną początku i końca; długie nazwy są skracane wizualnie z pełną nazwą w opisie. Cienki zielono-pomarańczowy pasek udziałów energii pozostaje bez zmian. Przycisk ? otwiera szczegóły danego planu: zakup kWh, zapas PV, wariant kosztu przy innej pogodzie, czas obliczenia i źródła profili. Przycisk działa na telefonie bez najeżdżania kursorem. Rozwinięcie jest lokalnym stanem widoku, nie zapisuje nowej historii. Zmiana liczby cykli lub dni blokuje zatwierdzenie starych wyników do ponownego przeliczenia. Samo rozwinięcie szczegółów nie steruje gniazdkami; od 0.9.1 nowe zatwierdzenie na aktualnej karcie uzbraja wykonanie. Zmiana doboru alternatyw nie zmienia zasad energii, taryfy, reguły dopłaty 5 gr, danych historycznych ani retencji.
+Usunięto opisową ramkę Stan: propozycje. Numer planu, kwota, przycisk ? i Zatwierdź są w jednym nagłówku. Po zatwierdzeniu przy wybranym planie widać Zatwierdzony i zielone obramowanie; nad listą pojawia się Anuluj zatwierdzony plan. Ewentualne błędy i przyczyny wycofania pozostają czytelne, nie są ukrywane. Nazwa cyklu i jego przedział czasowy są w jednym wierszu, z datą oraz godziną początku i końca; długie nazwy są skracane wizualnie z pełną nazwą w opisie. Cienki zielono-pomarańczowy pasek udziałów energii pozostaje bez zmian. Przycisk ? otwiera szczegóły danego planu: zakup kWh, zapas PV, wariant kosztu przy innej pogodzie, czas obliczenia i źródła profili. Przycisk działa na telefonie bez najeżdżania kursorem. Rozwinięcie jest lokalnym stanem widoku, nie zapisuje nowej historii. Zmiana liczby cykli lub dni blokuje zatwierdzenie starych wyników do ponownego przeliczenia. Samo rozwinięcie szczegółów nie steruje gniazdkami; od 0.9.2 nowe zatwierdzenie na aktualnej karcie uzbraja wykonanie. Zmiana doboru alternatyw nie zmienia zasad energii, taryfy, reguły dopłaty 5 gr, danych historycznych ani retencji.
 
 ### Dobór słonecznych propozycji i wariant bez PV (0.8.14)
 
 Pokrycie = suma energii nowych cykli minus dodatkowy zakup po bilansowaniu, z tolerancją liczbową 0,000001 kWh. Dlatego nie chodzi o fizyczny brak poboru z sieci w każdej minucie. Baza i pracujące już urządzenia są uwzględnione przed nowymi cyklami. Bardzo mały dodatni udział poniżej 1% pokazujemy na pasku do dwóch miejsc po przecinku, zamiast zaokrąglać go do 0%; pozostałe udziały pozostają całkowite.
 
-Dla pojedynczego urządzenia analizujemy wszystkie dopuszczalne starty co 15 minut. Dla kilku cykli nadal używamy ograniczonego przeszukiwania różnych kolejności i poprawek; najtańszy znaleziony nie oznacza udowodnionego minimum wszystkich kombinacji. Karta szuka propozycji ze słońcem w pełnej puli znalezionych planów obu celów, a pełny widok aplikacji zachowuje do dziesięciu zróżnicowanych propozycji i oba porównania. Nie usuwamy zapisanych raportów ani wariantów historycznych. Zatwierdzanie wskazuje stabilny identyfikator konkretnej propozycji z puli karty, żeby po filtrowaniu nie zapisać przypadkiem planu o tym samym numerze w pełnej tabeli. Zapis porównania i blokady sprzętu pozostają bez zmian; wykonanie zatwierdzeń na karcie opisuje sekcja 0.9.1. Nie zapisujemy pełnej surowej puli kandydatów na dysku; stan karty zawiera maksymalnie trzy propozycje, a przy całkowitym zakupie jedną.
+Dla pojedynczego urządzenia analizujemy wszystkie dopuszczalne starty co 15 minut. Dla kilku cykli nadal używamy ograniczonego przeszukiwania różnych kolejności i poprawek; najtańszy znaleziony nie oznacza udowodnionego minimum wszystkich kombinacji. Karta szuka propozycji ze słońcem w pełnej puli znalezionych planów obu celów, a pełny widok aplikacji zachowuje do dziesięciu zróżnicowanych propozycji i oba porównania. Nie usuwamy zapisanych raportów ani wariantów historycznych. Zatwierdzanie wskazuje stabilny identyfikator konkretnej propozycji z puli karty, żeby po filtrowaniu nie zapisać przypadkiem planu o tym samym numerze w pełnej tabeli. Zapis porównania i blokady sprzętu pozostają bez zmian; wykonanie zatwierdzeń na karcie opisuje sekcja 0.9.2. Nie zapisujemy pełnej surowej puli kandydatów na dysku; stan karty zawiera maksymalnie trzy propozycje, a przy całkowitym zakupie jedną.
 
 Wśród pełnych kandydatów z PV/bilansem karta przechodzi po rankingu kosztu i zapasu, wybierając kolejne wyraźnie różne plany (jak dotąd co najmniej 30 minut zmiany lub inna kolejność sprzętu). Nie wymusza skrajnie wczesnego lub późnego wariantu wyłącznie dla różnorodności. Pełny widok aplikacji nadal pokazuje szersze porównanie alternatyw.
 
@@ -721,6 +721,11 @@ show_header: true
 max_plans: 3
 show_energy_bar: true
 show_details: true
+show_program_variants: true
+program_variants_style: buttons
+show_program_duration: true
+show_program_energy: true
+program_variants_position: below_devices
 ```
 
 | Opcja | Domyślnie | Działanie |
@@ -728,7 +733,7 @@ show_details: true
 | `layout` | `compact` | `compact`: mniejsze odstępy, Dziś/Jutro/Zaplanuj w jednym wierszu, bez opisu i powtórzenia wyboru. `full`: dotychczasowy obszerniejszy układ. |
 | `title` | `Zaplanuj uruchomienie` | Dowolna nazwa. `title: ""` ukrywa nagłówek. |
 | `show_header` | `true` | `false` ukrywa nagłówek, zachowując wpisaną nazwę w konfiguracji. |
-| `max_plans` | `3` | Liczba dostępnych na karcie planów: 1, 2 lub 3. Domyślnie widoczny jest jeden, pozostałe rozwija strzałka. |
+| `max_plans` | `3` | Liczba głównych propozycji na karcie: 1, 2 lub 3, przed usunięciem duplikatów. Nazwane porównania są dodatkowe. Domyślnie widoczny jest jeden, pozostałe rozwija strzałka. |
 | `show_energy_bar` | `true` | `false` ukrywa pasek i procenty PV/bilans–sieć. |
 | `show_details` | `true` | `false` ukrywa przycisk `?` oraz szczegóły. Zatwierdzenie pozostaje dostępne. |
 | `entry_id` | automatycznie | Identyfikator integracji przy kilku instalacjach; dotychczasowe działanie pozostaje. |
@@ -778,7 +783,7 @@ W obrębie jednego obliczenia ponownie wykorzystujemy oceny tych samych startów
 Karta może wykorzystać wspólny odczyt HA młodszy niż 10 sekund. Starszy odczyt jest pobierany ponownie; krótka historia urządzeń jest odświeżana według dotychczasowych warunków świeżości, zamiast wymuszania jej przy każdym kliknięciu. Ręczne „Odczytaj dane i przelicz” zachowuje wymuszenie odczytu. Zmiana bieżącego pomiaru lub stanu urządzenia unieważnia wynik planu. Pierwsze obliczenie po starcie/importowaniu dużej historii może trwać dłużej; problem z HA lub siecią nadal może wydłużyć oczekiwanie.
 
 
-## Włączanie urządzeń i automatyczna aktualizacja planu — 0.9.1
+## Włączanie urządzeń i automatyczna aktualizacja planu — 0.9.2
 
 **Co zmieniło się względem 0.8:** od tej wersji nowe zatwierdzenie na aktualnej karcie HA oznacza zgodę na wysłanie poleceń włączenia switchy. Samo „Zaplanuj”, zapis wariantu w aplikacji do porównania i potwierdzenie wykonania w archiwum nadal nie sterują urządzeniami. Wcześniejsze zatwierdzenia bez sekcji wykonania nie są automatycznie uzbrajane. Stara karta z pamięci podręcznej dostaje komunikat o konieczności odświeżenia, zanim będzie mogła uzbroić sterowanie.
 
@@ -836,9 +841,9 @@ Przed wysłaniem zapisujemy zamiar wykonania. Normalny restart i powtarzane odcz
 W HA `.storage/pv_lab_execution_<entry_id>` jest osobnym trwałym rejestrem zegara i do 200 ostatnich tożsamości poleceń, z kolejką potwierdzeń, odliczaniem Auto i pamięcią ostatnich 200 anulowanych identyfikatorów Auto. Ta część należy do kopii Home Assistant, a nie eksportu samej aplikacji. Publiczny odczyt integracji nie przesyła pełnych profili wykonania. Nowe funkcje nie zmieniają prognozy PV, cen, historii produkcji ani ustawień AI.
 
 
-## Karta i obciążenie domu — zmiany 0.9.1
+## Karta i obciążenie domu — zmiany 0.9.2
 
-W rozwijanej liście karty, po maksymalnie trzech głównych propozycjach, domyślnie zawsze pokazujemy osobno wariant **Start dziennej taniej strefy** i **Start w godzinie szczytu PV** dla wybranych dni. Mają te same profile, cenę, bilansowanie i ograniczenia co aplikacja i uczestniczą w jej dotychczasowym wyborze harmonogramu. Nie są sztucznie wstawiane na początek rankingu. Można je zatwierdzić bezpośrednio z karty. Miniony termin, niepełny plan lub brak prognozy ma opis przyczyny i nieaktywny przycisk zatwierdzenia. Pozostają widoczne również przy samym zasilaniu z sieci, ponieważ są dodatkowymi porównaniami na życzenie. Przy dwóch dniach wariantów jest po dwa na każdy dzień. `max_plans` dotyczy tylko głównych propozycji; `show_reference_plans: false` ukrywa porównania. Zatwierdzony wariant pozostaje widoczny po ukryciu dodatkowych porównań.
+W rozwijanej liście karty, po maksymalnie trzech głównych propozycjach, domyślnie zawsze pokazujemy osobno wariant **Start tania strefa** i **Start szczyt PV** dla wybranych dni. Mają te same profile, cenę, bilansowanie i ograniczenia co aplikacja i uczestniczą w jej dotychczasowym wyborze harmonogramu. Nie są sztucznie wstawiane na początek rankingu. Można je zatwierdzić bezpośrednio z karty. Miniony termin, niepełny plan lub brak prognozy ma opis przyczyny i nieaktywny przycisk zatwierdzenia. Pozostają widoczne również przy samym zasilaniu z sieci, ponieważ są dodatkowymi porównaniami na życzenie. Przy dwóch dniach wariantów jest po dwa na każdy dzień. `max_plans` dotyczy tylko głównych propozycji; Porównania są zawsze widoczne po rozwinięciu listy, także gdy `max_plans` ogranicza liczbę zwykłych propozycji. Dawny parametr `show_reference_plans` pozostaje akceptowany dla zgodności; również `false` nie ukrywa już tych porównań. Zatwierdzony wariant pozostaje widoczny po zwinięciu listy.
 
 Po zatwierdzeniu `show_plan_chart: true` pokazuje prosty wykres PV, domu (w tym wcześniej trwających cykli) i nowych cykli, w kWh na 15 minut, przed bilansowaniem. Domyślnie wykres jest ukryty. Wykres pochodzi z obliczenia zatwierdzenia lub ostatniej kontroli, z widoczną datą prognozy; nie jest pomiarem wykonania. Dla dawnego planu bez zapisanych punktów pokazujemy brak wykresu. Pełne dane pozostają w aplikacji.
 
@@ -846,7 +851,7 @@ Dodatkowe parametry YAML:
 
 | Parametr | Domyślnie | Znaczenie |
 | --- | --- | --- |
-| `show_reference_plans` | `true` | Dodatkowe porównania szczytu PV i dziennej taniej strefy po rozwinięciu. |
+| `show_reference_plans` | `true` | Zgodność ze starszym YAML. Porównania są teraz zawsze obecne; `false` również ich nie ukrywa. |
 | `show_plan_chart` | `false` | Mały wykres zatwierdzonego planu. |
 | `device_button_height` | `36` | Wysokość przycisków urządzeń w px, liczba całkowita 28–60. |
 | `device_color` | `"#85b866"` | Kolor obrysu i delikatnego tła wybranego urządzenia. |
@@ -874,3 +879,81 @@ Opcjonalna linia zużycia domu w „Porównaniu prognoz i produkcji” uwzględn
 Nie pokazujemy ostrzeżenia o nieuwzględnionej niezaplanowanej pracy dla urządzenia, które już obserwuje detektor, nawet gdy wybrana liczba nowych cykli wynosi zero. Dla brakującego stanu obowiązuje osobny komunikat jakości i blokada niepewnych okresów. Ostrzeżenie o nieuwzględnionym urządzeniu pozostaje dla rzeczywiście nieobserwowanej encji odjętej od bazy.
 
 Ostatni uzbrojony harmonogram pozostaje w podglądzie aplikacji również po przygotowaniu nowych propozycji lub kolejnego odliczania Auto. Przechowujemy tylko ostatni taki plan obok bieżącego; starsze zdarzenia są w dotychczasowym dzienniku, bez powielania pełnych profili przy każdym odczycie.
+
+
+## Nazwane warianty i zatwierdzanie — 0.9.2
+
+Nazwy na karcie i w dodatkowych porównaniach to **Start tania strefa** i **Start szczyt PV**. Po obliczeniu planu porównania zawsze pozostają dostępne w rozwijanej liście, również przy zerowym udziale PV. „Zawsze” dotyczy obecności porównania, nie dopuszczalności uruchomienia: miniony termin, brak prognozy lub niepełny plan nadal ma opis przyczyny i wyłączony przycisk zatwierdzenia. Przed pierwszym obliczeniem karta nie pokazuje starych porównań z innego wyboru.
+
+Jeżeli zwykły plan jest identyczny z nazwanym wariantem, pokazujemy tylko nazwany wariant, na miejscu zastępowanej propozycji. Porównujemy komplet cykli: urządzenia, starty, końce, energię i źródło profilu; sama wspólna godzina pierwszego startu nie wystarcza. Jeśli oba porównania dają identyczny harmonogram, jeden wpis ma nazwę „Start tania strefa · Start szczyt PV”. Zatwierdzony plan zachowuje pierwotny identyfikator, status i przełączniki wykonania. Nie zmieniamy jego godzin ani oceny kosztów przy usuwaniu duplikatu z widoku.
+
+Przed zatwierdzeniem odczytujemy aktualne stany HA, automatycznie uzupełniając detektor według istniejących zasad odczytu historii. Nie wymagamy osobnego kliknięcia „Odczytaj dane”. Dostępność jest sprawdzana na tych samych profilach co wybrany plan. Jeżeli już podczas obliczenia stan był niepewny, ale start zaplanowano po konserwatywnym czasie blokady, sama etykieta „unknown” lub „observing” nie odrzuca ponownie takiego terminu. Nadal wymagana jest zgodność z aktualnym końcem blokady. To nie jest zamiana braku danych na bezczynność ani gwarancja zakończenia pracy.
+
+Jeśli od obliczenia utracono potwierdzony stan, brakuje danych urządzenia albo rzeczywista lub konserwatywnie oszacowana zajętość koliduje ze startem, zatwierdzenie pozostaje zablokowane. Komunikat podaje urządzenie, przyczynę i, gdy to możliwe, godzinę zwolnienia blokady. Błąd odczytu HA nie uzbraja planu. Wybrany harmonogram nie jest automatycznie zastępowany innymi godzinami przy zatwierdzeniu — w razie prawdziwej kolizji przelicz propozycje. Dotychczasowy limit aktualności propozycji i co najmniej minuta do startu nadal obowiązują.
+
+Powyższe zmiany nie modyfikują prognozy produkcji, cennika ani bilansowania energii. Krótki zapis stanu dostępności z chwili obliczenia jest częścią bieżącego pliku `dashboard-plan.json`; zastępuje go następna propozycja. Nie dodajemy nowych plików historii przy każdym odczycie.
+
+### Kompletny YAML karty
+
+Ten przykład obejmuje wszystkie własne parametry karty. `entry_id` można zostawić puste przy jednej instalacji. Pozostałe opcje układu standardowego dashboardu HA nie są parametrami PV Lab. Liczby cykli, dni i zapisane profile wybierasz na karcie. Bibliotekę profili, switche i taryfę konfigurujesz w aplikacji.
+
+```yaml
+type: custom:pv-lab-plan-card
+# Puste = automatyczny wybór, jeśli jest jedna integracja PV Lab.
+# Przy kilku instancjach wpisz ich entry_id albo wybierz instalację na karcie.
+entry_id: ""
+
+# Nagłówek: false go ukrywa; title zmienia jego nazwę.
+title: "Zaplanuj uruchomienie"
+show_header: true
+
+# compact lub full
+layout: compact
+
+# Liczba głównych propozycji: 1–3.
+# Nazwane porównania są dodatkowe i zawsze dostępne po rozwinięciu.
+max_plans: 3
+# Zgodność ze starszym YAML; false też nie ukrywa porównań.
+show_reference_plans: true
+
+show_energy_bar: true
+show_details: true
+show_program_variants: true
+program_variants_style: buttons
+show_program_duration: true
+show_program_energy: true
+program_variants_position: below_devices
+# Wykres pojawia się po zatwierdzeniu planu.
+show_plan_chart: true
+
+# Wysokość przycisków Zmywarka/Pralka: 28–60 px.
+device_button_height: 34
+# Kolory zapisuj jako #RRGGBB w cudzysłowach.
+device_color: "#85b866"
+auto_color: "#b992df"
+auto_active_color: "#83c9af"
+```
+
+Dla niepełnego porównania karta pokazuje „brak pełnego planu”, przyczynę i planowaną godzinę odniesienia, zamiast mylącego kosztu 0,00 zł. Takiego wpisu nie można zatwierdzić.
+
+
+### Wariant programu na karcie
+
+Osobne przyciski pod zmywarką i pralką wybierają profil lub wariant **Typowy / Średni / Największy** w profilu przypisanym danemu urządzeniu w PV Lab. Domyślnie przyciski programu są pod przyciskami urządzeń. Każde naciśnięcie wybiera kolejną pozycję; po ostatniej wracamy do pierwszej. `program_variants_style: select` zamiast przycisków pokazuje listy rozwijalne. `program_variants_position: details` chowa je w rozwijanej sekcji „Programy urządzeń”; `show_program_variants: false` ukrywa wybór. Domyślnie `show_program_variants: true` i `program_variants_position: below_devices`. Dostępne warianty wynikają z zapisanego profilu, nie dodajemy brakujących krzywych.
+
+Wybrany wariant określa przebieg poboru, energię i długość nowych cykli; dotyczy wszystkich żądanych cykli danego sprzętu. Wybór w karcie jest przekazywany w żądaniu przeliczenia i nie nadpisuje ustawień w aplikacji. Przy pierwszym wczytaniu przyjmujemy zapisany wariant z aplikacji. Wybór jest zachowany również dla urządzenia z zerem żądanych cykli, żeby można je było następnie dodać. Zmiana wariantu wymaga kliknięcia „Zaplanuj”, zanim zatwierdzisz propozycję. Plan już uzbrojony lub odliczanie Auto blokuje zmianę wariantu w karcie; najpierw anuluj plan, jeśli chcesz inny program.
+
+**Auto również używa wybranych wariantów.** Zapamiętuje je przy rozpoczęciu 10-minutowego oczekiwania. Po odliczaniu dopiero wybiera urządzenia z wyłączonym switchem. Późniejsze przeplanowania zachowują zamrożony wariant i profil zatwierdzenia. Wybranie wariantu nie uruchamia urządzenia ani nie ustawia fizycznego programu pralki czy zmywarki — to nadal przygotowujesz na urządzeniu.
+
+Jeśli używasz ręcznego profilu bez różnych krzywych z historii, warianty korzystają z tej samej ręcznie podanej energii i czasu. Widoczne podsumowania mają wtedy takie same wartości; nie wymyślamy różnic pomiędzy programami. Warianty statystyczne z historii nie oznaczają automatycznie konkretnych programów typu Eco czy Bawełna.
+
+
+### Programy własne, przyciski, czas i energia
+
+Przyciski programu domyślnie pokazują wybrany profil lub wariant, jego czas trwania i energię kWh. Układ zawija dodatkowe wartości do drugiej linii na wąskim ekranie. Pełna nazwa jest w podpowiedzi przycisku. `show_program_duration: false` ukrywa czas, a `show_program_energy: false` ukrywa kWh, niezależnie od siebie. Obie opcje są domyślnie `true`. `program_variants_style` przyjmuje `buttons` (domyślnie) lub `select` (lista rozwijalna). Położenie nadal wybierasz przez `program_variants_position: below_devices` lub `details`.
+
+**Własne zapisane profile są na początku wyboru**, przed standardowymi wariantami profilu z ustawień aplikacji. Profile z przypisanym urządzeniem lub źródłową encją mocy pojawiają się tylko przy właściwym sprzęcie. Profil ręczny bez przypisania jest dostępny dla obu urządzeń; nazwa sama nie decyduje o przypisaniu. Dla własnego profilu wybieramy jego wariant Typowy, a gdy go nie ma — pierwszy zapisany wariant. Warianty domyślnego profilu Typowy / Średni / Największy są dalej na liście; identyczny wybór tego samego profilu i wariantu nie jest powielany pod drugą nazwą.
+
+Domyślnie zaznaczony pozostaje profil i wariant zapisany w aplikacji; kolejność listy nie zmienia go bez kliknięcia. Dane czasu i kWh wynikają z faktycznej krzywej 5-minutowej wybranego profilu: czas to liczba kroków × 5 minut, energia to suma energii kroków. Bez zapisanego profilu korzystamy z ręcznego czasu i energii w ustawieniach. Nie znamy parametrów niezapisanego fizycznego programu urządzenia.
+
+Wybór profilu z karty jest wysyłany wraz z wariantem do planera i Auto. Nie podmieniamy urządzenia ani jego switcha: profil pralki nie może zostać użyty dla zmywarki, jeśli ma przypisane inne urządzenie. Auto zapamiętuje wybór przy włączeniu, a zatwierdzenie i późniejsze przeplanowania zachowują wybrany profil. Nazwy i podsumowania krzywych są odczytywane razem ze stanem karty; nie przesyłamy pełnych krzywych do przeglądarki. Brakujące lub usunięte profile nie są zastępowane po cichu innym programem.

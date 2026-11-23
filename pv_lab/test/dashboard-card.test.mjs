@@ -26,3 +26,23 @@ test('execution mode cycle is explicit and keeps fixed as default',()=>{assert.e
 
 test('new card parameters validate colors and geometry, chart and reference toggles',()=>{const c=cardOptions();assert.equal(c.show_reference_plans,true);assert.equal(c.show_plan_chart,false);assert.equal(c.device_button_height,36);for(const v of [{device_color:'red'},{auto_color:'url(evil)'},{device_button_height:0},{show_plan_chart:1},{show_reference_plans:'no'}])assert.throws(()=>cardOptions(v));assert.equal(cardOptions({device_color:'#aAbB12',device_button_height:28}).device_button_height,28);});
 test('unchanged status timestamps do not rebuild card and timeline chart preserves missing values',async()=>{const {renderFingerprint,planChart}=await import('../../custom_components/pv_lab/www/pv-lab-plan-card.js');assert.equal(renderFingerprint({readAt:1,execution:{mode:'fixed'}}),renderFingerprint({readAt:2,execution:{mode:'fixed'}}));assert.notEqual(renderFingerprint({execution:{mode:'finish'}}),renderFingerprint({execution:{mode:'fixed'}}));const x=planChart({cycles:[{start:0,end:2700000}],forecastAt:0,timeline:[{start:0,pvKWh:1,houseKWh:.1,deviceKWh:.2},{start:900000,pvKWh:null,houseKWh:.1,deviceKWh:.2},{start:1800000,pvKWh:1,houseKWh:.1,deviceKWh:.2}]},String);assert.match(x,/kWh/);assert.ok(!x.includes('NaN'));assert.match(x,/Nowe cykle/);assert.match(x,/M10.0,10.0 M210.0,10.0/);});
+
+test('reference labels are short, always visible and replace only identical full normal schedules',async()=>{
+ const {visibleCardPlans}=await import('../../custom_components/pv_lab/www/pv-lab-plan-card.js');
+ const plan=(id,start=1000)=>({id,complete:true,cycles:[{powerEntity:'sensor.washer',start,end:start+1000,energyKWh:1,profileSource:'typical'}]}),normal=plan('p0'),cheap={...plan('ref1'),kind:'cheap',label:'Old label'},peak={...plan('ref2',4000),kind:'peak'};
+ const state={proposals:[normal,plan('p1',6000)],references:[cheap,peak]};
+ let rows=visibleCardPlans(state,3);assert.deepEqual(rows.map(p=>p.id),['ref1','p1','ref2']);assert.deepEqual(rows.filter(p=>p.kind).map(p=>p.label),['Start tania strefa','Start szczyt PV']);
+ rows=visibleCardPlans(state,1);assert.deepEqual(rows.map(p=>p.id),['ref1','ref2']);assert.equal(cardOptions({show_reference_plans:false}).show_reference_plans,true);
+ state.references[1].cycles[0].start=1000;state.references[1].cycles[0].end=2000;rows=visibleCardPlans(state,3);assert.equal(rows.length,2);assert.match(rows[0].label,/Start tania strefa.*Start szczyt PV/);
+ state.approved=true;state.approvedId='p0';rows=visibleCardPlans(state,3);assert.equal(rows[0].id,'p0');assert.match(rows[0].label,/Start tania strefa/);
+ state.approvedId='ref2';assert.equal(visibleCardPlans(state,3)[0].id,'ref2');
+});
+test('same initial start alone does not merge different cycles, counts, durations or energy; incomplete references survive',async()=>{
+ const {visibleCardPlans}=await import('../../custom_components/pv_lab/www/pv-lab-plan-card.js');const cycle={powerEntity:'sensor.washer',start:1000,end:2000,energyKWh:1},normal={id:'p0',complete:true,cycles:[cycle]};
+ for(const cycles of [[{...cycle,end:3000}],[{...cycle,energyKWh:2}],[cycle,{...cycle,start:2000,end:3000}],[{...cycle,powerEntity:'sensor.dishwasher'}]])assert.equal(visibleCardPlans({proposals:[normal],references:[{id:'r',kind:'peak',complete:true,cycles}]}).length,2);
+ assert.equal(visibleCardPlans({proposals:[normal],references:[{id:'r',kind:'cheap',complete:false,cycles:[]},{id:'q',kind:'peak',complete:false,cycles:[]}]}).length,3);
+});
+
+test('program variant controls have configurable visibility and placement',()=>{assert.equal(cardOptions().show_program_variants,true);assert.equal(cardOptions().program_variants_position,'below_devices');assert.equal(cardOptions({show_program_variants:false,program_variants_position:'details'}).show_program_variants,false);assert.throws(()=>cardOptions({program_variants_position:'footer'}));assert.throws(()=>cardOptions({show_program_variants:'true'}));});
+
+test('program buttons expose duration/energy toggles and optional dropdown style',async()=>{const {programDuration,programChoices}=await import('../../custom_components/pv_lab/www/pv-lab-plan-card.js');assert.equal(cardOptions().program_variants_style,'buttons');assert.equal(cardOptions().show_program_duration,true);assert.equal(cardOptions().show_program_energy,true);assert.equal(programDuration(75),'1 h 15 min');assert.equal(programDuration(60),'1 h');assert.equal(programChoices().length,3);for(const input of [{program_variants_style:'bad'},{show_program_duration:0},{show_program_energy:'false'}])assert.throws(()=>cardOptions(input));});

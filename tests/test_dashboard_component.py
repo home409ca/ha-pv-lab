@@ -24,7 +24,7 @@ class DashboardComponentTests(unittest.IsolatedAsyncioTestCase):
         schema.Required = schema.Optional = lambda value: value
         schema.In = lambda value: value
         schema.Range = lambda **kwargs: kwargs
-        schema.All = lambda *args: args
+        schema.All = schema.Any = lambda *args: args
         ws = modules["homeassistant.components.websocket_api"]
         ws.websocket_command = lambda schema: lambda fn: fn
         ws.async_response = lambda fn: fn
@@ -57,7 +57,7 @@ class DashboardComponentTests(unittest.IsolatedAsyncioTestCase):
         await asyncio.gather(self.module.async_setup_dashboard(self.hass), self.module.async_setup_dashboard(self.hass))
         self.hass.http.async_register_static_paths.assert_awaited_once()
         self.js.assert_called_once()
-        self.assertIn("pv-lab-plan-card.js?v=0.9.1", self.js.call_args.args[1])
+        self.assertIn("pv-lab-plan-card.js?v=0.9.2", self.js.call_args.args[1])
         self.assertTrue((ROOT / "www/pv-lab-plan-card.js").is_file())
 
     async def test_card_is_registered_before_offline_app_aborts_entry_setup(self):

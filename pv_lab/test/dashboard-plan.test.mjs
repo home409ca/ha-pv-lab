@@ -9,3 +9,30 @@ test('unknown or overlapping current work rejects approval; an overrun invalidat
 test('rejects unsupported appliances and invalid counts; custom dates use installation timezone',()=>{const x=fixture();for(const counts of [{pralka:0,zmywarka:0},{pralka:8,zmywarka:1},{pralka:-1,zmywarka:1},{pralka:1.2,zmywarka:1},{pralka:1,zmywarka:0,other:1}])assert.throws(()=>dashboardInput({...x.request,counts},x.settings,x.c,x.now));const input=dashboardInput({...x.request,range:'custom',earliest:'2026-11-22T10:00',latest:'2026-11-22T15:00'},x.settings,x.c,x.now);assert.equal(input.latest,Date.parse('2026-11-22T14:00:00Z'));});
 
 test('card publishes the filtered solar choices, while the full cost comparison remains available',()=>{const x=fixture();for(const goal of ['cost','pv']){const full=planUnified(x.f,[],x.c,x.input,x.os,emptyLoad(),null,new Map(),{}, {profiles:[]},x.now);const card=dashboardProposals(full,{...x.request,goal},x.c,x.now);assert.ok(full.analyses[goal].length>=card.proposals.length);assert.deepEqual(card.proposals.map(p=>p.sourcePlanId),full.dashboardAnalyses[goal].map(p=>p.id));assert.ok(card.proposals.every(p=>p.cycles.reduce((n,c)=>n+c.energyKWh,0)>p.importKWh+1e-6));}});
+
+test('approval matches conservative planner windows for already uncertain devices without fabricating idle',()=>{
+ const x=fixture(),proposal=x.state.proposals[0],first=Math.min(...proposal.cycles.map(c=>c.start));
+ for(const status of ['unknown','observing']){const activity={devices:x.activity.devices.map(d=>({...d,status,blockedUntil:first}))};x.state.activitySnapshot=structuredClone(activity.devices);const result=approveDashboard(x.state,'p0',x.state.id,activity,x.now);assert.equal(result.approvedId,'p0');assert.equal(activity.devices[0].status,status);}
+});
+test('approval still blocks newly lost telemetry, unknown overlapping windows and genuine running conflicts, with a useful cause',()=>{
+ const x=fixture(),first=x.state.proposals[0].start;x.state.activitySnapshot=x.activity.devices;
+ let activity={devices:x.activity.devices.map(d=>({...d,status:'unknown',blockedUntil:x.now}))};assert.throws(()=>approveDashboard(x.state,'p0',x.state.id,activity,x.now),/utracono potwierdzenie/);
+ x.state.activitySnapshot=structuredClone(activity.devices);activity.devices[0].blockedUntil=first+3600000;assert.throws(()=>approveDashboard(x.state,'p0',x.state.id,activity,x.now),/potwierdzanie dostępności/);
+ activity.devices[0].status='running';assert.throws(()=>approveDashboard(x.state,'p0',x.state.id,activity,x.now),/nadal pracuje/);
+ assert.throws(()=>approveDashboard(x.state,'p0',x.state.id,{devices:[]},x.now),/brak danych/);
+});
+
+test('card variants select actual saved curves per appliance without mutating app settings',async()=>{
+ const x=fixture(),original=structuredClone(x.settings),request={...x.request,variants:{pralka:'maximum',zmywarka:'mean'}},input=dashboardInput(request,x.settings,x.c,x.now);
+ assert.equal(input.entries.find(e=>e.deviceId==='pralka').variant,'maximum');assert.equal(input.entries.find(e=>e.deviceId==='zmywarka').variant,'mean');assert.deepEqual(x.settings,original);
+ const profile={id:'washer_profile',name:'Pralka z historii',deviceId:'pralka',variants:{typical:{stepMinutes:5,wh:Array(12).fill(50)},mean:{stepMinutes:5,wh:Array(12).fill(75)},maximum:{stepMinutes:5,wh:Array(12).fill(100)}}},library={profiles:[profile]};input.entries.find(e=>e.deviceId==='pralka').profileId=profile.id;
+ const result=planUnified(x.f,[],x.c,input,x.os,emptyLoad(),null,new Map(),{},library,x.now,null),washer=result.analyses.cost[0].devices.find(d=>d.powerEntity===x.c.appliances.find(a=>a.id==='pralka').powerEntity);assert.equal(washer.energyKWh,1.2);
+ const state=dashboardProposals(result,request,x.c,x.now);assert.equal(state.request.variants.pralka,'maximum');
+ for(const variants of [null,[],{pralka:'eco'},{other:'typical'}])assert.throws(()=>dashboardInput({...x.request,variants},x.settings,x.c,x.now),/wariant/);
+ const zero=dashboardInput({...request,counts:{pralka:0,zmywarka:1}},x.settings,x.c,x.now);assert.equal(zero.entries.find(e=>e.deviceId==='pralka').variant,'maximum');
+});
+
+test('own profiles precede default variants and are limited to matching or unassigned devices',async()=>{const {dashboardPrograms}=await import('../src/dashboard-plan.mjs'),x=fixture(),curve={stepMinutes:5,wh:Array(15).fill(60)},library={profiles:[{id:'washer',name:'Moje pranie',deviceId:'pralka',variants:{typical:curve}},{id:'dish',name:'Moje zmywanie',deviceId:'zmywarka',variants:{typical:curve}},{id:'manual',name:'Ręczny',manual:true,variants:{typical:curve}}]};
+ const programs=dashboardPrograms(x.settings,x.c,library);assert.equal(programs.zmywarka.choices[0].label,'Ręczny');assert.equal(programs.zmywarka.choices[1].label,'Moje zmywanie');assert.equal(programs.zmywarka.choices[2].label,'Typowy');assert.ok(!programs.zmywarka.choices.some(p=>p.profileId==='washer'));assert.equal(programs.zmywarka.choices[0].durationMinutes,75);assert.equal(programs.zmywarka.choices[0].energyKWh,.9);
+ const input=dashboardInput({...x.request,profile_ids:{pralka:'washer'},variants:{pralka:'typical'}},x.settings,x.c,x.now,library);assert.equal(input.entries.find(e=>e.deviceId==='pralka').profileId,'washer');assert.throws(()=>dashboardInput({...x.request,profile_ids:{pralka:'dish'}},x.settings,x.c,x.now,library),/nie pasuje/);assert.throws(()=>dashboardInput({...x.request,profile_ids:{pralka:'missing'}},x.settings,x.c,x.now,library),/nie pasuje/);
+});
