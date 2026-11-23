@@ -1,3 +1,7 @@
+# 0.9.5
+
+Ukrywanie minionych wariantów taniej strefy i szczytu PV. Jeśli okno jeszcze trwa, porównanie liczy nowy start od najbliższego kwadransa po teraz; po końcu okna znika z karty. Zatwierdzony plan pozostaje widoczny. Bez zmiany zapisanych godzin, historii i zasad kosztu.
+
 # 0.9.4
 
 Karta: wspólny ranking kosztów również dla porównań taryfy i szczytu, objaśnienie 0% pokrycia PV, brak domyślnie wybranych urządzeń (YAML default_cycles), tylko nazwane programy z preferowanym wariantem oraz wykres w szczegółach przed zatwierdzeniem, z osią kWh i pełnym horyzontem.

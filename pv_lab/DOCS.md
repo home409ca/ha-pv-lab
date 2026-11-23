@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.9.4 -->
+<!-- pv-lab-manual-version: 0.9.5 -->
 
-**Wersja aplikacji i instrukcji: 0.9.4.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.9.5.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -993,3 +993,10 @@ Domyślnie na świeżo otwartej karcie oba urządzenia mają 0 cykli. Opcja YAML
 Lista programu pokazuje każdy nazwany profil raz, z jego wariantem domyślnym wybranym w PV Lab. Nie dodaje osobnych Typowy/Średni/Największy, jeśli są zapisane profile. Przy braku jakiegokolwiek profilu zachowany jest jawny wariant ręczny. Już uzbrojony plan zachowuje zamrożony przebieg; nowe preferencje dotyczą nowych obliczeń.
 
 `show_plan_chart: true` pokazuje wykres po rozwinięciu „?” każdego wariantu, również przed zatwierdzeniem; nie zajmuje miejsca w zwiniętym planie. Zakres jest od chwili obliczenia (przy późniejszym podglądzie od teraz) do końca wybranego dnia lub jutra. Starty cykli nadal respektują wybrane dni — pokazanie dzisiejszej prognozy przy planie na jutro nie pozwala uruchomić go dziś. Oś pionowa to kWh na 15 minut, pozioma ma daty i godziny. Linie PV, domu z trwającymi cyklami i nowych urządzeń są schodkowe, pokazują energię przed bilansowaniem. Brak danych jest przerwą, nie zerem. Wykres ma datę prognozy i nie jest pomiarem wykonania. Zatwierdzenie nie jest potrzebne do obejrzenia wykresu. Stary zapis bez osi czasu wymaga ponownego obliczenia. Podgląd nie steruje switchami i nie tworzy dodatkowych cyklicznych plików; kompaktowe osie czasu są częścią bieżących propozycji, zastępowanych nowym przeliczeniem.
+
+
+## Trwające i minione okna na karcie — 0.9.5
+
+Dla dziennej taniej strefy liczymy jej skonfigurowany początek i koniec; dla szczytu PV — pełną godzinę największej produkcji. Jeśli teraz jest w tym oknie, przy przeliczeniu wybieramy najbliższy dopuszczalny start co 15 minut od teraz, z zachowaniem wybranego zakresu i ograniczeń urządzeń. Przykład: 13:20 w taniej strefie 13–15 daje start 13:30. Godzina szczytu 11–12 o 11:20 daje 11:30. Koszt, profil i bilans są przeliczane dla nowego startu; nie podmieniamy samych etykiet czasu. Ostatni dopuszczalny kwadrans musi zaczynać się przed końcem okna. Pełny cykl może skończyć się później, jeśli pozwala na to zakres planu; cena każdego okresu jest liczona osobno.
+
+Po zakończeniu okna jego wariant znika z listy karty przy następnym odświeżeniu (standardowo do minuty), również gdy dane z serwera nie zmieniły się. Pozostałe propozycje i licznik rozwijanej listy są wyliczane bez niego. Zatwierdzony plan nie jest ukrywany ani samowolnie przesuwany. Pozostaje widoczny do kontroli wykonania. Zmiana nie usuwa archiwum ani danych porównań w aplikacji. Nowe godziny trwającego okna powstają po „Zaplanuj”; samo otwarcie szczegółów nie wykonuje ponownej optymalizacji.

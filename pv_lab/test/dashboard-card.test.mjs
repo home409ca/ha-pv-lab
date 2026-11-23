@@ -57,3 +57,11 @@ test('card defaults are empty and configurable without modifying an armed reques
  assert.deepEqual(cardOptions().default_cycles,{zmywarka:0,pralka:0});assert.deepEqual(cardOptions({default_cycles:{zmywarka:1}}).default_cycles,{zmywarka:1,pralka:0});for(const default_cycles of [null,[],{pralka:4},{dryer:1},{pralka:'1'}])assert.throws(()=>cardOptions({default_cycles}));
  const {PVLabPlanCard}=await import('../../custom_components/pv_lab/www/pv-lab-plan-card.js'),card=Object.create(PVLabPlanCard.prototype);Object.assign(card,{_config:cardOptions(),_sequence:0,_busy:false,_dirty:false,_usingDefaults:true,_request:{},render(){},async call(){return {defaults:{counts:{zmywarka:1,pralka:0},range:'tomorrow'},programs:{}};}});await card.status();assert.deepEqual(card._request.counts,{zmywarka:0,pralka:0});card.call=async()=>({approved:true,request:{counts:{zmywarka:2,pralka:0},range:'today',goal:'cost'}});await card.status();assert.equal(card._request.counts.zmywarka,2);
 });
+
+
+test('elapsed cheap and peak references disappear, active windows and approved execution remain visible',async()=>{
+ const {visibleCardPlans}=await import('../../custom_components/pv_lab/www/pv-lab-plan-card.js'),H=3600000,now=12.75*H;
+ const state={proposals:[],references:[{id:'peak',kind:'peak',referenceStart:11*H,windowEnd:12*H,complete:false,cycles:[]},{id:'cheap',kind:'cheap',referenceStart:13*H,windowEnd:15*H,complete:false,cycles:[]}]};
+ assert.deepEqual(visibleCardPlans(state,3,now).map(p=>p.id),['cheap']);assert.equal(visibleCardPlans(state,3,13.5*H).length,1);assert.equal(visibleCardPlans(state,3,15*H).length,0);
+ state.approved=true;state.approvedId='peak';assert.equal(visibleCardPlans(state,3,now)[0].id,'peak');
+});

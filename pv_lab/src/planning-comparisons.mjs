@@ -4,18 +4,20 @@ import {tariffZone} from './optimizer-tariff.mjs';
 import {rankDevice,reservations} from './optimizer.mjs';
 const H=3600000,Q=900000;
 const nextDay=day=>new Date(Date.parse(day+'T12:00:00Z')+24*H).toISOString().slice(0,10);
-export function comparisonRequests(f,range,c,settings){
+export function comparisonRequests(f,range,c,settings,now=range.earliest){
  const requests=[];
  for(let day=localParts(range.earliest,c.timezone).date;day<=localParts(range.latest-1,c.timezone).date;day=nextDay(day)){
   const [start,end]=dayBounds(day,c.timezone),month=Number(day.slice(5,7)),windows=settings.tariff.summerMonths.includes(month)?settings.tariff.summerOffPeak:settings.tariff.winterOffPeak;
-  const minute=windows.map(w=>w[0]).filter(v=>v>=360&&v<1080).sort((a,b)=>a-b)[0];
+  const window=windows.filter(w=>w[0]>=360&&w[0]<1080).sort((a,b)=>a[0]-b[0])[0],minute=window?.[0];
   let at=Number.isFinite(minute)?parseLocalInput(day+'T'+String(Math.floor(minute/60)).padStart(2,'0')+':'+String(minute%60).padStart(2,'0'),c.timezone):null;
   if(at!==null)at=Math.ceil(at/Q)*Q;
-  requests.push({kind:'cheap',day,label:'Start tania strefa',at,note:at!==null&&tariffZone(at,settings.tariff,c.timezone).holiday?'Cały dzień w taniej strefie — bez dodatkowej zmiany ceny.':'',reason:at===null?'Brak dziennego okna taniej strefy w konfiguracji.':null});
+  const windowStart=at,windowEnd=window?(window[1]===1440?end:parseLocalInput(day+'T'+String(Math.floor(window[1]/60)).padStart(2,'0')+':'+String(window[1]%60).padStart(2,'0'),c.timezone)):null,first=Math.ceil(Math.max(now,range.earliest)/Q)*Q;
+  if(at!==null&&first>at&&first<windowEnd)at=first;
+  requests.push({kind:'cheap',day,label:'Start tania strefa',at,windowStart,windowEnd,ongoing:at!==windowStart,note:at!==null&&tariffZone(at,settings.tariff,c.timezone).holiday?'Cały dzień w taniej strefie — bez dodatkowej zmiany ceny.':'',reason:at===null?'Brak dziennego okna taniej strefy w konfiguracji.':null});
   const hours=new Map();
   for(const row of f.fullRows||[]){if(row.start<start||row.start>=end||!Number.isFinite(row.wh)||row.wh<0)continue;const p=localParts(row.start,c.timezone),hour=row.start-Number(p.minute)*60000;const quarters=hours.get(hour)||new Map();quarters.set(row.start,row.wh);hours.set(hour,quarters);}
   const peak=[...hours].filter(([,rows])=>rows.size===4).map(([at,rows])=>({at,wh:[...rows.values()].reduce((n,w)=>n+w,0)})).filter(r=>r.wh>1).sort((a,b)=>b.wh-a.wh||a.at-b.at)[0];
-  requests.push({kind:'peak',day,label:'Start szczyt PV',at:peak?.at??null,peakKWh:peak?peak.wh/1000:null,note:'',reason:peak?null:'Brak pełnej godzinowej prognozy z dodatnią produkcją PV.'});
+  requests.push({kind:'peak',day,label:'Start szczyt PV',at:peak&&first>peak.at&&first<peak.at+H?first:peak?.at??null,windowStart:peak?.at??null,windowEnd:peak?peak.at+H:null,ongoing:!!peak&&first>peak.at&&first<peak.at+H,peakKWh:peak?peak.wh/1000:null,note:'',reason:peak?null:'Brak pełnej godzinowej prognozy z dodatnią produkcją PV.'});
  }
  return requests;
 }

@@ -21,3 +21,11 @@ test('gross PV peak can match cheap start and still buy the entire cycle when ho
  assert.ok(Math.abs(cheap.result.schedule.additionalImportKWh-.91)<1e-9);assert.ok(Math.abs(cheap.result.schedule.cost-.91*.68)<1e-9);assert.equal(cheap.result.schedule.cost.toFixed(2),'0.62');
  assert.ok(cheap.result.timeline.some(r=>r.pvKWh===1&&r.baseKWh===1.25));
 });
+
+
+test('ongoing cheap zone and PV peak recalculate exact future quarter instead of discarding the entire active window',()=>{
+ const x=fixture();const now=Date.parse('2026-01-12T12:20:00Z');x.f.fullRows.forEach((r,i)=>r.wh=Math.floor(i/4)===5?1000:100);
+ const range={earliest:now,latest:now+6*H},refs=comparisonRequests(x.f,range,x.c,x.os,now);for(const ref of refs){assert.equal(ref.at,Date.parse('2026-01-12T12:30:00Z'));assert.equal(ref.ongoing,true);assert.ok(ref.at<ref.windowEnd);assert.equal(ref.windowStart,Date.parse('2026-01-12T12:00:00Z'));}
+ x.now=now;x.s.earliest=now;x.s.latest=range.latest;x.s.entries.forEach(e=>e.count=e.deviceId==='zmywarka'?1:0);const result=run(x);for(const ref of result.comparisons){assert.equal(ref.result.schedule.startsAt,Date.parse('2026-01-12T12:30:00Z'));assert.equal(ref.result.schedule.devices,1);}
+ const ended=comparisonRequests(x.f,{earliest:Date.parse('2026-01-12T14:00:00Z'),latest:range.latest},x.c,x.os);assert.ok(ended.every(r=>r.windowEnd<=Date.parse('2026-01-12T14:00:00Z')));
+});
