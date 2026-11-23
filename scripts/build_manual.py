@@ -34,6 +34,16 @@ def render(source, version):
         line = lines[i].strip()
         if not line or line.startswith('<!--'):
             flush()
+        elif line.startswith('```'):
+            flush()
+            block = []
+            i += 1
+            while i < len(lines) and not lines[i].strip().startswith('```'):
+                block.append(lines[i])
+                i += 1
+            if i == len(lines):
+                raise ValueError('Unclosed code block')
+            out.append('<pre><code>' + html.escape('\n'.join(block)) + '</code></pre>')
         elif line.startswith('#'):
             flush()
             m = re.fullmatch(r'(#{1,6}) (.+)', line)
@@ -67,7 +77,7 @@ def render(source, version):
             paragraph.append(line)
         i += 1
     flush()
-    css = 'html{scroll-behavior:smooth}body{margin:0;background:#f4f6f7;color:#1c2b37;font:17px/1.7 system-ui,sans-serif}header{background:#142631;color:white;padding:38px max(24px,calc((100vw - 1080px)/2))}header p{color:#d6e4e6}main{max-width:1080px;margin:auto;padding:24px}h1{font-size:2.3rem;line-height:1.2}h2{margin-top:48px;padding-top:14px;border-top:2px solid #c7d6d8;color:#164c43;scroll-margin-top:20px}h3{margin-top:28px}nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;background:white;padding:22px;border-radius:12px}nav a{color:#155d50;text-decoration:none;padding:4px}a:hover{text-decoration:underline}table{border-collapse:collapse;width:100%;background:white;font-size:.94rem}th,td{text-align:left;vertical-align:top;border:1px solid #cbd5db;padding:12px}th{background:#e5efeb}code{background:#e6ecef;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}.table-scroll{overflow-x:auto;margin:20px 0}button{font:inherit;padding:10px 18px;border:0;border-radius:8px;background:#c8ef9d;color:#132923;cursor:pointer}footer{margin-top:44px;border-top:1px solid #cbd5db;padding:20px;color:#52616a}@media(max-width:650px){body{font-size:16px}main{padding:16px}nav{grid-template-columns:1fr}th,td{padding:8px}h1{font-size:1.8rem}}@media print{body{background:white;font-size:10pt}header{background:white;color:black;padding:0}header p{color:black}main{max-width:none;padding:0}button{display:none}nav{display:block;columns:2;padding:0}nav a{display:block}h2{break-after:avoid}tr{break-inside:avoid}.table-scroll{overflow:visible}a{color:black;text-decoration:none}}'
+    css = 'html{scroll-behavior:smooth}body{margin:0;background:#f4f6f7;color:#1c2b37;font:17px/1.7 system-ui,sans-serif}header{background:#142631;color:white;padding:38px max(24px,calc((100vw - 1080px)/2))}header p{color:#d6e4e6}main{max-width:1080px;margin:auto;padding:24px}h1{font-size:2.3rem;line-height:1.2}h2{margin-top:48px;padding-top:14px;border-top:2px solid #c7d6d8;color:#164c43;scroll-margin-top:20px}h3{margin-top:28px}nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;background:white;padding:22px;border-radius:12px}nav a{color:#155d50;text-decoration:none;padding:4px}a:hover{text-decoration:underline}table{border-collapse:collapse;width:100%;background:white;font-size:.94rem}th,td{text-align:left;vertical-align:top;border:1px solid #cbd5db;padding:12px}th{background:#e5efeb}pre{overflow-x:auto;padding:14px;border-radius:8px;background:#e6ecef;line-height:1.5}pre code{padding:0;background:none;white-space:pre}code{background:#e6ecef;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}.table-scroll{overflow-x:auto;margin:20px 0}button{font:inherit;padding:10px 18px;border:0;border-radius:8px;background:#c8ef9d;color:#132923;cursor:pointer}footer{margin-top:44px;border-top:1px solid #cbd5db;padding:20px;color:#52616a}@media(max-width:650px){body{font-size:16px}main{padding:16px}nav{grid-template-columns:1fr}th,td{padding:8px}h1{font-size:1.8rem}}@media print{body{background:white;font-size:10pt}header{background:white;color:black;padding:0}header p{color:black}main{max-width:none;padding:0}button{display:none}nav{display:block;columns:2;padding:0}nav a{display:block}h2{break-after:avoid}tr{break-inside:avoid}.table-scroll{overflow:visible}a{color:black;text-decoration:none}}'
     return '<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Instrukcja PV Lab ' + version + '</title><style>' + css + '</style></head><body><header><h1>Instrukcja PV Lab</h1><p>Wersja ' + version + ' · obliczenia, ekrany i interpretacja wyników</p><button onclick="window.print()">Drukuj / zapisz PDF</button></header><main><nav aria-label="Spis treści">' + ''.join(toc) + '</nav>' + '\n'.join(out) + '<footer>PV Lab ' + version + ' · Instrukcja działa również bez dostępu do internetu.</footer></main></body></html>\n'
 
 

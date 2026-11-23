@@ -1,3 +1,12 @@
+# 0.9.1
+
+- Karta: szczyt PV i początek dziennej taniej strefy jako dodatkowe rozwijane warianty, opcjonalny wykres zatwierdzonego planu i konfigurowalne niższe przyciski oraz kolory.
+- Auto: 10 minut na przygotowanie urządzeń, potem świeży odczyt wyłączonych switchy; trwałe odliczanie, anulowanie i ponowienie po chwilowej utracie połączenia.
+- Kłódki: czerwony → niebieski → zielony, z krótkim opisem końca planu. Aplikacja pokazuje ostatni harmonogram i porównanie kosztów ostatniej kontroli.
+- Ograniczono przebudowy karty i zbędne pełne odczyty po kliknięciach. Kliknięcie karty nie odsuwa okresowego odczytu prognozy HA.
+- Czujniki pracy zachowują ostatni potwierdzony stan, jawnie oznaczając jego nieświeżość. Potwierdzony wyłączony switch pozwala rozpoznać bezczynność bez pomiaru mocy.
+- Wykres zużycia domu uwzględnia pozostały profil ręcznie uruchomionych cykli, zgodnie z obliczeniami planera; niepewny stan nie tworzy fikcyjnej nadwyżki PV.
+
 # 0.9.0
 
 Zatwierdzanie na karcie uzbraja zapisane w HA polecenia switch.turn_on dla każdego cyklu. Trzy tryby: stałe godziny, elastyczny, elastyczny bez późniejszego końca. Kontrola co 30 minut, wspólna aktualna wycena, próg poprawy i blokada ostatnich 15 minut. Auto tworzy i zatwierdza jedną partię po jednym cyklu urządzeń z wyłączonym switchem. Konfigurowalne encje switch, lokalna historia prób, odporność na restart i anulowanie także bez aplikacji. Starsze zatwierdzenia nie są automatycznie uzbrajane; stara karta musi zostać odświeżona. Silnik prognozy i Gemini bez zmian.

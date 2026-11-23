@@ -59,13 +59,13 @@ export class ApplianceLive {
     for(const d of need){try{const rows=data.find(rows=>Array.isArray(rows)&&rows[0]?.entity_id===d.powerEntity)||[];if(!rows.length||rows.length>30000)throw new Error('Brak wystarczającej historii mocy urządzenia.');const points=powerHistory(rows);let machine=null;for(const p of points)if(p.at<=now)machine=observeAppliance(machine,Math.max(from,p.at),p.value,d.detection);if(!machine||!points.some(p=>p.value!==null))throw new Error('Brak poprawnych pomiarów W/kW w historii.');this.state.devices[d.powerEntity]=machine;}catch(e){const prior=this.state.devices[d.powerEntity];this.state.devices[d.powerEntity]={...(prior&&now-prior.at<=Math.max(180000,c.pollSeconds*2500)?prior:{}),historyError:e.message,retryAt:now+15*MINUTE};}}
    }catch(e){for(const d of need){const prior=this.state.devices[d.powerEntity];this.state.devices[d.powerEntity]={...(prior&&now-prior.at<=Math.max(180000,c.pollSeconds*2500)?prior:{}),historyError:e.message,retryAt:now+15*MINUTE};}}
   }
-  for(const d of devices){const old=this.state.devices[d.powerEntity],w=powerValue(states.get(d.powerEntity));this.state.devices[d.powerEntity]={...observeAppliance(old,now,w,d.detection),detectionKey:JSON.stringify(d.detection)};}
+  for(const d of devices){if(states.get(d.switchEntity)?.state==='off'){this.state.devices[d.powerEntity]={at:now,w:0,lastGoodAt:now,idleConfirmed:true,idleSince:now,run:null,detectionKey:JSON.stringify(d.detection),source:'switch_off'};continue;}const old=this.state.devices[d.powerEntity],w=powerValue(states.get(d.powerEntity));this.state.devices[d.powerEntity]={...observeAppliance(old,now,w,d.detection),detectionKey:JSON.stringify(d.detection)};}
   return this.state;
  }
  snapshot(c,input,library,now=Date.now()){return liveApplianceSnapshot(this.state,c,input,library,now);}
 }
 
-function runningWh(curve,from,to){
+export function runningWh(curve,from,to){
  if(!curve)return 0;
  let wh=0;const end=Math.min(to,curve.end);if(end<=from)return 0;
  if(curve.wh){for(let i=Math.max(0,Math.floor((from-curve.start)/STEP));i<curve.wh.length&&curve.start+i*STEP<end;i++){const overlap=Math.max(0,Math.min(end,curve.start+(i+1)*STEP)-Math.max(from,curve.start+i*STEP));wh+=curve.wh[i]*overlap/STEP;}const extension=Math.max(0,end-Math.max(from,curve.start+curve.duration));wh+=curve.currentW*extension/3600000;}
@@ -75,6 +75,7 @@ function runningWh(curve,from,to){
 // Running cycles belong to the baseline. New-cycle costs remain marginal and never charge them twice.
 export function applyRunningAppliances(ctx,activity){
  if(!activity)return;
+ ctx.observedAppliances=activity.devices.map(d=>d.powerEntity);
  for(const device of activity.devices){
   if(device.status==='idle')continue;
   const clean=ctx.s.load.mode==='constant'||ctx.s.load.alreadyExcludesDevices||ctx.s.load.excludeEntities.includes(device.powerEntity);

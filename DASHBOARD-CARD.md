@@ -1,4 +1,4 @@
-# Zaplanuj uruchomienie — PV Lab 0.9.0
+# Zaplanuj uruchomienie — PV Lab 0.9.1
 
 Zaktualizuj aplikację i integrację HACS, uruchom ponownie HA i odśwież dashboard. Dodaj kartę Zaplanuj uruchomienie albo użyj:
 
@@ -11,7 +11,7 @@ Naciśnięcia Pralka lub Zmywarka wybierają kolejno 0 → 1 → 2 → 3 → 0. 
 
 Zatwierdź uzbraja terminy i włączenie switchy w HA, Anuluj rozbraja przyszłe polecenia. Wysyłamy tylko turn_on; nigdy nie wyłączamy gniazdek. Pracujący sprzęt jest uwzględniony osobno i blokuje nakładanie cykli.
 
-Jeśli zasób nie załaduje się automatycznie, dodaj w Zasobach dashboardu /pv_lab_frontend/pv-lab-plan-card.js?v=0.9.0-dashboard jako Moduł JavaScript. Nie twórz drugiej integracji ani osobnego repozytorium.
+Jeśli zasób nie załaduje się automatycznie, dodaj w Zasobach dashboardu /pv_lab_frontend/pv-lab-plan-card.js?v=0.9.1-dashboard jako Moduł JavaScript. Nie twórz drugiej integracji ani osobnego repozytorium.
 
 Na karcie pod ceną znajduje się cienki pasek udziałów energii: zielony PV i bilans, pomarańczowy Do dokupienia. Procent zakupu = dodatkowa energia do dokupienia po bilansowaniu / suma energii cykli, ograniczony do 0–100%; zielony jest dopełnieniem. To udział po rozliczeniu okresów, a nie fizyczny pobór w każdej minucie. Baza domu i trwające cykle są już uwzględnione przed nowymi cyklami. Przy brakującej energii lub niepoprawnym wyniku pasek jest pomijany, nie pokazuje fikcyjnego 100% PV. Gdy miniona część bieżącego okresu miała saldo importu, dodatkowy zakup może być większy niż energia cykli; udział jest wtedy ograniczony do 100%, a wyliczony koszt nie jest obcinany. Procenty zaokrąglamy do pełnych liczb.
 
@@ -66,7 +66,7 @@ W obrębie jednego obliczenia ponownie wykorzystujemy oceny tych samych startów
 Karta może wykorzystać wspólny odczyt HA młodszy niż 10 sekund. Starszy odczyt jest pobierany ponownie; krótka historia urządzeń jest odświeżana według dotychczasowych warunków świeżości, zamiast wymuszania jej przy każdym kliknięciu. Ręczne „Odczytaj dane i przelicz” zachowuje wymuszenie odczytu. Zmiana bieżącego pomiaru lub stanu urządzenia unieważnia wynik planu. Pierwsze obliczenie po starcie/importowaniu dużej historii może trwać dłużej; problem z HA lub siecią nadal może wydłużyć oczekiwanie.
 
 
-## Włączanie urządzeń i automatyczna aktualizacja planu — 0.9.0
+## Włączanie urządzeń i automatyczna aktualizacja planu — 0.9.1
 
 **Co zmieniło się względem 0.8:** od tej wersji nowe zatwierdzenie na aktualnej karcie HA oznacza zgodę na wysłanie poleceń włączenia switchy. Samo „Zaplanuj”, zapis wariantu w aplikacji do porównania i potwierdzenie wykonania w archiwum nadal nie sterują urządzeniami. Wcześniejsze zatwierdzenia bez sekcji wykonania nie są automatycznie uzbrajane. Stara karta z pamięci podręcznej dostaje komunikat o konieczności odświeżenia, zanim będzie mogła uzbroić sterowanie.
 
@@ -79,7 +79,7 @@ Wejdź w **Ustawienia → Urządzenia — profile i sterowanie → Zmywarka / Pr
 | Zmywarka | `switch.gniazdkopomiarzmywarka` |
 | Pralka | `switch.gniazdkopomiarpralka` |
 
-Można podać inne encje. Nie wolno przypisać tego samego switcha dwóm urządzeniom. Przed zmianą mapowania anuluj aktywny plan; zatwierdzenie zapamiętuje konkretny switch, więc zmiana ustawień nie może po cichu przekierować istniejącego polecenia. Wykrywanie pracy nadal korzysta z encji mocy, nie ze stanu gniazdka. Switch „on” nie jest dowodem, że program urządzenia pracuje.
+Można podać inne encje. Nie wolno przypisać tego samego switcha dwóm urządzeniom. Przed zmianą mapowania anuluj aktywny plan; zatwierdzenie zapamiętuje konkretny switch, więc zmiana ustawień nie może po cichu przekierować istniejącego polecenia. Wykrywanie pracy korzysta z encji mocy. Świeży stan switcha `off` potwierdza bezczynność także przy brakującej lub starej mocy urządzenia; switch `on` nie jest dowodem pracy programu.
 
 ### Trzy tryby przy zatwierdzaniu
 
@@ -88,10 +88,10 @@ Kolorowa ikona kłódki obok `?` i „Zatwierdź” przełącza kolejno:
 | Kolor / tryb | Reguła |
 | --- | --- |
 | Czerwony, zamknięta kłódka — **Stałe godziny** | Domyślny. Nie zmieniamy godzin zatwierdzonych cykli. |
-| Zielony, otwarta kłódka — **Elastyczny** | Co 30 minut sprawdzamy lepsze terminy przyszłych cykli w pierwotnie wybranym, bezwzględnym zakresie dat i z zachowaniem ograniczeń. |
 | Niebieski — **Elastyczny, bez późniejszego końca** | Jak elastyczny, ale koniec ostatniego cyklu każdego urządzenia nie może przekroczyć jego końca z pierwotnie zatwierdzonego planu. |
+| Zielony, otwarta kłódka — **Elastyczny** | Co 30 minut sprawdzamy lepsze terminy przyszłych cykli w pierwotnie wybranym, bezwzględnym zakresie dat i z zachowaniem ograniczeń. |
 
-Opis ikony jest dostępny po wskazaniu/fokusie i jako etykieta dostępności. Tryb można zmienić także po uzbrojeniu planu. Kliknięcie ikony w Auto przełącza partię na wskazany tryb ręcznie zatwierdzonego planu; nie dodaje cykli. Zmiana trybu sama nie przesuwa żadnego terminu — pierwsza kontrola przypada po 30 minutach.
+Po lewej od ikony widać „Koniec o HH:MM” (czerwona), „Koniec przed HH:MM” (niebieska) albo „Koniec elastyczny” (zielona). Niebieski dopuszcza zakończenie wcześniej, także po wybraniu planu alternatywnego; granica oznacza najpóźniejszy dopuszczalny koniec, włącznie z podaną godziną. Każde urządzenie zachowuje własną pierwotną granicę. Opis jest też dostępny po wskazaniu/fokusie i jako etykieta dostępności. Tryb można zmienić także po uzbrojeniu planu. Kliknięcie ikony w Auto przełącza partię na wskazany tryb ręcznie zatwierdzonego planu; nie dodaje cykli. Zmiana trybu sama nie przesuwa żadnego terminu — pierwsza kontrola przypada po 30 minutach.
 
 ### Sprawdzanie lepszego terminu
 
@@ -99,13 +99,15 @@ Kontrola działa w integracji HA także po zamknięciu karty. Do PV Lab trafia �
 
 Nie zmieniamy liczby cykli, programu ani horyzontu. Profil i ograniczenia zatwierdzenia są zapamiętane. Przyszłe starty są nadal sprawdzane co 15 minut z 5-minutowym przebiegiem cyklu i wybranym bilansowaniem. Cykle jednego sprzętu nie mogą się nakładać. Wysłane/rozpoczęte cykle nie są ponownie planowane; ich zapamiętany czas zakończenia oraz bieżąca obserwacja pracy blokują wcześniejszy kolejny start. Start w ostatnich 15 minutach jest zamrożony. Niepełne dane lub nieudane połączenie oznaczają zachowanie dotychczasowych godzin, a nie fikcyjną oszczędność. Po częściowym wykonaniu korzyść liczymy dla pozostałych cykli; wyświetlana wycena całego planu zachowuje zapamiętane szacunki wcześniejszych cykli, więc nie jest rachunkiem za faktycznie zużytą energię.
 
-Karta pokazuje ostatnią kontrolę i zmianę, np. „12:15 → 11:15 · taniej o 0,18 zł”. Podgląd wykonania jest też w aplikacji, w Planowaniu zużycia. Przeliczenie nie gwarantuje globalnie najlepszego spośród wszystkich kombinacji — korzysta z dotychczasowego silnika planowania, bez AI.
+W aplikacji „Planowanie zużycia” → „Wykonanie w Home Assistant” widać ostatni zatwierdzony harmonogram (start i koniec każdego cyklu), jego status i tryb, również dla Auto. Ostatnia kontrola pokazuje czas, koszt zachowania dotychczasowych godzin i koszt najlepszego znalezionego wariantu na tych samych aktualnych danych. Kontrola bez zmiany jest również widoczna; przy braku danych wartości pozostają puste. Karta pokazuje ostatnią kontrolę i zmianę, np. „12:15 → 11:15 · taniej o 0,18 zł”. Podgląd wykonania jest też w aplikacji, w Planowaniu zużycia. Przeliczenie nie gwarantuje globalnie najlepszego spośród wszystkich kombinacji — korzysta z dotychczasowego silnika planowania, bez AI.
 
 ### Auto
 
-Kliknięcie **Auto** pobiera aktualne stany skonfigurowanych switchy. Dla każdego urządzenia ze stanem dokładnie `off` wybieramy jeden cykl, wyznaczamy wspólny pełny plan w zaznaczonym zakresie Dziś/Jutro i od razu go zatwierdzamy w trybie elastycznym. Urządzenia `on`, brakujące i `unavailable` nie są dodawane. Jeżeli żaden switch nie jest wyłączony albo nie ma pełnego planu, Auto nie uzbraja poleceń. Zachowujemy wybrane w aplikacji programy i terminy zakończenia. Jeśli istnieje aktywny plan, najpierw go anuluj.
+Kliknięcie **Auto** rozpoczyna trwałe odliczanie **10 minut**. Możesz przygotować urządzenia i wyłączyć ich switche; nie muszą być wyłączone przy kliknięciu. Karta wyróżnia Auto znakiem ✓ i kolorem, pokazuje komunikat oraz godzinę sprawdzenia. Dopiero po 10 minutach integracja HA prosi aplikację o świeży odczyt. Dla każdego switcha ze stanem dokładnie `off` wybieramy jeden cykl i zatwierdzamy wspólny pełny plan w trybie elastycznym. Obowiązuje zakres dat wybrany przy włączeniu Auto, bez przesuwania doby po północy. Urządzenia `on`, brakujące i `unavailable` nie są dodawane. Jeżeli żaden switch nie jest wyłączony albo nie ma pełnego planu, Auto nie uzbraja poleceń. Zachowujemy wybrane w aplikacji programy i terminy zakończenia. Jeśli istnieje aktywny plan, najpierw go anuluj.
 
-**Auto obejmuje jedną partię**, najwyżej po jednym cyklu zmywarki i pralki. Co pół godziny sprawdza lepszą godzinę jej pozostałych uruchomień. Nie dopisuje bez końca kolejnych prań ani nie rozpoczyna nowej partii po ponownym wyłączeniu gniazdka. Po wysłaniu wszystkich poleceń Auto kończy pracę. Kolejne kliknięcie aktywnego Auto anuluje przyszłe uruchomienia tej partii; nigdy nie wyłącza już pracujących urządzeń. Dla kolejnej partii włącz Auto ponownie.
+**Auto obejmuje jedną partię**, najwyżej po jednym cyklu zmywarki i pralki. Co pół godziny sprawdza lepszą godzinę jej pozostałych uruchomień. Nie dopisuje bez końca kolejnych prań ani nie rozpoczyna nowej partii po ponownym wyłączeniu gniazdka. Po wysłaniu wszystkich poleceń Auto kończy pracę. Kolejne kliknięcie aktywnego Auto anuluje odliczanie lub przyszłe uruchomienia tej partii; nigdy nie wyłącza już pracujących urządzeń. Dla kolejnej partii włącz Auto ponownie.
+
+Odliczanie przechowujemy również w HA. Po restarcie czekamy do zapisanego czasu, a przy braku połączenia po upływie 10 minut ponawiamy próbę najwyżej raz na minutę. Brak wyłączonych switchy lub pełnego planu kończy tę próbę Auto z opisem przyczyny. Anulowanie blokuje również spóźnioną odpowiedź z planem.
 
 ### Wykonanie poleceń i przerwy w działaniu
 
@@ -117,6 +119,42 @@ Przed wysłaniem zapisujemy zamiar wykonania. Normalny restart i powtarzane odcz
 
 ### Dane i retencja wykonania
 
-`/data/dashboard-plan.json` przechowuje bieżący plan, tryb, zamrożone profile, pierwotny zakres, statusy cykli i do 20 ostatnich zmian. Dzienniki `/data/execution-RRRR-MM-DD.jsonl` zachowują zdarzenia zatwierdzeń, kontroli, zmian i potwierdzeń; nie podlegają automatycznemu usuwaniu i można je pobrać w Plikach i retencji. Eksport JSON/GZIP obejmuje też te zdarzenia. To małe podsumowania, bez surowych odczytów encji i kluczy.
+`/data/dashboard-plan.json` przechowuje bieżący plan, tryb, zamrożone profile, pierwotny zakres, statusy cykli, ostatnią kontrolę kosztów, odliczanie Auto, kompaktowy wykres ostatniego zatwierdzenia lub kontroli i do 20 ostatnich zmian. Zapis wykresu jest zastępowany przy kontroli; nie tworzymy osobnego pliku na każdy odczyt. Dzienniki `/data/execution-RRRR-MM-DD.jsonl` zachowują zdarzenia zatwierdzeń, kontroli, zmian i potwierdzeń; nie podlegają automatycznemu usuwaniu i można je pobrać w Plikach i retencji. Eksport JSON/GZIP obejmuje też te zdarzenia. To małe podsumowania, bez surowych odczytów encji i kluczy.
 
-W HA `.storage/pv_lab_execution_<entry_id>` jest osobnym trwałym rejestrem zegara i do 200 ostatnich tożsamości poleceń, z kolejką potwierdzeń. Ta część należy do kopii Home Assistant, a nie eksportu samej aplikacji. Publiczny odczyt integracji nie przesyła pełnych profili wykonania. Nowe funkcje nie zmieniają prognozy PV, cen, historii produkcji ani ustawień AI.
+W HA `.storage/pv_lab_execution_<entry_id>` jest osobnym trwałym rejestrem zegara i do 200 ostatnich tożsamości poleceń, z kolejką potwierdzeń, odliczaniem Auto i pamięcią ostatnich 200 anulowanych identyfikatorów Auto. Ta część należy do kopii Home Assistant, a nie eksportu samej aplikacji. Publiczny odczyt integracji nie przesyła pełnych profili wykonania. Nowe funkcje nie zmieniają prognozy PV, cen, historii produkcji ani ustawień AI.
+
+
+
+
+W rozwijanej liście karty, po maksymalnie trzech głównych propozycjach, domyślnie zawsze pokazujemy osobno wariant **Start dziennej taniej strefy** i **Start w godzinie szczytu PV** dla wybranych dni. Mają te same profile, cenę, bilansowanie i ograniczenia co aplikacja i uczestniczą w jej dotychczasowym wyborze harmonogramu. Nie są sztucznie wstawiane na początek rankingu. Można je zatwierdzić bezpośrednio z karty. Miniony termin, niepełny plan lub brak prognozy ma opis przyczyny i nieaktywny przycisk zatwierdzenia. Pozostają widoczne również przy samym zasilaniu z sieci, ponieważ są dodatkowymi porównaniami na życzenie. Przy dwóch dniach wariantów jest po dwa na każdy dzień. `max_plans` dotyczy tylko głównych propozycji; `show_reference_plans: false` ukrywa porównania. Zatwierdzony wariant pozostaje widoczny po ukryciu dodatkowych porównań.
+
+Po zatwierdzeniu `show_plan_chart: true` pokazuje prosty wykres PV, domu (w tym wcześniej trwających cykli) i nowych cykli, w kWh na 15 minut, przed bilansowaniem. Domyślnie wykres jest ukryty. Wykres pochodzi z obliczenia zatwierdzenia lub ostatniej kontroli, z widoczną datą prognozy; nie jest pomiarem wykonania. Dla dawnego planu bez zapisanych punktów pokazujemy brak wykresu. Pełne dane pozostają w aplikacji.
+
+Dodatkowe parametry YAML:
+
+| Parametr | Domyślnie | Znaczenie |
+| --- | --- | --- |
+| `show_reference_plans` | `true` | Dodatkowe porównania szczytu PV i dziennej taniej strefy po rozwinięciu. |
+| `show_plan_chart` | `false` | Mały wykres zatwierdzonego planu. |
+| `device_button_height` | `36` | Wysokość przycisków urządzeń w px, liczba całkowita 28–60. |
+| `device_color` | `"#85b866"` | Kolor obrysu i delikatnego tła wybranego urządzenia. |
+| `auto_color` | `"#b992df"` | Osobny kolor nieaktywnego przycisku Auto. |
+| `auto_active_color` | `"#83c9af"` | Kolor włączonego Auto; dodatkowo znak ✓ i mocniejszy obrys. |
+
+Kolory przyjmują zapis `#RRGGBB` w cudzysłowach. Rozmiary i kolory nie zmieniają żadnych obliczeń. Przykład do edytora karty:
+
+```yaml
+type: custom:pv-lab-plan-card
+show_reference_plans: true
+show_plan_chart: true
+device_button_height: 34
+device_color: "#85b866"
+auto_color: "#b992df"
+auto_active_color: "#83c9af"
+```
+
+Karta nie wywołuje przeładowania całego dashboardu HA. Pomijamy przebudowę jej zawartości, jeśli okresowy odczyt nie zmienił danych lub stanu planu. Kliknięcia nie wymuszają pełnego pobrania prognoz wszystkich encji; aktualizujemy tylko dane planu, bez odsuwania okresowego odczytu integracji. Ręcznie wybrane dni i otwarte szczegóły zachowują dotychczasowe zasady.
+
+Wykrycie ręcznie uruchomionej pralki lub zmywarki jest niezależne od zatwierdzonego planu. Uczony profil domu pozostaje bazą po odjęciu urządzeń z konfiguracji. Do planowanego obciążenia dodajemy tylko pozostały przebieg pracującego cyklu, ze startem rozpoznanym z historii; nie dodajemy ponownie jego zużycia do oczyszczonej historii. Ten sam sprzęt jest zablokowany do szacowanego zakończenia, a potwierdzona bezczynność zwalnia go przy następnym odczycie. Jeżeli stan lub początek jest niepewny albo baza nie wyklucza urządzenia, obowiązują opisane ograniczenia jakości — nie obiecujemy wolnej energii z brakujących danych.
+
+Opcjonalna linia zużycia domu w „Porównaniu prognoz i produkcji” uwzględnia teraz bazę **i już trwające cykle**, zgodnie z bilansem planera. Nadwyżka to `max(PV − dom z trwającymi cyklami, 0)`. Nie obejmuje jeszcze nowych cykli, które dopiero chcesz zaplanować. Baza i dodany trwający cykl są zapisane osobno; przy niepewnym stanie nie pokazujemy fikcyjnej nadwyżki. Prognoza produkcji PV i ceny nie są przez tę zmianę modyfikowane.

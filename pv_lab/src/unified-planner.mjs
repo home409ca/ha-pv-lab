@@ -103,7 +103,7 @@ export function planUnified(f,samples,c,input,optimizer,load,live,states,model,l
  applyRunningAppliances(ctx,activity);
  for(const device of settings.devices){const running=activity?.devices.find(d=>d.powerEntity===device.powerEntity);if(running&&running.status!=='idle')device.earliest=Math.max(device.earliest??now,running.blockedUntil);}
  const prepared=settings.devices.map(device=>({device:{...device,_resource:device.powerEntity||input.entries.find(e=>e.id===device.id.slice(0,device.id.lastIndexOf('_')))?.id||device.id},curve:deviceCurve(device,library)}));
- if(settings.load.mode==='history')for(const entity of settings.load.excludeEntities)if(!prepared.some(p=>p.device.powerEntity===entity))ctx.warnings.push('Od bazy odjęto '+entity+', ale ten sprzęt nie ma cyklu we wspólnym planie. Jego niezaplanowana praca nie jest uwzględniona.');
+ if(settings.load.mode==='history')for(const entity of settings.load.excludeEntities)if(!prepared.some(p=>p.device.powerEntity===entity)&&!activity?.devices.some(d=>d.powerEntity===entity))ctx.warnings.push('Od bazy odjęto '+entity+', ale ten sprzęt nie ma cyklu we wspólnym planie. Jego niezaplanowana praca nie jest uwzględniona.');
  const references=buildComparisonPlans(ctx,prepared,comparisonRequests(f,range,c,settings),range);
  const searches=Object.fromEntries(['pv','cost'].map(goal=>[goal,search(ctx,prepared,goal,references)])),analyses={},dashboardAnalyses={},dashboardSelection={};
  for(const objective of ['pv','cost']){const found=searches[objective];analyses[objective]=found.plans.map(({plan,reason},i)=>({...materialize(ctx,prepared,plan,objective,found,range),id:objective+'_'+i,alternativeReason:reason}));

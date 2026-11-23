@@ -68,7 +68,8 @@ async def ws_schedule(hass, connection, msg):
             await executor.async_accept(result)
             result = executor.present(result)
         if request is not None:
-            await coordinator.async_request_refresh()
+            coordinator.data = {**(coordinator.data or {}), "devicePlanning": result}
+            coordinator.async_update_listeners()
         connection.send_result(msg["id"], result)
     except (AuthenticationError, ClientError, TimeoutError, ValueError, HomeAssistantError) as err:
         if executor and (msg["action"] == "cancel" or msg["action"] == "auto" and msg.get("enabled") is False):

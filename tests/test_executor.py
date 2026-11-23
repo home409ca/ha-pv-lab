@@ -82,3 +82,51 @@ class ExecutorTests(unittest.IsolatedAsyncioTestCase):
         await self.executor.async_accept(self.plan()); self.at+=60000; await self.executor.async_due(); self.service.assert_not_awaited()
         self.hass.is_running=True
         await self.executor.async_due(); self.service.assert_awaited_once()
+
+    def waiting(self):
+        return {"autoSetup": {"id": "a", "active": True, "requestedAt": self.at, "readyAt": self.at+600000, "range": "today"}}
+
+    async def test_auto_waits_ten_minutes_and_survives_restart(self):
+        waiting = self.waiting()
+        await self.executor.async_accept(waiting)
+        self.at += 599999
+        await self.executor.async_due()
+        self.request.assert_not_awaited()
+        await self.executor.async_stop()
+        self.executor = self.new()
+        await self.executor.async_setup()
+        self.at += 1
+        self.request.return_value = {"autoSetup": {**waiting["autoSetup"], "active": False}, **self.plan()}
+        await self.executor.async_due()
+        self.assertEqual(self.request.await_args.args[0], {"action": "auto_start", "auto_id": "a"})
+        self.assertIsNotNone(self.executor.data["plan"])
+        self.service.assert_not_awaited()
+
+    async def test_auto_cancel_blocks_late_planning_response_and_offline_restart(self):
+        waiting = self.waiting()
+        await self.executor.async_accept(waiting)
+        await self.executor.async_cancel()
+        await self.executor.async_accept({"autoSetup": {**waiting["autoSetup"], "active": False}, **self.plan()})
+        self.assertIsNone(self.executor.data["plan"])
+        self.assertFalse(self.executor.present(waiting)["autoSetup"]["active"])
+        self.at += 600000
+        await self.executor.async_due()
+        self.service.assert_not_awaited()
+
+    async def test_offline_auto_retries_once_per_minute_not_a_loop(self):
+        await self.executor.async_accept(self.waiting())
+        self.request.side_effect = OSError("offline")
+        self.at += 600000
+        await self.executor.async_due()
+        await self.executor.async_due()
+        self.assertEqual(self.request.await_count, 1)
+        self.at += 60000
+        await self.executor.async_due()
+        self.assertEqual(self.request.await_count, 2)
+
+    async def test_auto_never_arms_if_countdown_cannot_be_saved(self):
+        self.store.fail = True
+        with self.assertRaises(OSError):
+            await self.executor.async_accept(self.waiting())
+        self.assertIsNone(self.executor.data["autoSetup"])
+        self.store.fail = False

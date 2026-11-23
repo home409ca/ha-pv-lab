@@ -1,6 +1,7 @@
 """The same appliance state used by the app's planner; no second detector in HA."""
 from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorDeviceClass
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.restore_state import RestoreEntity
 from .const import DOMAIN, VERSION
 from .contract import read_appliance_running, read_dashboard_plan
 
@@ -15,17 +16,35 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities([*(PVLabApplianceRunning(coordinator, entry, *spec) for spec in SPECS), PVLabPlanApproved(coordinator, entry)])
 
 
-class PVLabApplianceRunning(CoordinatorEntity, BinarySensorEntity):
+class PVLabApplianceRunning(CoordinatorEntity, BinarySensorEntity, RestoreEntity):
     _attr_has_entity_name = True
     _attr_device_class = BinarySensorDeviceClass.RUNNING
 
     def __init__(self, coordinator, entry, appliance_id, name, icon):
         super().__init__(coordinator)
+        self._last_confirmed = None
+        self._last_confirmed_at = None
         self.appliance_id = appliance_id
         self._attr_name = name
         self._attr_icon = icon
         self._attr_unique_id = f"{entry.entry_id}_appliance_{appliance_id}_running"
         self._attr_device_info = {"identifiers": {(DOMAIN, entry.entry_id)}, "name": "PV Lab", "manufacturer": "PV Lab", "model": "Local PV forecast", "sw_version": VERSION}
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+        previous = await self.async_get_last_state()
+        if previous and previous.state in ("on", "off"):
+            self._last_confirmed = previous.state == "on"
+            self._last_confirmed_at = previous.attributes.get("last_confirmed_at")
+
+    def _reading(self):
+        value, attrs = read_appliance_running(self.coordinator.data or {}, self.appliance_id)
+        fresh = bool(getattr(self.coordinator, "last_update_success", True)) and value is not None
+        if fresh:
+            self._last_confirmed = value
+            row = next((r for r in (self.coordinator.data or {}).get("applianceActivity", {}).get("devices", []) if r.get("id") == self.appliance_id), {})
+            self._last_confirmed_at = row.get("readAt")
+        return self._last_confirmed, {**attrs, "data_fresh": fresh, "last_confirmed_at": self._last_confirmed_at, "state_source": "pomiar" if fresh else "ostatni potwierdzony stan"}
 
     @property
     def suggested_object_id(self):
@@ -33,17 +52,15 @@ class PVLabApplianceRunning(CoordinatorEntity, BinarySensorEntity):
 
     @property
     def available(self):
-        # Independent of solar-forecast availability, including during the night.
-        value, _ = read_appliance_running(self.coordinator.data or {}, self.appliance_id)
-        return super().available and value is not None
+        return True
 
     @property
     def is_on(self):
-        return read_appliance_running(self.coordinator.data or {}, self.appliance_id)[0]
+        return self._reading()[0]
 
     @property
     def extra_state_attributes(self):
-        return read_appliance_running(self.coordinator.data or {}, self.appliance_id)[1]
+        return self._reading()[1]
 
 
 class PVLabPlanApproved(CoordinatorEntity, BinarySensorEntity):

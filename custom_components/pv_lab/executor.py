@@ -23,7 +23,7 @@ class PlanExecutor:
         self.hass, self.entry, self.now = hass, entry, now
         self.store = store or Store(hass, 1, "pv_lab_execution_" + entry.entry_id)
         self.requester = requester
-        self.data = {"plan": None, "commands": {}, "receipts": [], "reviewAt": 0, "message": "", "watermark": 0, "blockedPlans": []}
+        self.data = {"plan": None, "commands": {}, "receipts": [], "reviewAt": 0, "message": "", "watermark": 0, "blockedPlans": [], "autoSetup": None, "blockedAuto": [], "autoRetryAt": 0}
         self.lock = asyncio.Lock()
         self.network_lock = asyncio.Lock()
         self.save_lock = asyncio.Lock()
@@ -54,6 +54,11 @@ class PlanExecutor:
     def present(self, state):
         result = copy.deepcopy(state)
         execution = result.get("execution") or {}
+        setup = result.get("autoSetup") or {}
+        if setup.get("id") in self.data["blockedAuto"]:
+            setup.update(active=False, message="Anulowano Auto w Home Assistant.")
+            execution.update(enabled=False, auto=False)
+            result.update(approved=False, phase="anulowany")
         if execution.get("planId") in self.data["blockedPlans"]:
             result.update(approved=False, cancelledAt=self.now(), cancelReason="Anulowano lokalnie w Home Assistant.", phase="anulowany")
             execution.update(enabled=False, auto=False, reviewMessage="Anulowano przyszłe polecenia.")
@@ -70,6 +75,29 @@ class PlanExecutor:
         self.data["receipts"].append(event)
 
     async def async_accept(self, state):
+        setup = state.get("autoSetup") if isinstance(state, dict) else None
+        if isinstance(setup, dict):
+            async with self.lock:
+                if setup.get("id") in self.data["blockedAuto"]:
+                    return
+                current_setup = self.data["autoSetup"]
+                if current_setup and setup.get("requestedAt", 0) < current_setup.get("requestedAt", 0):
+                    return
+                if setup.get("active"):
+                    if not isinstance(setup.get("id"), str) or any(type(setup.get(k)) not in (int, float) or not math.isfinite(setup[k]) for k in ("requestedAt", "readyAt")) or setup["readyAt"] < setup["requestedAt"] + 600000:
+                        raise ValueError("Nieprawidłowe odliczanie Auto")
+                    previous = copy.deepcopy(self.data)
+                    self.data["autoSetup"] = copy.deepcopy(setup)
+                    try:
+                        await self._save()
+                    except Exception:
+                        self.data = previous
+                        raise
+                elif current_setup and current_setup.get("id") == setup.get("id"):
+                    self.data["autoSetup"] = None
+                    self.data["message"] = setup.get("message", "")
+                    await self._save()
+                self._schedule()
         execution = state.get("execution") if isinstance(state, dict) else None
         if not isinstance(execution, dict) or execution.get("schema") != 1:
             return
@@ -120,7 +148,7 @@ class PlanExecutor:
             self.data["commands"] = dict(list(self.data["commands"].items())[-200:])
             self.data["plan"] = copy.deepcopy(execution)
             self.data["watermark"] = max(self.data["watermark"], execution.get("createdAt", 0))
-            self.data["receipts"] = [e for e in self.data["receipts"] if e["plan_id"] == execution["planId"]]
+            self.data["receipts"] = [e for e in self.data["receipts"] if e.get("plan_id") == execution["planId"]]
             try:
                 await self._save()
             except Exception:
@@ -132,15 +160,23 @@ class PlanExecutor:
         if self.cancel_timer:
             self.cancel_timer()
             self.cancel_timer = None
-        if self.stopped or not self.data["plan"]:
+        if self.stopped:
             return
         pending = [c["start"] for c in self.data["commands"].values() if c["status"] == "pending"]
+        setup = self.data["autoSetup"]
+        if setup and setup.get("active"):
+            pending.append(max(setup["readyAt"], self.data["autoRetryAt"]))
         if pending:
             at = max(self.now() + (100 if getattr(self.hass, "is_running", True) else 10000), min(pending))
             self.cancel_timer = async_track_point_in_utc_time(self.hass, self.async_due, datetime.fromtimestamp(at / 1000, timezone.utc))
 
     async def async_cancel(self):
         async with self.lock:
+            if self.data["autoSetup"]:
+                identity = self.data["autoSetup"]["id"]
+                self.data["blockedAuto"] = (self.data["blockedAuto"] + [identity])[-200:]
+                self.data["receipts"].append({"action": "cancel", "auto_id": identity})
+                self.data["autoSetup"] = None
             if self.data["plan"]:
                 self.data["blockedPlans"] = (self.data["blockedPlans"] + [self.data["plan"]["planId"]])[-200:]
                 self.data["receipts"].append({"action": "cancel", "plan_id": self.data["plan"]["planId"]})
@@ -153,6 +189,10 @@ class PlanExecutor:
             self._schedule()
 
     async def async_due(self, _now=None):
+        await self.async_auto_due()
+        if not self.data["plan"]:
+            await self.async_flush()
+            return
         async with self.lock:
             if self.stopped or not self.data["plan"]:
                 return
@@ -185,6 +225,22 @@ class PlanExecutor:
                 await self._save()
             self._schedule()
         await self.async_flush()
+
+    async def async_auto_due(self):
+        setup = self.data["autoSetup"]
+        if self.stopped or not getattr(self.hass, "is_running", True) or not setup or not setup.get("active") or self.now() < max(setup["readyAt"], self.data["autoRetryAt"]) or self.network_lock.locked():
+            return
+        async with self.network_lock:
+            # Persist retry pacing before contacting the app; a restart cannot create a tight loop.
+            self.data["autoRetryAt"] = self.now() + 60000
+            await self._save()
+            try:
+                result = await self._request({"action": "auto_start", "auto_id": setup["id"]})
+                await self.async_accept(result)
+            except Exception:
+                self.data["message"] = "Auto czeka na połączenie z aplikacją; ponowimy odczyt za minutę."
+                await self._save()
+            self._schedule()
 
     async def async_flush(self):
         if self.network_lock.locked():

@@ -28,11 +28,12 @@ class ApplianceBinaryTests(unittest.IsolatedAsyncioTestCase):
         package = types.ModuleType("appliance_component_test")
         package.__path__ = [str(ROOT)]
         modules = {"appliance_component_test": package}
-        for name in ("homeassistant", "homeassistant.components", "homeassistant.helpers", "homeassistant.components.binary_sensor", "homeassistant.helpers.update_coordinator"):
+        for name in ("homeassistant", "homeassistant.components", "homeassistant.helpers", "homeassistant.components.binary_sensor", "homeassistant.helpers.update_coordinator", "homeassistant.helpers.restore_state"):
             modules[name] = types.ModuleType(name)
         modules["homeassistant.components.binary_sensor"].BinarySensorEntity = type("BinarySensorEntity", (Entity,), {})
         modules["homeassistant.components.binary_sensor"].BinarySensorDeviceClass = types.SimpleNamespace(RUNNING="running")
         modules["homeassistant.helpers.update_coordinator"].CoordinatorEntity = CoordinatorEntity
+        modules["homeassistant.helpers.restore_state"].RestoreEntity = type("RestoreEntity", (Entity,), {})
         self.modules = patch.dict(sys.modules, modules)
         self.modules.start()
         self.binary = importlib.import_module("appliance_component_test.binary_sensor")
@@ -76,6 +77,28 @@ class ApplianceBinaryTests(unittest.IsolatedAsyncioTestCase):
             row = {**self.row, **updates}
             self.assertIsNone(self.contract.read_appliance_running({"applianceActivity": {"devices": [row]}}, "pralka", self.now)[0])
         self.coordinator.last_update_success = False
-        self.assertFalse(self.entity.available)
+        self.assertTrue(self.entity.available)
         self.coordinator.data = {}
         self.assertIsNone(self.entity.is_on)
+
+    async def test_last_confirmed_state_remains_visible_but_is_marked_stale(self):
+        self.assertTrue(self.entity.is_on)
+        self.coordinator.last_update_success = False
+        self.coordinator.data = {}
+        self.assertTrue(self.entity.available)
+        self.assertTrue(self.entity.is_on)
+        self.assertFalse(self.entity.extra_state_attributes["data_fresh"])
+        self.coordinator.last_update_success = True
+        self.row.update(status="idle", running=False)
+        self.coordinator.data = {"applianceActivity": {"devices": [self.row]}}
+        self.assertFalse(self.entity.is_on)
+        self.assertTrue(self.entity.extra_state_attributes["data_fresh"])
+
+    async def test_restore_preserves_confirmed_state_after_restart(self):
+        from unittest.mock import AsyncMock
+        self.binary.RestoreEntity.async_added_to_hass = AsyncMock()
+        self.entity.async_get_last_state = AsyncMock(return_value=types.SimpleNamespace(state="on", attributes={"last_confirmed_at": self.now-60000}))
+        self.coordinator.data = {}
+        await self.entity.async_added_to_hass()
+        self.assertTrue(self.entity.is_on)
+        self.assertFalse(self.entity.extra_state_attributes["data_fresh"])

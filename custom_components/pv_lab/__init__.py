@@ -47,7 +47,7 @@ async def async_setup_entry(hass, entry):
     try:
         await coordinator.async_config_entry_first_refresh()
     except ConfigEntryNotReady:
-        if not coordinator.executor.data.get("plan"):
+        if not coordinator.executor.data.get("plan") and not coordinator.executor.data.get("autoSetup"):
             await coordinator.executor.async_stop()
             raise
         # Keep locally stored approved commands alive while the app is offline.
