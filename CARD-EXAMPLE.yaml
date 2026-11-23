@@ -21,11 +21,12 @@ show_details: true
 
 # Własne profile i warianty Typowy / Średni / Największy.
 show_program_variants: true
-program_variants_style: buttons
+show_program_in_device: true
+program_variants_style: select
 show_program_duration: true
 show_program_energy: true
 # below_devices = pod urządzeniami; details = sekcja rozwijana.
-program_variants_position: below_devices
+program_variants_position: details
 # Wykres pojawia się po zatwierdzeniu planu.
 show_plan_chart: true
 

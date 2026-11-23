@@ -5,8 +5,8 @@ import {dayBounds} from '../public/presentation.js';
 export const defaultPlan={energyKWh:4,durationHours:2,baseW:300,mode:'hourly',earliest:null,latest:null,profileId:null,profileVariant:'typical'};
 export function validatePlan(p){
   if(!p||Object.keys(p).some(k=>!Object.hasOwn(defaultPlan,k)))throw new Error('Nieznane pole planowania.');
-  for(const [k,min,max] of [['energyKWh',.01,100],['durationHours',.25,24],['baseW',0,50000]])if(!Number.isFinite(p[k])||p[k]<min||p[k]>max)throw new Error('Niepoprawna wartość planu: '+k);
-  if(Math.abs(p.durationHours*4-Math.round(p.durationHours*4))>1e-8)throw new Error('Czas pracy musi być wielokrotnością 15 minut.');
+  for(const [k,min,max] of [['energyKWh',.01,100],['durationHours',1/12,24],['baseW',0,50000]])if(!Number.isFinite(p[k])||p[k]<min||p[k]>max)throw new Error('Niepoprawna wartość planu: '+k);
+  if(Math.abs(p.durationHours*12-Math.round(p.durationHours*12))>1e-8)throw new Error('Czas pracy musi być wielokrotnością 5 minut.');
   if(!['hourly','quarterly','instant'].includes(p.mode))throw new Error('Niepoprawny tryb bilansowania.');
   for(const k of ['earliest','latest'])if(p[k]!==null&&(!Number.isFinite(p[k])||p[k]<0||p[k]>8640000000000000))throw new Error('Niepoprawna data planu.');
   if(p.profileId!==null&&(typeof p.profileId!=='string'||!/^[a-zA-Z0-9_-]{1,80}$/.test(p.profileId)))throw new Error('Niepoprawny profil urządzenia.');

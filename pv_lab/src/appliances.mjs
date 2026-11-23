@@ -1,4 +1,4 @@
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash} from 'node:crypto';
 import {DAY,localParts} from './time.mjs';
 export const detectionDefaults={startW:10,stopW:5,idleMinutes:20,minActiveMinutes:2,minDurationMinutes:10,maxDurationMinutes:480,minEnergyKWh:.05};
 export const defaultAppliances=[
@@ -46,7 +46,7 @@ export function detectCycles(power,energy,device,begin,end,zone){
     }
   }
   if(run)rejected.incomplete++;
-  return {cycles:cycles.slice(-2000),rejected,warnings:cycles.length>2000?['Zachowano ostatnie 2000 zakończonych cykli.']:[],detected:cycles.length};
+  return {cycles,rejected,warnings:[],detected:cycles.length};
 }
 export async function analyzeAppliance(ha,device,days,zone,onProgress=()=>{},now=Date.now()){
   device=validateAppliance(device);if(!Number.isInteger(days)||days<1||days>30)throw new Error('Historia urządzenia: 1–30 dni.');
@@ -60,20 +60,24 @@ export async function analyzeAppliance(ha,device,days,zone,onProgress=()=>{},now
   return {at:now,begin,end:now,deviceId:device.id,deviceName:device.name,powerEntity:device.powerEntity,energyEntity:device.energyEntity,settings:device.detection,workType:device.workType,windowMinutes:device.windowMinutes,...detected,warnings:[...detected.warnings,...(!energy.length&&device.energyEntity?['Brak historii licznika energii; użyto całkowania mocy.']:[])],note:'Historia zmian mocy jest traktowana jako przebieg schodkowy. Surowa historia nie jest zapisywana. Cykle i grupowanie programów wymagają Twojego sprawdzenia.'};
 }
 const median=values=>{const a=[...values].sort((a,b)=>a-b),i=Math.floor(a.length/2);return a.length%2?a[i]:(a[i-1]+a[i])/2;};
-function shape(wh){const values=[...wh];while(values.length%3)values.push(0);return {stepMinutes:5,wh:values,durationMinutes:values.length*5,energyKWh:values.reduce((a,b)=>a+b,0)/1000};}
+function shape(wh){const values=[...wh];return {stepMinutes:5,wh:values,durationMinutes:values.length*5,energyKWh:values.reduce((a,b)=>a+b,0)/1000};}
 export function buildProfile(analysis,cycleIds,name,existingId=null,now=Date.now()){
   if(typeof name!=='string'||!name.trim()||name.length>80)throw new Error('Podaj nazwę profilu (do 80 znaków).');
   if(!Array.isArray(cycleIds)||!cycleIds.length||new Set(cycleIds).size!==cycleIds.length)throw new Error('Wybierz zakończone cykle.');const cycles=cycleIds.map(id=>analysis.cycles.find(c=>c.id===id));if(cycles.some(c=>!c))throw new Error('Cykl nie istnieje w bieżącej analizie.');
-  const buckets=new Map();for(const c of cycles){const key=Math.ceil(c.durationMinutes/15)*15;(buckets.get(key)||buckets.set(key,[]).get(key)).push(c);}const typicalGroup=[...buckets].sort(([a,x],[b,y])=>y.length-x.length||a-b)[0][1],mid=median(typicalGroup.map(c=>c.energyKWh));
-  const typical=[...typicalGroup].sort((a,b)=>Math.abs(a.energyKWh-mid)-Math.abs(b.energyKWh-mid)||a.start-b.start)[0],maximum=[...cycles].sort((a,b)=>b.energyKWh-a.energyKWh||b.durationMinutes-a.durationMinutes)[0],length=Math.max(...cycles.map(c=>c.wh.length)),mean=Array.from({length},(_,i)=>cycles.reduce((sum,c)=>sum+(c.wh[i]||0),0)/cycles.length);
+  const buckets=new Map();for(const c of cycles){const key=Math.ceil(c.durationMinutes/5)*5;(buckets.get(key)||buckets.set(key,[]).get(key)).push(c);}const typicalGroup=[...buckets].sort(([a,x],[b,y])=>y.length-x.length||a-b)[0][1],mid=median(typicalGroup.map(c=>c.energyKWh));
+  const typical=[...typicalGroup].sort((a,b)=>Math.abs(a.energyKWh-mid)-Math.abs(b.energyKWh-mid)||a.start-b.start)[0],maximum=[...cycles].sort((a,b)=>b.energyKWh-a.energyKWh||b.durationMinutes-a.durationMinutes)[0],meanDuration=Math.ceil(cycles.reduce((n,c)=>n+c.durationMinutes,0)/cycles.length/5)*5,mean=Array.from({length:meanDuration/5},(_,j)=>cycles.reduce((sum,c)=>{
+    const duration=c.durationMinutes,from=j*5/meanDuration*duration,to=(j+1)*5/meanDuration*duration;let energy=0;
+    for(let i=0;i<c.wh.length;i++){const a=i*5,b=Math.min(duration,a+5),overlap=Math.max(0,Math.min(to,b)-Math.max(from,a));if(b>a)energy+=c.wh[i]*overlap/(b-a);}return sum+energy/cycles.length;
+  },0));
+  const ceiling=Math.max(...cycles.map(c=>c.peakW||0),...cycles.flatMap(c=>c.wh.map(w=>w*12)))/12,target=mean.reduce((a,b)=>a+b,0),bounded=mean.map(w=>Math.min(w,ceiling)),excess=target-bounded.reduce((a,b)=>a+b,0),room=bounded.reduce((n,w)=>n+ceiling-w,0);if(excess>1e-10&&room>0)for(let i=0;i<mean.length;i++)mean[i]=bounded[i]+excess*(ceiling-bounded[i])/room;
   const variants={typical:shape(typical.wh),mean:shape(mean),maximum:shape(maximum.wh)};
   for(const v of Object.values(variants))validateShape(v);
-  return {id:existingId||randomUUID(),name:name.trim(),deviceId:analysis.deviceId,source:{powerEntity:analysis.powerEntity||null,energyEntity:analysis.energyEntity||null,begin:analysis.begin||null,end:analysis.end||null},at:now,cycleIds,summary:{cycles:cycles.length,minKWh:Math.min(...cycles.map(c=>c.energyKWh)),meanKWh:cycles.reduce((s,c)=>s+c.energyKWh,0)/cycles.length,maxKWh:maximum.energyKWh,medianKWh:median(cycles.map(c=>c.energyKWh)),peakW:Math.max(...cycles.map(c=>c.peakW)),typicalDurationMinutes:Math.ceil(typical.durationMinutes/15)*15},variants};
+  return {id:existingId||randomUUID(),name:name.trim(),deviceId:analysis.deviceId,algorithmVersion:2,defaultVariant:'typical',source:{powerEntity:analysis.powerEntity||null,energyEntity:analysis.energyEntity||null,begin:analysis.begin||null,end:analysis.end||null},at:now,cycleIds,summary:{cycles:cycles.length,minKWh:Math.min(...cycles.map(c=>c.energyKWh)),meanKWh:cycles.reduce((s,c)=>s+c.energyKWh,0)/cycles.length,maxKWh:maximum.energyKWh,medianKWh:median(cycles.map(c=>c.energyKWh)),peakW:Math.max(...cycles.map(c=>c.peakW)),typicalDurationMinutes:variants.typical.durationMinutes,meanDurationMinutes:meanDuration,observedMeanDurationMinutes:cycles.reduce((n,c)=>n+c.durationMinutes,0)/cycles.length},variants};
 }
-export function validateShape(v){if(!v||v.stepMinutes!==5||!Array.isArray(v.wh)||!v.wh.length||v.wh.length>288||v.wh.length%3||v.wh.some(x=>!Number.isFinite(x)||x<0||x>100000/12))throw new Error('Niepoprawny przebieg 5-minutowy profilu.');const energy=v.wh.reduce((a,b)=>a+b,0)/1000;if(energy<.01||energy>100)throw new Error('Energia profilu musi wynosić 0,01–100 kWh.');return v;}
+export function validateShape(v){if(!v||v.stepMinutes!==5||!Array.isArray(v.wh)||!v.wh.length||v.wh.length>288||v.wh.some(x=>!Number.isFinite(x)||x<0||x>100000/12))throw new Error('Niepoprawny przebieg 5-minutowy profilu.');const energy=v.wh.reduce((a,b)=>a+b,0)/1000;if(energy<.01||energy>100)throw new Error('Energia profilu musi wynosić 0,01–100 kWh.');return v;}
 export function manualProfile(name,powersW,existingId=null,now=Date.now()){
   if(typeof name!=='string'||!name.trim()||name.length>80||!Array.isArray(powersW)||!powersW.length||powersW.length>288||powersW.some(v=>!Number.isFinite(v)||v<0||v>100000))throw new Error('Podaj nazwę i od 1 do 288 wartości mocy W (0–100000).');
-  const variant=shape(powersW.map(w=>w/12));validateShape(variant);return {id:existingId||randomUUID(),name:name.trim(),deviceId:null,at:now,manual:true,cycleIds:[],summary:{cycles:0,minKWh:variant.energyKWh,meanKWh:variant.energyKWh,maxKWh:variant.energyKWh,medianKWh:variant.energyKWh,peakW:Math.max(...powersW),typicalDurationMinutes:variant.durationMinutes},variants:{typical:variant}};
+  const variant=shape(powersW.map(w=>w/12));validateShape(variant);return {id:existingId||randomUUID(),name:name.trim(),deviceId:null,at:now,manual:true,defaultVariant:'typical',algorithmVersion:2,cycleIds:[],summary:{cycles:0,minKWh:variant.energyKWh,meanKWh:variant.energyKWh,maxKWh:variant.energyKWh,medianKWh:variant.energyKWh,peakW:Math.max(...powersW),typicalDurationMinutes:variant.durationMinutes},variants:{typical:variant}};
 }
 export function selectProfile(library,id,variant='typical'){
   if(!id)return null;const profile=library.profiles.find(p=>p.id===id);if(!profile)throw new Error('Wybrany profil urządzenia nie istnieje.');const curve=profile.variants[variant];if(!curve)throw new Error('Wybrany wariant profilu nie istnieje.');validateShape(curve);return {id:profile.id,name:profile.name,variant,...curve,durationMinutes:curve.wh.length*5,energyKWh:curve.wh.reduce((a,b)=>a+b,0)/1000};
@@ -84,12 +88,16 @@ export function detectWindows(points,device,begin,end){
  for(let start=Math.ceil(begin/length)*length;start+length<=end;start+=length){const stop=start+length,segments=[];let covered=0,peak=0;
   for(let i=0;i<points.length;i++){const p=points[i],a=Math.max(start,p.x),b=Math.min(stop,points[i+1]?.x??end);if(b<=a)continue;if(p.y===null)continue;covered+=b-a;peak=Math.max(peak,p.y);segments.push({start:a,end:b,y:p.y});}
   if(covered<length){rejected.missing++;continue;}const wh=binsFromSegments(segments,start,stop),energyKWh=wh.reduce((a,b)=>a+b,0)/1000;if(energyKWh<device.detection.minEnergyKWh){rejected.short++;continue;}cycles.push({id:device.id+'-'+start,start,end:stop,durationMinutes:device.windowMinutes,energyKWh,peakW:peak,meterKWh:null,warning:'Stałe okno obserwacji, nie automatycznie rozpoznany cykl.',stepMinutes:5,wh});
- }return {cycles:cycles.slice(-2000),rejected,warnings:['Praca ciągła: stałe okna obserwacji. Przesunięcie pracy pompy wymaga Twojej oceny komfortu i ograniczeń urządzenia.'],detected:cycles.length};
+ }return {cycles,rejected,warnings:['Praca ciągła: stałe okna obserwacji. Przesunięcie pracy pompy wymaga Twojej oceny komfortu i ograniczeń urządzenia.'],detected:cycles.length};
 }
+export const analysisContext=a=>JSON.stringify([a.powerEntity,a.energyEntity,a.settings,a.workType||'cyclic',a.windowMinutes||120]);
+const overlaps=(a,b)=>a.id===b.id||Math.max(0,Math.min(a.end,b.end)-Math.max(a.start,b.start))>.8*Math.min(a.end-a.start,b.end-b.start);
 export function mergeAnalysis(old,next){
- if(!old)return {...next,added:next.cycles.length};
- const signature=a=>JSON.stringify([a.powerEntity,a.energyEntity,a.settings,a.workType||'cyclic',a.windowMinutes||120]);
- if(signature(old)!==signature(next))return {...next,added:next.cycles.length,warnings:[...next.warnings,'Zmieniły się encje lub zasady wykrywania. Bieżąca lista zawiera nową analizę; zapisane profile pozostają zachowane.']};
- const cycles=[...old.cycles];let added=0;for(const cycle of next.cycles){const i=cycles.findIndex(c=>c.id===cycle.id||Math.max(0,Math.min(c.end,cycle.end)-Math.max(c.start,cycle.start))>.8*Math.min(c.end-c.start,cycle.end-cycle.start));if(i>=0)cycles[i]=cycle;else{cycles.push(cycle);added++;}}
- cycles.sort((a,b)=>a.start-b.start);return {...next,begin:Math.min(old.begin,next.begin),cycles:cycles.slice(-2000),added,warnings:[...next.warnings,...(cycles.length>2000?['Biblioteka zachowuje ostatnie 2000 cykli tego urządzenia.']:[])]};
+ const oldKey=old?analysisContext(old):null,newKey=analysisContext(next),cycles=(old?.cycles||[]).map(c=>({...c,contextKey:c.contextKey||oldKey})),deletedCycles=old?.deletedCycles||[];let added=0;
+ for(const raw of next.cycles){const cycle={...raw,contextKey:newKey};if(deletedCycles.some(c=>c.contextKey===newKey&&overlaps(c,cycle)))continue;
+ const i=cycles.findIndex(c=>c.contextKey===newKey&&overlaps(c,cycle));if(i>=0)cycles[i]={...cycle,id:cycles[i].id};else{if(cycles.some(c=>c.id===cycle.id))cycle.id+='@'+createHash('sha256').update(newKey).digest('hex').slice(0,12);cycles.push(cycle);added++;}}
+ cycles.sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));return {...next,begin:Math.min(old?.begin??next.begin,next.begin),cycles,deletedCycles,added,warnings:[...next.warnings,...(old&&oldKey!==newKey?['Zachowano wcześniejsze cykle z innymi encjami lub progami. Sprawdź je przed wspólnym użyciem.']:[])]};
+}
+export function removeAnalysisCycles(analysis,ids){
+ if(!analysis||!Array.isArray(ids)||!ids.length||new Set(ids).size!==ids.length||ids.some(id=>!analysis.cycles.some(c=>c.id===id)))throw new Error('Wybierz istniejące cykle do usunięcia.');const selected=new Set(ids),context=analysisContext(analysis),deleted=(analysis.deletedCycles||[]).slice();for(const c of analysis.cycles)if(selected.has(c.id))deleted.push({id:c.id,start:c.start,end:c.end,contextKey:c.contextKey||context});return {...analysis,cycles:analysis.cycles.filter(c=>!selected.has(c.id)),deletedCycles:deleted};
 }

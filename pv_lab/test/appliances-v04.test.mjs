@@ -23,10 +23,10 @@ test('kontrolny licznik dzienny obsługuje północ i nie zmienia po cichu całk
 test('typowy wybiera realny cykl z najczęstszej długości, średni zachowuje średnią energię',()=>{
   const cycle=(id,wh,start)=>({id,start,durationMinutes:wh.length*5,wh,energyKWh:wh.reduce((a,b)=>a+b,0)/1000,peakW:3000});
   const cycles=[cycle('a',[100,100,100],1),cycle('b',[200,200,200],2),cycle('c',[300,300,300,300,300,300],3)],profile=buildProfile({cycles,deviceId:'pralka'},['a','b','c'],'Bawełna');
-  assert.equal(profile.variants.typical.durationMinutes,15);close(profile.variants.mean.energyKWh,.9);close(profile.variants.maximum.energyKWh,1.8);assert.equal(profile.summary.cycles,3);assert.equal(profile.variants.mean.wh.length,6);
+  assert.equal(profile.variants.typical.durationMinutes,15);close(profile.variants.mean.energyKWh,.9);close(profile.variants.maximum.energyKWh,1.8);assert.equal(profile.summary.cycles,3);assert.equal(profile.variants.mean.wh.length,4);
 });
 test('profil ręczny jest walidowany i dopełniony zerami bez dodawania energii',()=>{
-  const p=manualProfile('Test',[2000]);assert.equal(p.variants.typical.durationMinutes,15);close(p.variants.typical.energyKWh,1/6);assert.deepEqual(p.variants.typical.wh.slice(1),[0,0]);
+  const p=manualProfile('Test',[2000]);assert.equal(p.variants.typical.durationMinutes,5);close(p.variants.typical.energyKWh,1/6);assert.deepEqual(p.variants.typical.wh.slice(1),[]);
   assert.throws(()=>manualProfile('Zły',[-1]));assert.throws(()=>manualProfile('Zły',[0]));assert.throws(()=>manualProfile('Zły',[NaN]));assert.throws(()=>selectProfile({profiles:[]},'missing'));
 });
 test('rozłożenie energii profilu zmienia bilans i pobór fizyczny przy tej samej energii i długości',()=>{

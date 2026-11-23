@@ -1,3 +1,11 @@
+# 0.9.3
+
+- Profile: rzeczywisty krok 5 minut bez dopisywania zer do kwadransa. Średni wariant zachowuje średnią energię i średni czas źródeł, z ograniczeniem szczytu do zaobserwowanej mocy.
+- Oddzielne nazwy programów i urządzeń: pralka i zmywarka mogą mieć własny profil „60 min”. Dodano zapis domyślnego wariantu oraz profilu podstawowego urządzenia.
+- Karta: uproszczony wykres zatwierdzenia domyślnie włączony, opcjonalna nazwa programu w nawiasie przy urządzeniu i wybór z rozwijanej sekcji. Brakujący profil przed zatwierdzeniem zastępuje profil podstawowy lub pierwszy pasujący; już uzbrojony plan zachowuje zapisany program.
+- Biblioteka cykli: brak automatycznego kasowania po imporcie, zmianie progów lub wygaśnięciu Recordera; ręczne usuwanie zaznaczonych cykli nie zmienia zapisanych profili. Długa lista jest wyświetlana po 200 pozycji.
+- Starsze profile uczone są przebudowywane, gdy pozostały wszystkie cykle źródłowe. Zachowujemy kopię biblioteki sprzed poprawki oraz dotychczasowe identyfikatory, nazwy, ustawienia i historię.
+
 # 0.9.2
 
 - Karta: przyciski programów pod urządzeniami, własne profile jako pierwsze oraz warianty Typowy / Średni / Największy. Konfigurowalne położenie, widoczność, lista lub przyciski oraz osobne przełączniki czasu i kWh. Wybór działa również w Auto i nie nadpisuje ustawień aplikacji.

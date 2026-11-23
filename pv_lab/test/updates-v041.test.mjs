@@ -8,11 +8,11 @@ const cycle=(id,offset=0)=>({id,start:start+offset,end:start+offset+30*M,wh:[10,
 const analysis=(cycles)=>({at:start,begin:start-M,end:start+100*M,deviceId:'pralka',powerEntity:'sensor.power',energyEntity:'sensor.energy',settings:{startW:10},cycles,warnings:[]});
 test('repeat appliance imports merge cycles, update overlapping reads and retain earlier cycles',()=>{
  const old=analysis([cycle('a'),cycle('b',60*M)]),next=analysis([cycle('shifted',M),cycle('c',120*M)]),result=mergeAnalysis(old,next);
- assert.equal(result.cycles.length,3);assert.equal(result.added,1);assert.equal(result.cycles[0].id,'shifted');assert.equal(mergeAnalysis(result,next).added,0);
+ assert.equal(result.cycles.length,3);assert.equal(result.added,1);assert.equal(result.cycles[0].id,'a');assert.equal(mergeAnalysis(result,next).added,0);
 });
 test('different thresholds or entities do not silently mix detection results',()=>{
  const old=analysis([cycle('a')]),next={...analysis([cycle('b')]),settings:{startW:100}};const result=mergeAnalysis(old,next);
- assert.equal(result.cycles.length,1);assert.equal(result.cycles[0].id,'b');assert.ok(result.warnings.some(w=>w.includes('Zmieniły')));
+ assert.equal(result.cycles.length,2);assert.equal(result.cycles[0].id,'a');assert.ok(result.cycles.every(c=>c.contextKey));assert.ok(result.warnings.some(w=>w.includes('Zachowano')));
 });
 test('continuous device uses complete fixed windows and rejects unavailable intervals',()=>{
  const device=validateAppliance({...defaultAppliances[0],workType:'continuous',windowMinutes:60});
