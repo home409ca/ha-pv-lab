@@ -12,3 +12,12 @@ test('all-day cheap weekend is identified as such rather than promised a tariff 
 
 
 test('card keeps peak/tariff references independently from first three and can approve either',async()=>{const {dashboardProposals,approveDashboard,dashboardPublic}=await import('../src/dashboard-plan.mjs'),{armExecution}=await import('../src/execution-plan.mjs');const x=fixture(),result=run(x),state=dashboardProposals(result,{goal:'cost',range:'today',counts:{pralka:2,zmywarka:1}},x.c,x.now);assert.equal(state.references.length,2);assert.ok(state.references.every(p=>p.complete&&p.label));const ref=state.references.find(p=>p.kind==='cheap'),approved=approveDashboard(state,ref.id,state.id,{devices:[]},x.now,new Set(['zmywarka','pralka'])),armed=armExecution(approved,result,x.c,'finish',false,{profiles:[]},x.now);assert.equal(dashboardPublic(armed,x.now).selected.id,ref.id);assert.equal(armed.execution.cycles.length,3);assert.ok(armed.execution.timeline.length>0);assert.equal(armed.execution.cycles[0].start,ref.start);});
+
+
+test('gross PV peak can match cheap start and still buy the entire cycle when house consumes all PV',()=>{
+ const x=fixture();x.os.load.baseW=5000;x.s.entries.forEach(e=>{e.count=e.deviceId==='zmywarka'?1:0;e.energyKWh=.91;e.durationMinutes=60;});
+ x.f.fullRows.forEach((r,i)=>r.wh=Math.floor(i/4)===5?1000:100);
+ const result=run(x),cheap=result.comparisons.find(r=>r.kind==='cheap'),peak=result.comparisons.find(r=>r.kind==='peak');assert.equal(cheap.at,peak.at);assert.equal(peak.peakKWh,4);
+ assert.ok(Math.abs(cheap.result.schedule.additionalImportKWh-.91)<1e-9);assert.ok(Math.abs(cheap.result.schedule.cost-.91*.68)<1e-9);assert.equal(cheap.result.schedule.cost.toFixed(2),'0.62');
+ assert.ok(cheap.result.timeline.some(r=>r.pvKWh===1&&r.baseKWh===1.25));
+});

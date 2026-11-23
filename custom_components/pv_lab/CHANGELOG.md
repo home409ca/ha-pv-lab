@@ -1,3 +1,7 @@
+# 0.9.4
+
+Karta: wspólny ranking kosztów również dla porównań taryfy i szczytu, objaśnienie 0% pokrycia PV, brak domyślnie wybranych urządzeń (YAML default_cycles), tylko nazwane programy z preferowanym wariantem oraz wykres w szczegółach przed zatwierdzeniem, z osią kWh i pełnym horyzontem.
+
 # 0.9.3
 
 - Profile: rzeczywisty krok 5 minut bez dopisywania zer do kwadransa. Średni wariant zachowuje średnią energię i średni czas źródeł, z ograniczeniem szczytu do zaobserwowanej mocy.

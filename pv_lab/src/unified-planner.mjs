@@ -115,5 +115,5 @@ export function planUnified(f,samples,c,input,optimizer,load,live,states,model,l
  }
  const signature=p=>p.devices.filter(d=>d.scheduled).map(d=>JSON.stringify([d.powerEntity||d.id,d.curve.wh,d.scheduled.start])).sort().join('|');
  const comparisons=references.map(row=>{const {plan,...info}=row,result=materialize(ctx,prepared,plan,'cost',searches.cost,range),id='comparison_'+row.kind+'_'+row.day;result.id=id;result.comparisonLabel=row.label;result.schedule.method='Wariant ze wskazanym startem; kolejne cykle najwcześniej po zwolnieniu sprzętu, z zachowaniem ograniczeń.';const match=Object.fromEntries(['cost','pv'].map(goal=>[goal,result.schedule.devices===result.schedule.requested&&result.schedule.requested?analyses[goal].find(r=>signature(r)===signature(result))?.id||null:null]));return {...info,id,result,matchedPlan:match};});
- return {settings:input,expandedSettings:settings,calculatedAt:now,range,analyses,dashboardAnalyses,dashboardSelection,comparisons,activity};
+ return {settings:input,expandedSettings:settings,calculatedAt:now,range,analyses,dashboardAnalyses,dashboardSelection,comparisons,activity,dashboardTimeline:ctx.quarterRows.filter(r=>r.end>now&&r.start<range.latest)};
 }

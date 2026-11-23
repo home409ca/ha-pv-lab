@@ -27,7 +27,7 @@ show_program_duration: true
 show_program_energy: true
 # below_devices = pod urządzeniami; details = sekcja rozwijana.
 program_variants_position: details
-# Wykres pojawia się po zatwierdzeniu planu.
+# Wykres pojawia się po rozwinięciu ?, przed zatwierdzeniem.
 show_plan_chart: true
 
 # Wysokość przycisków Zmywarka/Pralka: 28–60 px.
@@ -36,3 +36,8 @@ device_button_height: 34
 device_color: "#85b866"
 auto_color: "#b992df"
 auto_active_color: "#83c9af"
+
+# Domyślnie brak wybranych cykli. Możesz ustawić 1 przy zmywarce.
+default_cycles:
+  zmywarka: 0
+  pralka: 0
