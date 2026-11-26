@@ -1,3 +1,11 @@
+# 0.10.2
+
+Ostrożniejsze Auto: przeplanowanie wymaga co najmniej 15 gr i 15% oszczędności, poprawy oceny kosztu z ryzykiem, niepogorszenia scenariusza gorszej pogody o więcej niż 1 gr i dwóch zgodnych kontroli co 30 min. Pierwszy wybór Auto uwzględnia ryzyko i kandydatów taniej strefy, także w pełni sieciowych. Pozostają ograniczenia terminów, zajętość urządzeń i zamrożenie ostatnich 15 min. Pełna historia decyzji, przyczyn pozostawienia planu, cen, scenariuszy i statusów jest zapisywana w kompresowanych dziennikach auto-decisions, dostępna w aplikacji, plikach i kopii eksportowej. Danych i zatwierdzonych godzin nie usuwamy.
+
+# 0.10.1
+
+Przycisk karty zachowuje nazwę Auto w każdym trybie. Mały, wyrównany do prawej opis pod przyciskiem wskazuje tryb jednorazowy lub ciągły. Oba tryby zachowują szare, zablokowane przyciski dni. Zapisany, jednoznaczny cykl z historii mocy może uzupełnić początek i koniec ostatniego wykonania po aktualizacji; nie uzbraja nowych poleceń. Bezczynność zaobserwowana dopiero po poleceniu nie dowodzi, że urządzenie nie wystartowało. Starsze wykonania są łączone z zapisem kosztu tylko przy jednoznacznej zgodności identyfikatorów, encji i czasu utworzenia. Porównanie uwzględnia koszt ostatniego zatwierdzonego przeplanowania, zachowując pierwotny zapis.
+
 # 0.10.0
 
 Auto jednorazowe wraca do pustej karty po potwierdzonym zakończeniu cykli. Drugie kliknięcie włącza czerwone Auto ciągłe: bezterminowo reaguje na nowe wyłączenie switcha, planując wyłącznie w dniu zdarzenia. Trzecie kliknięcie wyłącza Auto. Oba aktywne tryby blokują szare przyciski dni. Dodano obserwację rzeczywistego startu i końca, automatyczną weryfikację kosztu/PV oraz ocenę przesunięcia tego samego planu po fakcie. Czasowe ograniczenie dostępności paneli (np. śnieg) wpływa na końcową prognozę, z terminem wygaśnięcia i sygnałem niskiej produkcji.

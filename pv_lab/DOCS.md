@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.10.0 -->
+<!-- pv-lab-manual-version: 0.10.2 -->
 
-**Wersja aplikacji i instrukcji: 0.10.0.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.10.2.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -814,7 +814,7 @@ Po lewej od ikony widać „Koniec o HH:MM” (czerwona), „Koniec przed HH:MM�
 
 ### Sprawdzanie lepszego terminu
 
-Kontrola działa w integracji HA także po zamknięciu karty. Do PV Lab trafia żądanie oceny co 30 minut, sprawdzane przez niezależny minutowy zegar. Porównujemy pozostawienie pierwotnych przyszłych terminów z nowymi wariantami, **oba na tej samej aktualnej prognozie, bazie domu i cenach**. Dopuszczamy zmianę przy co najmniej 0,05 zł oszczędności albo przy większym o co najmniej 0,2 kWh zapasie PV bez wzrostu kosztu, przy tej samej cenie po zaokrągleniu do groszy. To progi ograniczające ciągłe drobne przesunięcia.
+Kontrola działa w integracji HA także po zamknięciu karty. Do PV Lab trafia żądanie oceny co 30 minut, sprawdzane przez niezależny minutowy zegar. Porównujemy pozostawienie pierwotnych przyszłych terminów z nowymi wariantami, **oba na tej samej aktualnej prognozie, bazie domu i cenach**. Od 0.10.2 zmiana wymaga 15 gr i 15% oszczędności, poprawy oceny kosztu z ryzykiem oraz potwierdzenia w dwóch kontrolach co 30 minut. Nie przesuwamy już terminu tylko dla 5 gr albo samego zapasu PV. Szczegóły i historię opisuje sekcja „Ostrożniejsze Auto i historia decyzji — 0.10.2”.
 
 Nie zmieniamy liczby cykli, programu ani horyzontu. Profil i ograniczenia zatwierdzenia są zapamiętane. Przyszłe starty są nadal sprawdzane co 15 minut z 5-minutowym przebiegiem cyklu i wybranym bilansowaniem. Cykle jednego sprzętu nie mogą się nakładać. Wysłane/rozpoczęte cykle nie są ponownie planowane; ich zapamiętany czas zakończenia oraz bieżąca obserwacja pracy blokują wcześniejszy kolejny start. Start w ostatnich 15 minutach jest zamrożony. Niepełne dane lub nieudane połączenie oznaczają zachowanie dotychczasowych godzin, a nie fikcyjną oszczędność. Po częściowym wykonaniu korzyść liczymy dla pozostałych cykli; wyświetlana wycena całego planu zachowuje zapamiętane szacunki wcześniejszych cykli, więc nie jest rachunkiem za faktycznie zużytą energię.
 
@@ -1053,3 +1053,51 @@ Porównanie po fakcie przesuwa ten sam zestaw zmierzonych cykli co 15 minut w ju
 W Prognozach jest sekcja „Dostępność paneli — śnieg lub przeszkoda”. Po sprawdzeniu instalacji możesz włączyć 0% dostępności do końca jutra albo wcześniej przywrócić prognozę. Ograniczenie zmniejsza końcową PV Lab po dotychczasowych korektach, zanim energia trafi do podsumowań, planowania i eksportu do panelu Energia. Dotyczy przyszłej energii, nie zmierzonych kWh ani zakończonych godzin. Przebiegi źródłowe dostawców pozostają ich własnymi prognozami. Status i termin wygaśnięcia są widoczne; po odsłonięciu paneli przywróć wynik wcześniej. API dopuszcza 0–100% z obowiązkowym końcem najwyżej za 7 dni. Sam restart nie kasuje ograniczenia. Ustawienie jest w production-availability.json oraz kopii eksportu; nie zawiera sekretów.
 
 Przy co najmniej 40 min pokrycia z ostatnich 45 min, przewidywanej energii co najmniej 0,4 kWh i zmierzonej produkcji poniżej 5% tej energii pokazujemy sygnał bardzo niskiej produkcji. Nie uznajemy jednej próbki zera, nocy ani luk w danych za śnieg. Sygnał nie włącza sam ograniczenia na jutro: podobny wynik może oznaczać awarię, pogodę lub problem pomiaru. Ręcznie potwierdzone ograniczenie jest jawną decyzją użytkownika; w tym czasie nowe bieżące próbki są wyłączane z uczenia korekt, aby znany brak dostępności nie stał się trwałym błędem dostawcy. Zmierzone dane nadal trafiają do raportów. Nie odtwarzamy automatycznie przyczyny dawnych zimowych strat i nie poprawiamy po fakcie zapisanych prognoz.
+
+
+## Uzupełnienie obserwacji i wygląd Auto — 0.10.1
+
+Przycisk na karcie ma zawsze krótki napis „Auto”. Kolor i zaznaczenie nadal wskazują stan, a bezpośrednio pod rzędem przycisków, po prawej stronie, pojawia się dyskretny opis „Tryb jednorazowy” albo „Tryb ciągły · bezterminowo”. Informacja o 10 minutach przygotowania pozostaje osobno. Dziś/Jutro są szare i zablokowane w obu aktywnych trybach; po wyłączeniu wracają do wyboru. Parametry kolorów w YAML pozostają obsługiwane.
+
+Po aktualizacji lub przerwie w obserwacji bieżąca cisza nie dowodzi, że wcześniejszy cykl nie wystartował. Komunikat o niewykrytym starcie wymaga ciągłej, potwierdzonej bezczynności sięgającej chwili polecenia. Zapisany, zakończony cykl z „Profile urządzeń” może uzupełnić ostatni proces: musi mieć tę samą encję mocy, początek między 2 min przed poleceniem a 15 min po nim oraz poprawny koniec przed teraz. Przy wielu pasujących cyklach niczego nie przypisujemy. Aktualny i ostatni proces mogą otrzymać prawdziwy start i koniec także wtedy, gdy wcześniej nie rozpoznano startu. To korekta opisu i powiązania pomiarów; nie wysyła polecenia, nie przywraca anulowanego Auto i nie zmienia dat aktywnego harmonogramu.
+
+Dla starszych zapisów bez recordId powiązanie z historią planów wymaga jednego pasującego zapisu: zgodna liczba cykli, identyfikatory, encje mocy i czas utworzenia różniący się o mniej niż 5 s. Brak lub niejednoznaczność pozostawia zapis bez automatycznego przypisania. Po potwierdzeniu wszystkich cykli rzeczywiste czasy trafiają do weryfikacji; pierwotne pozostają osobno. Koszt/import ostatniego zatwierdzonego przeplanowania są zapisywane niezależnie od pierwotnej rekomendacji, aby koszt wykonania nie był porównywany z porzuconą godziną. Dla starszego pojedynczego cyklu korzystamy z zapisanej przy nim końcowej estymaty; nie sumujemy niezależnych kosztów marginalnych kilku urządzeń. W 0.10.1 zachowano taryfy, bilansowanie, ówczesny próg 5 gr i zapisane prognozy. Nowa reguła 0.10.2 jest opisana poniżej.
+
+Opcja śniegu jest w zakładce Prognozy, zaraz pod wykresem porównania, w sekcji „Dostępność paneli — śnieg lub przeszkoda”. Przyciski pozwalają ustawić 0% do końca jutra lub przywrócić prognozę. Nie jest to automatyczne rozpoznawanie śniegu.
+
+
+## Ostrożniejsze Auto i historia decyzji — 0.10.2
+
+### Pierwszy wybór Auto
+
+Po przygotowaniu urządzeń Auto porównuje pełne znalezione harmonogramy według oceny **R = K + 0,5 × (K_gorszy − K)**. K jest szacowanym dodatkowym kosztem planu, a K_gorszy najwyższym kosztem spośród istniejących scenariuszy pogody i zużycia domu. Wartość 0,5 jest wagą ostrożności, nie prawdopodobieństwem pogody. Scenariusze wykorzystują wcześniejsze błędy PV dla danego horyzontu, gdy są dostępne; w przeciwnym razie roboczy margines 25%. Wahania bazy domu pochodzą z jej profilu. Nie pokazujemy pozornego procentu pewności i nie zakładamy, że sama zgodność dostawców gwarantuje produkcję. Nie jest to nowy model prognozy PV.
+
+Tania strefa z zapisanej taryfy jest pełnoprawnym kandydatem, również gdy cały cykl wymaga sieci. Dokładne godziny pochodzą z konfiguracji, a nie ze sztywnego założenia 13:00/15:00. Liczymy cały profil, dom i bilans; nie mnożymy całej energii przez cenę z samej godziny startu. Nie wymuszamy taniej strefy: tańszy odporny wariant słoneczny może wygrać. Remisy rozstrzyga koszt podstawowy, koszt gorszego scenariusza, zapas PV, potem wcześniejszy start. Dla kilku urządzeń pozostaje heurystyka, bez gwarancji globalnego minimum.
+
+Dotyczy to automatycznego wyboru po 10 minutach. Zwykłe „Zaplanuj” i ręczna lista propozycji zachowują dotychczasowy koszt oraz margines 5 gr za zapas. Ręcznie zatwierdzona godzina nie jest zastępowana pierwszym wyborem Auto. Automatyczny plan może zatem różnić się od pierwszej ręcznej propozycji, ponieważ bierze pod uwagę odporność kosztu. Nie zmieniamy cen, profili, bilansowania, przewidywanej produkcji ani terminów użytkownika.
+
+### Przeplanowanie zatwierdzonych godzin
+
+Obecny i nowy harmonogram liczymy na tych samych aktualnych danych, przy zachowaniu ustawień programu. Do przesunięcia potrzebne są wszystkie warunki:
+
+- Oszczędność podstawowa co najmniej max(0,15 zł; 15% bezwzględnego kosztu obecnego terminu). Przy koszcie bliskim zeru sam duży procent nie wystarcza.
+- Poprawa R co najmniej max(0,15 zł; 15% bezwzględnej wartości R obecnego terminu).
+- K_gorszy nowego planu nie przekracza K_gorszy obecnego o więcej niż 0,01 zł; 1 gr jest tolerancją kosztu, nie zgodą na duży wzrost ryzyka.
+- Ten sam pełny harmonogram spełnia reguły w dwóch kolejnych kontrolach oddzielonych co najmniej 30 min. Potwierdzenie wygasa po przerwie ponad 45 min; inny kandydat, brak danych lub błąd zerują oczekiwanie. Jeżeli termin kandydata minie przed potwierdzeniem, zachowujemy obecny plan.
+- Wszystkie ograniczenia nadal obowiązują: brak nakładania tego samego sprzętu, horyzont, termin końca i zamrożenie zmian na ostatnie 15 min przed startem. Wysłany lub rozpoczęty cykl nie jest przesuwany. Tryb stałych godzin nie podlega przeplanowaniu.
+
+Reguła dotyczy obu Auto oraz elastycznych planów ręcznych. Podobny koszt i sam większy zapas nie wystarczają już do zmiany zaakceptowanej godziny. Brak danych o którymkolwiek koszcie nie jest zerem. Dotychczasowe harmonogramy są zachowane; przy następnej dopuszczalnej kontroli korzystają z nowych warunków. Oczekujące potwierdzenie jest trwałym małym stanem w dashboard-plan.json; zmiana trybu je zeruje.
+
+### Historia — co, gdzie i jak długo
+
+W Planowanie zużycia znajduje się rozwijana „Historia decyzji Auto”. Pokazuje ostatnie 15 zdarzeń: czas, powód, obecny i rozważany start, koszty i wariant taniej strefy. Widać także odrzucenie zmiany, oczekiwanie na potwierdzenie i brak pełnej kontroli. Informacje o przygotowaniu, anulowaniu, wysłaniu polecenia i potwierdzonym cyklu są dopisywane do tych samych dzienników.
+
+Pełne pliki /data/auto-decisions-RRRR-MM-DD.jsonl są bezstratnie kompresowane GZIP; daty nazw są w UTC, a wiersze zapisują także strefę instalacji. Przeglądarka plików pozwala je podejrzeć lub pobrać skompresowane albo rozpakowane. Nie podlegają automatycznej retencji prognoz. W pamięci utrzymujemy do 200 ostatnich zdarzeń (po restarcie z ostatnich 30 dni); archiwum plików pozostaje pełne. Eksport kopii zawiera wszystkie dzienniki Auto, również starsze niż ten podgląd. Odczyt eksportu jest zsynchronizowany z dopisywaniem, aby nie potraktować trwającego zapisu jako uszkodzenia.
+
+Każda kontrola zapisuje próg i wersję reguły, koszt podstawowy, gorszy i R, oszczędność kwotową/procentową, kilka najlepszych alternatyw i tanią strefę, czas przeliczenia i odczytów źródeł, cennik, godziny i statusy cykli. Nie kopiujemy pełnych krzywych dostawców ani surowych historii urządzeń co 30 min. Dziennik łączy się z istniejącymi wersjami prognoz przez czas przeliczenia. Brak miejsca/błąd zapisu historii jest jawnie zgłaszany w zdarzeniach aplikacji; nie udajemy zapisanego audytu.
+
+### Weryfikacja progów
+
+Sprawdzono dostępne zapisane plany Auto, używając wyłącznie wersji prognoz znanych przed każdym porównaniem. Zamrożono zapisane programy i ceny oraz wykluczono późniejsze pomiary z modelu domu. Porównano 5 gr, 10 gr/10%, 15 gr/15% i 20 gr/20%. Próba jest mała i zawiera powtórzenia planów. Wyższe progi dały w niej taki sam wynik; nie dowodzi to optymalności 15 gr/15%. Zastosowano ustaloną ostrożną wartość. Zapisana zmiana za około 5 gr nie spełnia nowego progu. Testy osobno sprawdzają, że istotna i potwierdzona poprawa nadal pozwala zmienić plan oraz że tania strefa może wygrać przy mniejszym ryzyku.
+
+Odtworzenie nie jest dokładną kopią dawnych decyzji: brak pełnej historycznej migawki modelu ryzyka i wszystkich bieżących stanów urządzeń. W próbie użyto roboczego marginesu PV 25%, więc nie przypisujemy jej potwierdzonego wzrostu oszczędności na rachunku. Nowe dzienniki pozwolą dokładniej ocenić przyszłe decyzje. Nie poprawiamy starych prognoz ani zapisów po fakcie.
