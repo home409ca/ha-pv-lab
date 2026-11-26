@@ -40,7 +40,7 @@ async def ws_entries(hass, connection, msg):
 @websocket_api.websocket_command({
     vol.Required("type"): "pv_lab/device_schedule",
     vol.Required("entry_id"): str,
-    vol.Required("action"): vol.In(["status", "preview", "approve", "cancel", "mode", "auto"]),
+    vol.Required("action"): vol.In(["status", "preview", "approve", "cancel", "mode", "auto", "auto_continuous"]),
     vol.Optional("execution_schema"): vol.In([1]),
     vol.Optional("mode"): vol.In(["fixed", "flexible", "finish"]),
     vol.Optional("enabled"): bool,

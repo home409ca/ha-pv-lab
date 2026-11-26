@@ -1,3 +1,7 @@
+# 0.10.0
+
+Auto jednorazowe wraca do pustej karty po potwierdzonym zakończeniu cykli. Drugie kliknięcie włącza czerwone Auto ciągłe: bezterminowo reaguje na nowe wyłączenie switcha, planując wyłącznie w dniu zdarzenia. Trzecie kliknięcie wyłącza Auto. Oba aktywne tryby blokują szare przyciski dni. Dodano obserwację rzeczywistego startu i końca, automatyczną weryfikację kosztu/PV oraz ocenę przesunięcia tego samego planu po fakcie. Czasowe ograniczenie dostępności paneli (np. śnieg) wpływa na końcową prognozę, z terminem wygaśnięcia i sygnałem niskiej produkcji.
+
 # 0.9.7
 
 Wcześniejsza historia mocy potwierdza bezczynność bez ponownego czekania 20 minut. Niezmienione 0 W w początkowym wpisie HA uwzględnia czas ostatniej zmiany stanu, nie późniejszego odświeżenia atrybutów. Ponowienie niepełnego odczytu przy niskiej mocy najwyżej raz na minutę. Zawiera również poprawki komunikatów i pozornych zer z 0.9.6.

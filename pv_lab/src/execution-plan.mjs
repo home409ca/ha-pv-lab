@@ -11,12 +11,12 @@ export function armExecution(state,result,c,mode='fixed',auto=false,library={pro
  const ids=new Set(result.settings.entries.map(e=>e.profileId).filter(Boolean));
  return {...state,execution:{schema:1,planId:randomUUID(),revision:1,createdAt:now,enabled:true,mode,auto,cycles,finishBy,horizon:structuredClone(result.range),plannerInput:structuredClone(result.settings),library:{profiles:structuredClone(library.profiles.filter(p=>ids.has(p.id)))},timeline:previewTimeline(result,source),chartStart:now,forecastAt:result.calculatedAt??now,lastCheck:null,lastReviewAt:now,reviewMessage:'Plan oczekuje na wykonanie w Home Assistant.',changes:[]}};
 }
-export function publicExecution(execution){if(!execution)return null;const {plannerInput,library,...view}=execution;return view;}
+export function publicExecution(execution){if(!execution)return null;const {plannerInput,library,...view}=execution;return {...view,monitoring:!execution.finishedAt&&execution.cycles.some(c=>['sent','uncertain'].includes(c.status)&&!['completed','not_started'].includes(c.observedStatus))};}
 export function applyExecutionReceipt(state,event,now=Date.now()){
  const e=state.execution;if(!e||event.plan_id!==e.planId)throw new Error('Potwierdzenie dotyczy innego planu.');const cycle=e.cycles.find(c=>c.key===event.cycle_key);if(!cycle||!['dispatching','sent','failed','missed','uncertain'].includes(event.status))throw new Error('Nieprawidłowe potwierdzenie wykonania.');
  if(['sent','failed','missed','uncertain'].includes(cycle.status))return state;
  cycle.status=event.status;cycle.commandAt=Number.isFinite(event.at)?event.at:now;cycle.message={dispatching:'Rozpoczęto wysyłanie polecenia.',sent:'Wysłano polecenie włączenia.',failed:'Nie udało się wysłać polecenia.',missed:'Termin minął — polecenia nie wysłano.',uncertain:'Wysyłanie przerwał restart; nie ponawiamy automatycznie.'}[event.status];
- if(e.cycles.every(c=>!['pending','dispatching'].includes(c.status))){e.enabled=false;e.auto=false;}return state;
+ if(e.cycles.every(c=>!['pending','dispatching'].includes(c.status))){e.enabled=false;e.reviewMessage='Polecenia obsłużone — oczekiwanie na potwierdzenie pracy i zakończenia.';}return state;
 }
 export function reviewInputs(execution,now){
  const remaining=execution.cycles.filter(c=>c.status==='pending');if(!remaining.length)return null;

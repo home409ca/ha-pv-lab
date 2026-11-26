@@ -130,3 +130,24 @@ class ExecutorTests(unittest.IsolatedAsyncioTestCase):
             await self.executor.async_accept(self.waiting())
         self.assertIsNone(self.executor.data["autoSetup"])
         self.store.fail = False
+
+    async def test_continuous_watch_survives_restart_and_ticks_without_browser(self):
+        state = {"autoWatch": {"id": "watch", "active": True}, "execution": None}
+        await self.executor.async_accept(state)
+        self.assertTrue(self.store.data["watch"]["active"])
+        self.executor = self.new()
+        await self.executor.async_setup()
+        self.request.return_value = state
+        await self.executor.async_tick()
+        self.request.assert_awaited_with({"action": "monitor"})
+        self.assertEqual(self.service.await_count, 0)
+
+    async def test_cancel_continuous_watch_is_local_persistent_and_blocks_stale_server_state(self):
+        state = {"autoWatch": {"id": "watch", "active": True}, "execution": None}
+        await self.executor.async_accept(state)
+        await self.executor.async_cancel()
+        self.assertIsNone(self.store.data["watch"])
+        await self.executor.async_accept(state)
+        self.assertFalse(self.executor.data["watch"]["active"])
+        self.assertFalse(self.executor.present(state)["autoWatch"]["active"])
+        self.assertTrue(any(e.get("watch_id") == "watch" for e in self.executor.data["receipts"]))

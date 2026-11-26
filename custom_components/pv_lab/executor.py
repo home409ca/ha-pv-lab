@@ -23,7 +23,7 @@ class PlanExecutor:
         self.hass, self.entry, self.now = hass, entry, now
         self.store = store or Store(hass, 1, "pv_lab_execution_" + entry.entry_id)
         self.requester = requester
-        self.data = {"plan": None, "commands": {}, "receipts": [], "reviewAt": 0, "message": "", "watermark": 0, "blockedPlans": [], "autoSetup": None, "blockedAuto": [], "autoRetryAt": 0}
+        self.data = {"plan": None, "commands": {}, "receipts": [], "reviewAt": 0, "message": "", "watermark": 0, "blockedPlans": [], "autoSetup": None, "blockedAuto": [], "autoRetryAt": 0,"watch": None,"monitoring": False}
         self.lock = asyncio.Lock()
         self.network_lock = asyncio.Lock()
         self.save_lock = asyncio.Lock()
@@ -62,6 +62,9 @@ class PlanExecutor:
         if execution.get("planId") in self.data["blockedPlans"]:
             result.update(approved=False, cancelledAt=self.now(), cancelReason="Anulowano lokalnie w Home Assistant.", phase="anulowany")
             execution.update(enabled=False, auto=False, reviewMessage="Anulowano przyszłe polecenia.")
+        watch = result.get("autoWatch") or {}
+        if watch.get("id") in self.data["blockedAuto"]:
+            watch["active"] = False
         result["executorStatus"] = self.status()
         return result
 
@@ -75,6 +78,17 @@ class PlanExecutor:
         self.data["receipts"].append(event)
 
     async def async_accept(self, state):
+        watch = copy.deepcopy(state.get("autoWatch")) if isinstance(state, dict) else None
+        if watch and watch.get("id") in self.data["blockedAuto"]:
+            watch["active"] = False
+            state = copy.deepcopy(state)
+            if state.get("autoSetup"):
+                state["autoSetup"]["active"] = False
+            if (state.get("execution") or {}).get("auto"):
+                state["execution"]["enabled"] = False
+        self.data["watch"] = watch
+        view_execution = state.get("execution") or {}
+        self.data["monitoring"] = bool(view_execution.get("monitoring"))
         setup = state.get("autoSetup") if isinstance(state, dict) else None
         if isinstance(setup, dict):
             async with self.lock:
@@ -98,6 +112,7 @@ class PlanExecutor:
                     self.data["message"] = setup.get("message", "")
                     await self._save()
                 self._schedule()
+        await self._save()
         execution = state.get("execution") if isinstance(state, dict) else None
         if not isinstance(execution, dict) or execution.get("schema") != 1:
             return
@@ -146,6 +161,7 @@ class PlanExecutor:
                     command["status"] = "cancelled"
             # Keep recent execution identities across app responses and HA restarts.
             self.data["commands"] = dict(list(self.data["commands"].items())[-200:])
+            self.data["monitoring"] = self.data["monitoring"] or any(c.get("status") in ("sent", "uncertain") for c in execution["cycles"])
             self.data["plan"] = copy.deepcopy(execution)
             self.data["watermark"] = max(self.data["watermark"], execution.get("createdAt", 0))
             self.data["receipts"] = [e for e in self.data["receipts"] if e.get("plan_id") == execution["planId"]]
@@ -172,6 +188,10 @@ class PlanExecutor:
 
     async def async_cancel(self):
         async with self.lock:
+            watch = self.data.get("watch")
+            if watch:
+                self.data["blockedAuto"] = (self.data["blockedAuto"] + [watch["id"]])[-200:]
+                self.data["receipts"].append({"action": "cancel", "watch_id": watch["id"]})
             if self.data["autoSetup"]:
                 identity = self.data["autoSetup"]["id"]
                 self.data["blockedAuto"] = (self.data["blockedAuto"] + [identity])[-200:]
@@ -181,6 +201,7 @@ class PlanExecutor:
                 self.data["blockedPlans"] = (self.data["blockedPlans"] + [self.data["plan"]["planId"]])[-200:]
                 self.data["receipts"].append({"action": "cancel", "plan_id": self.data["plan"]["planId"]})
             self.data["plan"] = None
+            self.data["watch"] = None
             for c in self.data["commands"].values():
                 if c["status"] == "pending":
                     c["status"] = "cancelled"
@@ -265,6 +286,14 @@ class PlanExecutor:
 
     async def async_tick(self, _now=None):
         await self.async_due(_now)
+        if (self.data.get("watch") or {}).get("active") or self.data.get("monitoring"):
+            if not self.network_lock.locked():
+                async with self.network_lock:
+                    try:
+                        result = await self._request({"action": "monitor"})
+                        await self.async_accept(result)
+                    except Exception:
+                        self.data["message"] = "Brak połączenia — Auto czeka; nie utworzono nowych poleceń."
 
     async def async_stop(self):
         self.stopped = True
