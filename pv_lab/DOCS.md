@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.10.2 -->
+<!-- pv-lab-manual-version: 0.10.3 -->
 
-**Wersja aplikacji i instrukcji: 0.10.2.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.10.3.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -1101,3 +1101,14 @@ Każda kontrola zapisuje próg i wersję reguły, koszt podstawowy, gorszy i R, 
 Sprawdzono dostępne zapisane plany Auto, używając wyłącznie wersji prognoz znanych przed każdym porównaniem. Zamrożono zapisane programy i ceny oraz wykluczono późniejsze pomiary z modelu domu. Porównano 5 gr, 10 gr/10%, 15 gr/15% i 20 gr/20%. Próba jest mała i zawiera powtórzenia planów. Wyższe progi dały w niej taki sam wynik; nie dowodzi to optymalności 15 gr/15%. Zastosowano ustaloną ostrożną wartość. Zapisana zmiana za około 5 gr nie spełnia nowego progu. Testy osobno sprawdzają, że istotna i potwierdzona poprawa nadal pozwala zmienić plan oraz że tania strefa może wygrać przy mniejszym ryzyku.
 
 Odtworzenie nie jest dokładną kopią dawnych decyzji: brak pełnej historycznej migawki modelu ryzyka i wszystkich bieżących stanów urządzeń. W próbie użyto roboczego marginesu PV 25%, więc nie przypisujemy jej potwierdzonego wzrostu oszczędności na rachunku. Nowe dzienniki pozwolą dokładniej ocenić przyszłe decyzje. Nie poprawiamy starych prognoz ani zapisów po fakcie.
+
+
+## Naprawa niepełnego obrazu aplikacji — 0.10.3
+
+Komunikat „execution-monitor.mjs does not provide an export named executionRecord” oznacza niezgodność plików uruchamianej aplikacji: nowszy serwer oczekuje funkcji, której starszy moduł jeszcze nie ma. Nie jest to błąd historii urządzeń ani konfiguracji użytkownika. Poprawne pliki na GitHub nie zmieniają automatycznie już zbudowanego obrazu. Nawet numer 0.10.2 w HA nie dowodzi kompletności kodu, jeżeli aplikację zbudowano przed uzupełnieniem plików. Restart uruchamia ten sam obraz, a aktualizacja samej integracji HACS nie wymienia /app/src aplikacji.
+
+Wersja 0.10.3 ma nowy numer aplikacji i integracji. Paczka jest zbiorczą różnicą od 0.10.0: zawiera także poprawki 0.10.1 i 0.10.2, które mogły zostać pominięte. Wgraj zawartość ZIP do katalogu głównego repozytorium z zachowaniem podkatalogów. Po udanej publikacji odśwież repozytorium w sklepie aplikacji/dodatków HA i zaktualizuj samą aplikację PV Lab do 0.10.3. Zaktualizuj integrację HACS do 0.10.3, uruchom ponownie HA i odśwież kartę. Nie trzeba odinstalowywać aplikacji, usuwać katalogu /data, ponawiać importu ani zmieniać YAML. Zachowane terminy i Auto pozostają zapisane.
+
+Podczas budowania obrazu kontrolujemy połączenie całego grafu modułów ES w src i public. Kontrola sprawdza istnienie plików oraz rzeczywiste nazwy eksportów, w tym executionRecord, i obsługuje statyczny JSON. Nie wykonuje kodu serwera lub interfejsu, nie wywołuje HA i nie otwiera trwałego /data. Taka sama kontrola działa przed testami publikacji. Zastosowano wbudowany mechanizm modułów Node.js 22, bez dodatkowych pakietów. Negatywny test celowo usuwa eksport i potwierdza odrzucenie mieszanki plików; osobny efekt uboczny dodany w teście potwierdza, że aplikacja nie jest wykonywana podczas tej kontroli.
+
+To naprawa dystrybucji i kontroli budowania. Obliczenia PV, taryfy, progi 15 gr/15%, scenariusze ryzyka, historia Auto oraz detekcja cykli pozostają takie jak w kompletnym 0.10.2. Stan karty zależy od załadowanej integracji i działającej aplikacji; przy problemie połączenia po aktualizacji najpierw potwierdź uruchomienie aplikacji, następnie integracji HA.

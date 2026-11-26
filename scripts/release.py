@@ -87,6 +87,7 @@ def run_tests(root):
         raise RuntimeError('Node.js 22+ is required (included in ubuntu-24.04 runner)')
     env = {k: v for k, v in os.environ.items() if k not in {'GITHUB_TOKEN', 'GH_TOKEN', 'SUPERVISOR_TOKEN', 'HA_TOKEN', 'HA_URL', 'DATA_DIR', 'PORT'}}
     env['PYTHONDONTWRITEBYTECODE'] = '1'
+    subprocess.run([node, '--experimental-vm-modules', 'pv_lab/src/check-modules.mjs'], cwd=root, env=env, check=True)
     tests = sorted(str(p.relative_to(root)) for p in (root / 'pv_lab/test').glob('*.test.mjs'))
     subprocess.run([node, '--test', *tests], cwd=root, env=env, check=True)
     subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-v'], cwd=root, env=env, check=True)

@@ -1,3 +1,7 @@
+# 0.10.3
+
+Naprawa aktualizacji niekompletnego obrazu aplikacji: nowy numer pozwala ponownie pobrać i zbudować spójny kod po częściowym 0.10.2. Zawiera wszystkie poprawki od 0.10.0. Budowanie obrazu i kontrola wydania sprawdzają teraz rzeczywiste eksporty modułów, bez uruchamiania serwera, połączeń HA i zapisów danych. Brak executionRecord lub innej wymaganej funkcji zatrzyma budowę przed uruchomieniem. Zachowano historię, konfigurację, profile, zasady Auto i zatwierdzone terminy.
+
 # 0.10.2
 
 Ostrożniejsze Auto: przeplanowanie wymaga co najmniej 15 gr i 15% oszczędności, poprawy oceny kosztu z ryzykiem, niepogorszenia scenariusza gorszej pogody o więcej niż 1 gr i dwóch zgodnych kontroli co 30 min. Pierwszy wybór Auto uwzględnia ryzyko i kandydatów taniej strefy, także w pełni sieciowych. Pozostają ograniczenia terminów, zajętość urządzeń i zamrożenie ostatnich 15 min. Pełna historia decyzji, przyczyn pozostawienia planu, cen, scenariuszy i statusów jest zapisywana w kompresowanych dziennikach auto-decisions, dostępna w aplikacji, plikach i kopii eksportowej. Danych i zatwierdzonych godzin nie usuwamy.
