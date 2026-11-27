@@ -1,3 +1,11 @@
+# 0.11.0
+
+- Laboratorium prognozy: eksperymentalny odczyt krzywej ML, automatyczny zapis po jej pojawieniu się i wykres godzinowy w kWh. Brak danych nie jest zerem.
+- Pięć etapów obserwacyjnych: ML, ocena na kolejnych dniach, pogoda i niepewność, wariant ostatnich godzin, diagnostyka połaci i model temperatury bazy domu.
+- Wszystkie nowe warianty mają 0% wpływu na końcową prognozę, Energię, planowanie i Auto. Potwierdzenie poprawy wymaga wspólnych ocen i wcześniejszych danych; nic nie włącza się automatycznie.
+- Archiwum dzienne bez surowych stanów HA, eksport w kopii, izolacja błędów i ograniczenie odczytów pogody do jednego na 30 minut.
+- Instrukcja opisuje warunki uczenia, jednostki ML, jakość pomiarów, retencję i interpretację testów.
+
 # 0.10.6
 
 Podejrzenie zasłonięcia paneli pozostaje między dniami i po restarcie, aż produkcja wiarygodnie wróci lub użytkownik potwierdzi odsłonięcie. Limit obejmuje również przyszłe dni dostępnej prognozy, więc Auto nie wraca co rano do pełnej produkcji przy nierozwiązanym podejrzeniu. Nowe encje HA: status podejrzenia, przełącznik korekty, wybór lokalnej encji weather oraz przycisk potwierdzenia odsłonięcia. Kontrole korzystają z istniejącego parowania i ograniczonego API; nie wywołują fizycznych switchy. Ręczne potwierdzenie rozpoczyna nowe okno obserwacji. Brak encji pogody nadal pozwala wykrywać podejrzenie zimą przy zgodnych prognozach dwóch dostawców. Dane, zatwierdzone plany i zasady Auto zachowane.

@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.10.6 -->
+<!-- pv-lab-manual-version: 0.11.0 -->
 
-**Wersja aplikacji i instrukcji: 0.10.6.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.11.0.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -20,6 +20,7 @@ PV Lab tworzy jedną prognozę produkcji AC z prognoz dostawców, pomiarów i hi
 | Historia i trendy | Widok opisowy; te same dane mogą zasilać kwalifikowany potencjał. |
 | Raport porównań | Ocenia wcześniejsze wyniki, nie zmienia przeszłości. |
 | Profile urządzeń, zużycie domu, ceny | Zmieniają rekomendacje uruchomienia, nie produkcję PV. |
+| Laboratorium prognozy — ML i cztery etapy | Wyłącznie obserwacja: 0% wpływu na wynik, Energię, planowanie i Auto. |
 | Analiza AI | Wyłącznie raport doradczy; nie zmienia żadnych obliczeń ani urządzeń. |
 | Ukrycie linii wykresu | Tylko wygląd, bez wyłączenia źródła z obliczeń. |
 
@@ -1156,3 +1157,52 @@ Nazwy encji mogą mieć przyrostek, jeśli podobna nazwa jest już zajęta. Brak
 Jako pogodę wybierz weather odpowiadającą Twojemu domowi, np. istniejącą encję integracji pogodowej używanej na dashboardzie. Nie wpisuj sensora produkcji Solcast ani Open-Meteo Solar: to źródła prognozy PV, a potrzebna jest encja o domenie weather ze stanem pogody i temperaturą. Listę znajdziesz również w Narzędzia deweloperskie → Stany, filtr weather. Nie można wskazać jednej poprawnej nazwy dla wszystkich instalacji. Brak encji jest poprawnym ustawieniem; wtedy zimą obowiązuje warunek zgodności co najmniej dwóch dostawców PV i wszystkie kontrole jakości.
 
 Odsłonięcie można potwierdzić także przyciskiem w Prognozy i korekty. Ręczne potwierdzenie nie usuwa dawnych pomiarów ani wcześniejszych oznaczeń dni; lista wyłączeń z uczenia pozostaje trwała. Nierozwiązane podejrzenie może trwać kilka dni, dlatego przy jego fałszywym rozpoznaniu użyj przycisku potwierdzenia lub wyłącz korektę. Nie zakładamy automatycznie odsłonięcia po nocy ani po samej dodatniej temperaturze.
+
+
+## 27. Laboratorium prognozy — pięć etapów (0.11.0)
+
+Laboratorium znajdziesz w zakładce **Prognozy**, pod porównaniem produkcji. Łączy eksperymentalną prognozę ML i cztery kolejne etapy analizy. Wszystkie pięć działa w trybie obserwacyjnym. Żaden wynik nie jest przekazywany do końcowej prognozy, panelu Energia, harmonogramów ani Auto. Sam dobry wynik testu również nie włącza korekty. Dotychczasowa kalibracja, profil historyczny, ryzyko sieci i korekta śniegu nadal działają niezależnie.
+
+### 27.1. Podłączenie ML i automatyczny zapis
+
+Domyślnie włączony jest odczyt `sensor.pv_forecast_total_forecast_curve` i statusu `sensor.pv_forecast_fotowoltaika_model_status`. Jeśli zmienisz nazwy w HA, wskaż je w ustawieniach laboratorium. Status „learning” nie oznacza awarii: gdy nie ma krzywej, PV Lab czeka. Gdy pojawią się poprawne przyszłe przedziały, automatycznie zaczyna je zapisywać. Nie trzeba importować historii ani czekać na ręczne zatwierdzenie. Obecność krzywej nie potwierdza zakończenia uczenia modelu; zapisujemy także jego status i wariant.
+
+Odczyt korzysta z pobieranych już stanów HA. Krzywa musi mieć aktualizację lub raport nie starszy niż 45 minut. Preferujemy `quarters`: P10, P50 i P90 są mocą w W dla kwadransa; dzielimy przez cztery, otrzymując Wh. Zapasowy format `hourly` zawiera Wh w godzinie i jest dzielony równo na cztery kwadranse. Nie odczytujemy sumy dobowej jako przebiegu godzinowego. Daty muszą zawierać strefę czasową, przedziały być wyrównane, a liczby nieujemne i uporządkowane P10 ≤ P50 ≤ P90. Błędna lub nieaktualna krzywa oznacza lukę, nie zero. Rzeczywiste nocne zera są poprawnymi danymi. Wariant użyty w porównaniu ograniczamy fizycznym limitem falownika; zachowujemy również oryginalne P50.
+
+Co 15 minut zapisujemy najnowszą wersję znaną przed rozpoczęciem każdej przyszłej pełnej godziny, do 72 godzin naprzód i tylko przy czterech dostępnych kwadransach końcowej prognozy PV Lab. Zapis bieżący i „na jutro” są oddzielne. Wariant na jutro musi pochodzić z poprzedniego dnia i ostatnich sześciu godzin przed skonfigurowaną godziną zamrożenia. Nie odtwarzamy wcześniejszych prognoz ML z później otrzymanej krzywej. Rozpoczęta godzina nie jest uzupełniana nową prognozą po fakcie.
+
+Wykres w kWh porównuje godzinową prognozę PV Lab, P50 ML oraz zmierzoną produkcję. Dodatkowo można włączyć przedziały P10/P90, wariant pogodowy i wariant ostatnich godzin. Brak linii może oznaczać oczekiwanie na dane albo warunki uczenia; nie jest potwierdzeniem zerowej produkcji. Przedział P10–P90 pochodzi z modelu i wymaga sprawdzenia pokrycia na rzeczywistych pomiarach.
+
+### 27.2. Ocena bez znajomości przyszłości
+
+Każdą prognozę porównujemy z wynikiem tej samej godziny i tego samego trybu. Pierwszeństwo ma potwierdzona statystyka energii AC całej instalacji. W jej braku używamy całkowania poprawnych pomiarów mocy z pokryciem co najmniej 95%. Niepełny wynik czeka do siedmiu dni, potem jest oznaczany jako brak pomiaru, nigdy jako zero. Wynik oceny nie przepisuje zapisanej prognozy.
+
+Tabela pokazuje liczbę wspólnych godzin i dni, średni błąd ważony, zmianę błędu i stan potwierdzenia. Ocena laboratorium używa kary 100% za zawyżenie i 50% za niedoszacowanie; nie zmienia wybranej oceny w dotychczasowych raportach. Godziny całkowicie nocne nie decydują o jakości prognozy PV. Dane z innej konfiguracji źródła, instalacji lub bazy domu nie są mieszane w jednym teście.
+
+Wymagamy co najmniej 100 ocenionych godzin z 14 dni oraz co najmniej 2% mniejszego błędu. Dodatkowo powtarzamy losowanie całych dni 500 razy: górna granica 97,5% różnicy błędów musi pozostać poniżej zera. To ogranicza ryzyko przypadkowej poprawy na kilku godzinach; nie gwarantuje przyszłej przewagi. Nawet status „lepiej w obserwacji” oznacza nadal 0% wpływu. Nie ma przycisku automatycznego włączenia eksperymentu.
+
+### 27.3. Pogoda i niepewność
+
+Puste pole encji pogody korzysta z encji wskazanej dla śniegu, np. `weather.dom`. Można wskazać inną encję `weather.*`. Laboratorium pobiera prognozę godzinową przez usługę HA `weather.get_forecasts` najwyżej raz na 30 minut. Zachowuje czas odczytu. Prognoza pogody starsza niż godzinę nie jest używana do nowych wariantów. Awaria usługi nie blokuje głównego odczytu HA ani Auto. Temperatura w °F jest przeliczana na °C; brak temperatury lub zachmurzenia nie jest zgadywany.
+
+Model pogodowy porównuje wcześniejszą rzeczywistą produkcję z prognozą PV Lab w podobnym zachmurzeniu, porze dnia i horyzoncie. Używa ostatnich 90 dni, wyłącznie wyników rozliczonych przed wydaniem nowego wariantu. Potrzebuje minimum 20 godzin z siedmiu dni. Mediana stosunku produkcji do prognozy jest ograniczona do 0,5–1,5 i stopniowo przybliżana do pełnego wpływu wraz z liczbą obserwacji. Jest to osobny wariant obserwacyjny; nie mnożymy nim prognozy końcowej.
+
+Empiryczny przedział niepewności opiera się na wcześniejszych błędach z ostatnich 60 dni. Powstaje od 70 godzin i 14 dni. Sprawdzamy osobno, jak często pomiar jest poniżej P10 i powyżej P90; oczekiwane wartości to około 10% na każdą stronę. Status pokrycia wymaga 100 ocen i 14 dni, z tolerancją ±5 punktów procentowych. Pokrycie przedziału jest inną miarą niż poprawa błędu P50 i nie jest gwarancją pokrycia kolejnego dnia.
+
+### 27.4. Reakcja na ostatnie godziny
+
+Wariant krótkoterminowy wymaga co najmniej dwóch poprawnie zmierzonych, już zakończonych godzin z ostatnich czterech godzin. Porównuje ich produkcję z wcześniej zapisaną prognozą, a nie z prognozą poprawioną po fakcie. Stosunek ograniczamy do 0,5–1,5. Jego znaczenie maleje wykładniczo ze stałą trzech godzin, wyłącznie dla bieżącego dnia i horyzontu do sześciu godzin. Ten eksperyment nie zastępuje istniejącej korekty bieżącej: porównuje swój wariant z całym dotychczasowym wynikiem, bez dodatkowego odejmowania w rzeczywistym planie.
+
+### 27.5. Połacie i temperatura zużycia domu
+
+Diagnostyka połaci porównuje zmierzoną energię DC każdej połaci z modelem odniesienia, przy podobnej pogodzie i położeniu Słońca. Potrzebuje co najmniej 14 wcześniejszych dni i 10 porównywalnych godzin. Sygnalizuje jednostronny spadek, gdy przez dwa ostatnie dni występują co najmniej dwie takie obserwacje na dzień, poziom jednej połaci spada poniżej 70% odniesienia, a druga pozostaje na co najmniej 80%. Wspólny spadek obu połaci nie jest automatycznie uznawany za problem jednej. To sygnał do sprawdzenia, nie rozpoznanie przyczyny ani korekta prognozy AC. Luki, nieprawidłowy status i problemy napięcia są wyłączane z uczenia.
+
+Model temperatury uczy się różnicy między oczyszczoną bazą domu a jej prognozą: osobno wpływu chłodu poniżej 15°C i ciepła powyżej 22°C. Wymaga 100 poprawnych godzin z 14 dni w zgodnej konfiguracji. Starsze obserwacje z 90 dni tracą wagę z połowicznym czasem 21 dni. Baza rzeczywista jest zapisywana tylko przy świeżych pomiarach domu i wszystkich odejmowanych urządzeń; luka dłuższa niż dopuszczona w jakości pomiarów nie jest wypełniana zerem. Prognoza temperatury musi być znana w momencie wydania wariantu. Nowe uruchomienia urządzeń nie są ponownie dodawane do modelu bazy. Wynik jest oceniany w laboratorium, nie zmienia planera.
+
+### 27.6. Przechowywanie i uruchomienie
+
+`forecast-lab.json` zawiera ustawienia, status, krótki bufor pogody i oczekujące godziny. `lab-day-RRRR-MM-DD.json` przechowuje zwarte porównania: wydaną prognozę, pogodę znaną przy wydaniu, późniejszy pomiar i jakość. Nie zapisujemy całej odpowiedzi `/states` ani surowych pomiarów pogodowych co minutę. Do obliczeń w pamięci trafia ostatnich 92 dni; starsze pliki pozostają na dysku i są objęte eksportem kopii. Odczyt ML nie usuwa ani nie zmienia historii integracji źródłowej. Zmiana ustawień nie usuwa dawnych porównań.
+
+Uszkodzone pliki eksperymentu są zachowane do odzyskania. Laboratorium wyłącza swój zapis i pokazuje błąd, a główna aplikacja działa dalej. Wyłączenie odczytu w ustawieniach wstrzymuje gromadzenie nowych prognoz; nie usuwa zapisów.
+
+Po aktualizacji nie trzeba ponownie importować wieloletniej produkcji. Jej historia nie zastępuje brakujących prognoz ML i pogody wydanych przed zdarzeniem. Pierwsze modele i oceny pojawiają się dopiero po zebraniu wymaganych danych; proces może trwać dłużej niż dwa tygodnie, ponieważ najpierw uczymy wariant, a potem uczciwie oceniamy jego kolejne prognozy. Wszystkie etapy pozostają obserwacyjne także po osiągnięciu liczebności.

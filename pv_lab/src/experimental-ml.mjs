@@ -1,0 +1,22 @@
+const Q=900000,H=3600000;
+const number=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0;
+export const experimentDefaults=()=>({enabled:true,curveEntity:'sensor.pv_forecast_total_forecast_curve',statusEntity:'sensor.pv_forecast_fotowoltaika_model_status',weatherEntity:''});
+export function validateExperiment(raw){if(!raw||typeof raw.enabled!=='boolean')throw new Error('Niepoprawne ustawienie eksperymentu.');for(const key of ['curveEntity','statusEntity','weatherEntity'])if(typeof raw[key]!=='string'||key!=='weatherEntity'&&!/^sensor\.[a-z0-9_]+$/.test(raw[key])||key==='weatherEntity'&&raw[key]&&!/^weather\.[a-z0-9_]+$/.test(raw[key]))throw new Error('Wskaż poprawne encje eksperymentu.');return Object.fromEntries(['enabled','curveEntity','statusEntity','weatherEntity'].map(k=>[k,raw[k]]));}
+const time=value=>typeof value==='string'&&/(Z|[+-]\d\d:\d\d)$/.test(value)?Date.parse(value):NaN;
+export function readExperimentalML(states,settings,now){
+ const entity=states.get(settings.curveEntity),model=states.get(settings.statusEntity),reported=Date.parse(entity?.last_reported||entity?.last_updated),base={entity:settings.curveEntity,modelState:model?.state||'brak encji',model:model?.attributes?.model??null,modelAt:model?.attributes?.last_trained??null,variant:states.get(settings.statusEntity.replace(/_model_status$/,'_model_variant'))?.state??null,receivedAt:now,reportedAt:Number.isFinite(reported)?reported:null,rows:[],influence:0};
+ const fail=(status,reason)=>({...base,status,reason});
+ if(!settings.enabled)return fail('disabled','Eksperyment wyłączony.');
+ if(!entity||['unknown','unavailable'].includes(entity.state))return fail('waiting','Oczekiwanie na krzywą ML; uczenie może nadal trwać.');
+ if(!Number.isFinite(reported)||reported>now+60000||now-reported>45*60000)return fail('stale','Krzywa ML nie ma świeżego potwierdzenia odczytu (45 min).');
+ const a=entity.attributes||{},quarters=Array.isArray(a.quarters)&&a.quarters.length?a.quarters:null,source=quarters||a.hourly,step=quarters?Q:H;
+ if(!Array.isArray(source)||!source.length)return fail('waiting','ML nie udostępnia jeszcze przedziałów prognozy.');
+ if(source.length>2000)return fail('invalid','Za duża krzywa ML.');
+ const seen=new Set(),rows=[];
+ for(const r of source){const start=time(r?.time);if(!Number.isFinite(start)||start%step||![r.p10,r.p50,r.p90].every(number)||r.p10>r.p50||r.p50>r.p90||seen.has(start))return fail('invalid','Niepoprawne czasy, duplikaty albo kolejność P10/P50/P90.');seen.add(start);if(start<now-2*86400000||start>now+4*86400000)continue;for(let i=0;i<step/Q;i++)rows.push({start:start+i*Q,p10:r.p10/4,p50:r.p50/4,p90:r.p90/4});}
+ if(!rows.some(r=>r.start+Q>now))return fail('stale','Krzywa ML nie zawiera przyszłych przedziałów.');
+ return {...base,status:'ready',reason:'Odczyt eksperymentalny — udział w końcowej prognozie i Auto: 0%.',representation:quarters?'quarters_W':'hourly_Wh',rows:rows.sort((a,b)=>a.start-b.start)};
+}
+export function cloudClass(coverage,condition){if(Number.isFinite(coverage)&&coverage>=0&&coverage<=100)return coverage<30?'clear':coverage<70?'mixed':'overcast';if(['sunny','clear-night'].includes(condition))return 'clear';if(['partlycloudy'].includes(condition))return 'mixed';if(['cloudy','rainy','pouring','snowy','snowy-rainy','fog','lightning-rainy'].includes(condition))return 'overcast';return null;}
+export function readWeatherObservation(states,entity,now){const s=states.get(entity),a=s?.attributes||{},at=Date.parse(s?.last_reported||s?.last_updated);if(!s||!Number.isFinite(at)||now-at>3*H||at>now+60000||['unavailable','unknown'].includes(s.state))return null;let temperature=Number.isFinite(a.temperature)?a.temperature:null;if(a.temperature_unit==='°F'&&temperature!==null)temperature=(temperature-32)*5/9;else if(a.temperature_unit&&a.temperature_unit!=='°C')temperature=null;return {entity,at:now,temperature,cloud:cloudClass(a.cloud_coverage,s.state),condition:s.state};}
+export function parseWeatherForecast(response,entity,unit,now){const input=response?.service_response?.[entity]?.forecast;if(!Array.isArray(input))return [];return input.flatMap(r=>{const start=time(r.datetime);let temperature=Number.isFinite(r.temperature)?r.temperature:null;if(unit==='°F'&&temperature!==null)temperature=(temperature-32)*5/9;else if(unit&&unit!=='°C')temperature=null;return Number.isFinite(start)&&start%H===0&&start+H>now&&start<now+4*86400000?[{start,temperature,cloud:cloudClass(r.cloud_coverage,r.condition),condition:r.condition??null,issuedAt:now,entity}]:[];});}
