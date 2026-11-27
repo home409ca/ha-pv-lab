@@ -1,3 +1,4 @@
+import {bindWeatherLab} from './weather-lab.js';
 import {bindForecastLab} from './forecast-lab.js';
 import {snowBanner,bindSnow} from './snow-status.js';
 import {renderAI,bindAI,discardAI} from './ai.js';
@@ -106,6 +107,7 @@ function render(){if(!data)return;if(tab==='optimizer'){tab='planner';history.re
   if(renderedTab)detailsByTab.set(renderedTab,captureDetails(content));
   content.innerHTML=snowBanner(data,helpers())+({ai:()=>renderAI(data,helpers()),optimizer:()=>renderEnergyOptimizer(data,helpers()),imports:()=>renderExternal(data,helpers()),potential:()=>renderHistorical(data,helpers()),appliances:()=>renderAppliances(data,helpers()),reports:()=>renderReports(data,helpers()),planner:()=>renderUnified(data,helpers())+renderEnergyOptimizer(data,helpers(),true,unifiedSelection()),overview,forecast:forecastPage,panels:panelPage,voltage:voltagePage,sources:sourcesPage,settings:settingsPage,history:historyPage,storage:storagePage,integration:integrationPage}[tab])();
   bindSnow(data,api,load,toast);
+  bindWeatherLab(data,helpers(),api,load,toast,render,value=>dirty=value);
   bindForecastLab(data,helpers(),api,load,toast,render,value=>dirty=value);
   if(tab==='ai')bindAI(data,helpers(),api,render,value=>dirty=value);
   if(tab==='panels')bindPanelMaps(data,helpers(),api,load,toast,render,value=>dirty=value);

@@ -9,7 +9,11 @@ from .contract import sensor_specs, read_sensor
 
 async def async_setup_entry(hass, entry, async_add_entities):
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(PVLabSensor(coordinator, entry, spec) for spec in sensor_specs())
+    from .weather_diagnostics import WeatherDiagnostic
+    async_add_entities([*(PVLabSensor(coordinator, entry, spec) for spec in sensor_specs()),
+                        *(WeatherDiagnostic(coordinator, entry, key, name) for key, name in (
+                            ('source', 'Pogoda — źródło'), ('ageSeconds', 'Pogoda — wiek odczytu'),
+                            ('availability', 'Pogoda — dostępność'), ('quality', 'Pogoda — ocena jakości')))])
 
 
 class PVLabSensor(CoordinatorEntity, SensorEntity):

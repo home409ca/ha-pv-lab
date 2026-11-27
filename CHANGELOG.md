@@ -1,3 +1,11 @@
+# 0.12.0
+
+- Pogoda PV Lab: inwentaryzacja encji weather, trwałe archiwum prognoz i dostępności oraz osobne pomiary odniesienia. Czas pobrania nie jest czasem wydania; braki nie są zerami.
+- Laboratorium prognozy pogody: wspólne godziny, parametry i horyzonty, cztery warianty, kontrola wcześniejszych danych i warunki potwierdzenia przewagi. Nowe warianty nie zmieniają prognozy PV, wejść ML ani Auto.
+- Nowa encja weather.pv_lab z prognozą godzinową oraz sensory źródła, wieku odczytu, dostępności i jakości. Jawne źródło zastępcze przy brakach.
+- Przygotowane osobne pomiary temperatury przy domu i paczkomatu, wilgotności oraz ciśnienia. Początkowo niesprawdzone: bez uczenia korekt na niepotwierdzonym wzorcu.
+- Bezstratna kompresja nowych dzienników, pobieranie archiwum, pełny opis jednostek i przedziałów. Instrukcja i zakres eksperymentu ML z nową pogodą.
+
 # 0.11.0
 
 - Laboratorium prognozy: eksperymentalny odczyt krzywej ML, automatyczny zapis po jej pojawieniu się i wykres godzinowy w kWh. Brak danych nie jest zerem.

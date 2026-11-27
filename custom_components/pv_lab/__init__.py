@@ -62,7 +62,7 @@ async def async_setup_entry(hass, entry):
         raise
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     try:
-        await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.DATETIME, Platform.SWITCH, Platform.BUTTON])
+        await hass.config_entries.async_forward_entry_setups(entry, [Platform.WEATHER, Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.DATETIME, Platform.SWITCH, Platform.BUTTON])
     except Exception:
         hass.data[DOMAIN].pop(entry.entry_id, None)
         await coordinator.executor.async_stop()
@@ -71,7 +71,7 @@ async def async_setup_entry(hass, entry):
 
 
 async def async_unload_entry(hass, entry):
-    unloaded = await hass.config_entries.async_unload_platforms(entry, [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.DATETIME, Platform.SWITCH, Platform.BUTTON])
+    unloaded = await hass.config_entries.async_unload_platforms(entry, [Platform.WEATHER, Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.DATETIME, Platform.SWITCH, Platform.BUTTON])
     if unloaded:
         coordinator = hass.data[DOMAIN].pop(entry.entry_id, None)
         if coordinator and coordinator.executor:

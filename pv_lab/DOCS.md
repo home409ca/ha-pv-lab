@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.11.0 -->
+<!-- pv-lab-manual-version: 0.12.0 -->
 
-**Wersja aplikacji i instrukcji: 0.11.0.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.12.0.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -20,6 +20,7 @@ PV Lab tworzy jedną prognozę produkcji AC z prognoz dostawców, pomiarów i hi
 | Historia i trendy | Widok opisowy; te same dane mogą zasilać kwalifikowany potencjał. |
 | Raport porównań | Ocenia wcześniejsze wyniki, nie zmienia przeszłości. |
 | Profile urządzeń, zużycie domu, ceny | Zmieniają rekomendacje uruchomienia, nie produkcję PV. |
+| Pogoda PV Lab i jej laboratorium | Osobna encja weather i ocena pogody; bez automatycznej zmiany danych PV, ML i Auto. |
 | Laboratorium prognozy — ML i cztery etapy | Wyłącznie obserwacja: 0% wpływu na wynik, Energię, planowanie i Auto. |
 | Analiza AI | Wyłącznie raport doradczy; nie zmienia żadnych obliczeń ani urządzeń. |
 | Ukrycie linii wykresu | Tylko wygląd, bez wyłączenia źródła z obliczeń. |
@@ -1206,3 +1207,90 @@ Model temperatury uczy się różnicy między oczyszczoną bazą domu a jej prog
 Uszkodzone pliki eksperymentu są zachowane do odzyskania. Laboratorium wyłącza swój zapis i pokazuje błąd, a główna aplikacja działa dalej. Wyłączenie odczytu w ustawieniach wstrzymuje gromadzenie nowych prognoz; nie usuwa zapisów.
 
 Po aktualizacji nie trzeba ponownie importować wieloletniej produkcji. Jej historia nie zastępuje brakujących prognoz ML i pogody wydanych przed zdarzeniem. Pierwsze modele i oceny pojawiają się dopiero po zebraniu wymaganych danych; proces może trwać dłużej niż dwa tygodnie, ponieważ najpierw uczymy wariant, a potem uczciwie oceniamy jego kolejne prognozy. Wszystkie etapy pozostają obserwacyjne także po osiągnięciu liczebności.
+
+
+## 28. Pogoda — jakość i źródła (0.12.0)
+
+Sekcja znajduje się w zakładce Prognozy, poniżej laboratorium PV. Ocenia prognozy meteorologiczne, a nie gotowe prognozy produkcji Forecast.Solar, Open-Meteo Solar lub Solcast. Nowa encja weather.pv_lab działa niezależnie; aktualizacja nie podmienia źródła istniejącego modelu ML, pogody wybranej dla śniegu, prognozy PV ani Auto.
+
+### 28.1. Dostawcy, możliwości i pochodzenie
+
+Po odczycie HA wykrywamy do 12 encji weather.*. Pomijamy własne encje PV Lab, również rozpoznane po atrybucie pv_lab_weather, aby uniknąć pętli. Z rejestru encji, jeśli jest dostępny, odczytujemy integrację źródłową. Nazwa weather.dom nie potwierdza dostawcy. Rejestr potwierdza integrację, ale niekoniecznie model meteorologiczny. Model i wspólną rodzinę można wpisać po ich sprawdzeniu w konfiguracji źródła.
+
+Wykres ma osobny wybór dnia i parametru; wilgotność na wykresie ma jednostkę %, a jej błąd w tabeli — punkty procentowe. Tabela podaje zakres dat, liczbę godzin i dostępne pola, odsetek udanych prób, wiek od pobrania i znany czas wydania. Dostępność oznacza uzyskanie poprawnej krzywej godzinowej w odpowiedzi HA, nie trafność prognozy. Źródło z krzywą co trzy godziny jest archiwizowane w tej rozdzielczości i oznaczone jako nieobsługiwane godzinowo. Nie dopisujemy sztucznych punktów i nie dzielimy jego opadu na zgadywane godziny.
+
+Usługi mogą współdzielić modele. Met.no jest usługą meteorologiczną, OpenWeatherMap ma różne tryby i zakresy, Pirate Weather łączy modele. Nazwa API nie dowodzi niezależności danych. Niepotwierdzone modele domyślnie należą do wspólnej grupy unresolved. Zmiana grup wymaga wiedzy o pochodzeniu; nie rozdzielaj identycznych źródeł tylko po to, aby zwiększyć ich znaczenie. Prosta średnia jest porównaniem kontrolnym i nie ma takiego zabezpieczenia; mieszanka z wagami uwzględnia grupy.
+
+### 28.2. Archiwizacja w chwili odczytu
+
+Prognozy pobieramy przez weather.get_forecasts, najwyżej co 30 minut, z istniejącego połączenia HA. Odczyty źródeł są niezależne; awaria jednego nie blokuje pozostałych ani głównego PV Lab. Zapis zawiera identyfikator źródła, model lub jego brak, rodzinę, czas pobrania, opcjonalny czas wydania, czas obowiązywania, jednostki, pola nieobecne i odrzucone oraz jawne znaczenie przedziałów. Czas pobrania nie jest przedstawiany jako czas wydania. Wiele integracji HA nie udostępnia czasu wydania; pozostaje on nieznany.
+
+Zapisujemy temperaturę, wilgotność, punkt rosy, zachmurzenie, opad, prawdopodobieństwo opadu, wiatr, kierunek, ciśnienie i natężenie promieniowania w zakresie obecnym w danych. Parametr nieudostępniony przez HA pozostaje brakiem. Warunki pogodowe jako kategoria pochodzą z pojedynczego źródła, nie są średnią napisów. Kierunek wiatru jest łączony wektorowo, a przeciwnie skierowane, znoszące się kierunki dają brak określonego kierunku.
+
+Jednostki kanoniczne: °C, %, hPa, mm, m/s, stopnie i W/m². Obsługujemy m.in. °F, Pa/kPa/inHg/mmHg, km/h/mph/kn oraz cale opadu. Nie zgadujemy jednostki na podstawie wartości. Nie traktujemy Wh/m² jak W/m². Parametr promieniowania oznacza poziome globalne GHI. Typ GHI trzeba potwierdzić zarówno u dostawcy, jak i dla czujnika; nie mieszamy z DNI, DHI ani pomiarem w płaszczyźnie panelu tylko dlatego, że mają tę samą jednostkę. Dla opadu i promieniowania osobno wybierz, czy znacznik czasu oznacza początek czy koniec przedziału, dopiero po sprawdzeniu opisu dostawcy. Przy niepotwierdzonym znaczeniu oryginalne liczby i jednostki są w archiwum, ale parametr nie jest oceniany ani publikowany jako godzinowa suma lub średnia. Prawdopodobieństwo opadu wymaga zgodności przedziału z opadem.
+
+Pliki weather-forecast-RRRR-MM-DD.jsonl są bezstratnie kompresowane GZIP. Zmieniona krzywa jest nowym zapisem, nigdy nadpisaniem wcześniejszej. Dla identycznej krzywej zapisujemy małe potwierdzenie kolejnego odczytu i odwołanie do wcześniejszego odcisku, bez powtarzania całej odpowiedzi. Osobne dzienniki weather-availability zachowują wyniki prób. Nie archiwizujemy całego /states ani danych co minutę dla każdego dostawcy. Archiwum rośnie wraz z rzeczywiście nowymi prognozami; kompresja ogranicza, ale nie zeruje przyrostu.
+
+### 28.3. Pomiary odniesienia i Twoje czujniki
+
+Domyślnie przygotowane są:
+
+| Pomiar | Encja | Zastosowanie |
+| --- | --- | --- |
+| Temperatura przy domu | sensor.temperatura_na_zewnatrz | Pomocniczy punkt odniesienia; montaż przy gruncie, możliwe nagrzewanie latem rano. |
+| Druga temperatura | sensor.parcel_locker_gszv01bapp_temperatura | Oddzielny pomiar porównawczy z paczkomatu około 3 km od domu; nie zastępuje automatycznie pierwszego. |
+| Wilgotność | sensor.parcel_locker_gszv01bapp_wilgotnosc | Regionalny pomiar pomocniczy. |
+| Ciśnienie | sensor.parcel_locker_gszv01bapp_cisnienie | Regionalny pomiar pomocniczy; trzeba sprawdzić jednostkę i redukcję do poziomu morza. |
+
+Wszystkie te punkty są początkowo niesprawdzone. Ich obserwacje mogą być zapisywane i porównywane opisowo, ale nie uczą wag i korekt ani nie potwierdzają zwycięzcy. Zaznaczenie „Sprawdzony montaż i jednostki” jest potwierdzeniem jakości pomiaru, nie przełącznikiem zwiększającym liczebność. Czujnik temperatury do oceny pogody powinien reprezentować temperaturę powietrza w odpowiedniej osłonie i bez wpływu promieniowania słonecznego. Różnica paczkomat minus dom nie mówi samodzielnie, który czujnik jest błędny. Ciśnienia rzeczywistego nie porównuj ze zredukowanym bez zgodnej podstawy.
+
+Punktowe temperatury, wilgotność, ciśnienie i kierunek są porównywane z pierwszym świeżym odczytem do pięciu minut po pełnej godzinie. To dopuszczona tolerancja czasowa, nie idealny pomiar dokładnie w chwili prognozy. Główne odczyty muszą mieć raport HA nie starszy niż pięć minut; drugi czujnik temperatury do porównania może mieć do 15 minut. Raport HA nie zawsze potwierdza fizyczny czas pomiaru zewnętrznej stacji — sprawdź atrybuty integracji przed uznaniem jej za wzorzec.
+
+Opad jest integrowany z natężenia mm/h albo liczony z przyrostu licznika mm; spadek licznika nie jest ujemnym deszczem. Promieniowanie jest średnią z przedziału, a nie jednym odczytem. Dla obu potrzebujemy pokrycia co najmniej 95% godziny i przerw nie większych niż pięć minut. Restart lub brak sensora może pozostawić lukę; nie uzupełniamy jej zerem. Nie mamy obecnie wskazanego deszczomierza ani pyranometru. Produkcja PV nie jest bezpośrednim pomiarem promieniowania ani zachmurzenia.
+
+Pomiary godzinowe oraz drugi czujnik zapisują się w weather-observed-RRRR-MM-DD.json. Zmiana czujnika, jego rodzaju lub potwierdzenia jakości rozpoczyna zgodny nowy zbiór ocen, bez kasowania dawnego archiwum. Obecna implementacja ma jeden podstawowy punkt odniesienia na parametr i dodatkowy pomiar temperatury do kontroli. Nie miesza pomiaru lokalnego i regionalnego w jednym wyniku. Przestawienie punktu odniesienia nie jest dowodem poprawy modelu.
+
+### 28.4. Uczciwe porównanie i znaczenie tabel
+
+Wyprzedzenia wynoszą 1–6, 6–24, 24–48 oraz 48+ godzin, przy czym 6 należy do drugiego, a 24 do trzeciego zakresu. Liczymy je od odczytu, ponieważ rzeczywisty czas wydania często jest nieznany. To wyprzedzenie informacji dostępnej w HA, nie potwierdzony wiek modelu meteorologicznego. Czas wydania, gdy jest dostępny, pozostaje zapisany oddzielnie. Oczekujące porównanie zachowuje najnowszą wersję odczytaną przed granicą danego wyprzedzenia; pełne dzienniki zachowują także wcześniejsze wersje.
+
+Trafność dostawców jest liczona na wspólnych godzinach danego parametru i względem tego samego czujnika. Pokazujemy dni, godziny, daty, MAE oraz średnie zawyżanie (+) lub zaniżanie (−). Dodatkowo porównanie dostawców ma 95% przedział różnicy błędu wyznaczany przez losowanie całych dni. Przedział obejmujący zero nie potwierdza różnicy. W obliczeniu przedziału dni mają jednakową wagę przez ich średnie błędy; pojedynczy dzień z większą liczbą odczytów nie udaje wielu niezależnych dni. Wilgotność i zachmurzenie mają błąd w punktach procentowych, nie procentach względnych. Dla opadu oddzielamy błąd ilości i trafienie wystąpienia ≥0,1 mm: trafienia, pominięcia i fałszywe alarmy. Brier dla prawdopodobieństwa jest dostępny tylko po potwierdzeniu, że u dostawcy prawdopodobieństwo opisuje ten sam przedział i zdarzenie ≥0,1 mm. Inaczej pozostaje brak, zamiast pozornie precyzyjnego wyniku.
+
+„Brak możliwości bezpośredniej oceny” oznacza brak odpowiedniego pomiaru albo wspólnych obserwacji. „Porównanie z niezweryfikowanym czujnikiem” nie jest rankingiem jakości meteorologicznej. Kilka zgodnych godzin ani sama aktualność danych nie potwierdzają lepszej prognozy.
+
+### 28.5. Cztery warianty i test bez danych z przyszłości
+
+Porównujemy: pojedynczego dostawcę wybranego z wcześniejszych wspólnych pomiarów, prostą średnią, stabilną mieszankę z wagami i mieszankę z lokalną korektą temperatury/wilgotności. Gdy wcześniejszych danych jest za mało, „pojedyncze źródło” oznacza wskazane źródło zastępcze, a nie wygrany ranking. Wagi i wybór są zapisywane przy wydaniu. Późniejszy pomiar nie poprawia prognozy ocenianej w tej godzinie.
+
+Wagi uczą się oddzielnie dla parametru i wyprzedzenia po co najmniej 100 wspólnych godzinach z 14 dni i zweryfikowanym pomiarze. Część wagi zawsze pozostaje przy równym podziale pomiędzy rodzinami, a część zależy od wcześniejszego MAE. Źródła tej samej rodziny dzielą jej wagę. Przy dwóch rodzinach jedna może dostać najwyżej 75%, co ogranicza gwałtowne przeskoki; z jedną rodziną nie udajemy wielokrotnego niezależnego potwierdzenia. Nie dodajemy podziałów sezonowych przy niewystarczającej próbie.
+
+Lokalna korekta wymaga własnych wcześniejszych błędów mieszanki, co najmniej 100 godzin i 14 dni. Korekta temperatury jest ograniczona do ±3°C, wilgotności do ±15 punktów procentowych. Dodatkowy wpływ ostatniego znanego odchylenia maleje wraz z horyzontem; nie przenosimy obecnej różnicy bez końca na kolejne dni. Punkt rosy nie przekracza temperatury, procenty pozostają w 0–100%, a opad i prędkość nie są ujemne. Kategorii pogody nie uśredniamy.
+
+Nowe warianty najpierw są oceniane obserwacyjnie. Wybranie publikacji mieszanki wymaga dla danego parametru i horyzontu co najmniej 100 ocen z 14 dni, poprawy MAE co najmniej 2% oraz potwierdzenia różnicy przez 500 losowań całych dni. Górna granica 97,5% różnicy błędu musi być poniżej zera. To warunek wstępny, nie gwarancja jakości jutro. Testowe prognozy powstały wcześniej, zanim znaliśmy oceniane pomiary. Żaden wariant nie jest z góry uznany za skuteczniejszy.
+
+### 28.6. Encja weather.pv_lab i diagnostyka w HA
+
+Po aktualizacji aplikacji i integracji HACS do 0.12.0 oraz restarcie HA w urządzeniu PV Lab pojawi się encja weather.pv_lab (przy zajętej nazwie możliwy przyrostek). Obsługuje aktualne warunki oraz weather.get_forecasts z type: hourly. Warunki bieżące pochodzą ze świeżej encji źródłowej; zweryfikowane czujniki mogą dostarczyć wybrane bieżące pomiary. Prognoza przyszłości jest osobnym przebiegiem. Nie zastępujemy aktualnej temperatury temperaturą z przyszłej godziny.
+
+Przy zbyt starym lub niedostępnym źródle wybieramy kolejne dostępne źródło i pokazujemy jego nazwę. Krzywa źródłowa po dwóch godzinach bez udanego pobrania nie jest publikowana. Bieżący raport encji źródłowej też musi mieścić się w dwóch godzinach. Są to limity od pobrania i raportowania, nie domniemany czas wydania meteorologicznego. Gdy brak poprawnych danych, encja jest niedostępna. Nie prezentujemy starych liczb jako nowego pomiaru.
+
+Dodatkowe sensory urządzenia PV Lab opisują źródło pogody, wiek odczytu w sekundach, dostępność oraz jakość. Są niezależne od dziennej produkcji PV. Atrybuty encji weather zawierają źródło bieżących warunków, informację o ich rodzaju, wybrany wariant i wpływ na PV równy zero. Wybrany wariant i rzeczywiście użyty wariant parametru widać także w aplikacji. Zmiana samego wariantu publikacji lub wstrzymanie archiwizacji nie zeruje wcześniejszej oceny; zmiana danych wejściowych i potwierdzenia pomiaru rozpoczyna nowy zgodny zbiór. Parametr bez potwierdzonej korzyści mieszanki pozostaje przy pojedynczym źródle.
+
+Przykład karty dashboardu:
+
+```yaml
+type: weather-forecast
+entity: weather.pv_lab
+forecast_type: hourly
+show_forecast: true
+```
+
+Nie wybieramy automatycznie weather.pv_lab jako wejścia istniejących automatów. Nie przestawiamy też pogody wskazanej dla śniegu. Najpierw oceń nową encję obok dotychczasowej.
+
+### 28.7. Przechowywanie, ograniczenia i ML
+
+weather-lab.json zawiera ustawienia, ograniczony bufor źródeł i oczekujące oceny. Archiwa forecast, availability, evaluation oraz observed są trwałe. Ostatnie 92 dni ocen służą bieżącym obliczeniom, a około dziewięć dni pomiarów jest w pamięci do rozliczania oczekujących godzin. Starsze pliki pozostają na dysku. Zapis pełnych krzywych jest kompresowany, a kopia PV Lab i przycisk pobrania archiwum obejmują prognozy, oceny, dostępność i pomiary. Uszkodzenie archiwum pogodowego nie powinno zatrzymać głównego PV Lab; pliki są zachowane, a moduł pokazuje błąd. Gdy nie można odczytać całego archiwum do kopii, eksport zwraca jawny błąd części pogodowej i listę plików zamiast blokować resztę kopii. Oryginalne pliki można nadal pobrać w Pliki i retencja.
+
+Zainstalowana według dostarczonej diagnostyki integracja ML 0.9.9 pobiera Open-Meteo bezpośrednio i nie ma standardowego wejścia weather.*. Sama nowa encja nie podłącza jej do wytrenowanego modelu. Ponadto model potrzebuje m.in. promieniowania GHI/DNI/DHI i zachmurzenia warstwowego; standardowe prognozy HA nie gwarantują tych pól. Nie podmieniamy pogody wytrenowanemu modelowi. Konkretny zakres przyszłego rozszerzenia opisuje ML-WEATHER-EXPERIMENT.md. Porównanie alternatywnego ML wymaga osobnego uczenia, zgodnej historii wejść i kolejnych rzeczywistych prognoz. Nie przedstawiamy go jako wykonanego, gdy tych danych nie ma.
+
+Nowe dane zaczynają się gromadzić po instalacji i pierwszym udanym odczycie. Nie można odtworzyć dawnych prognoz pogodowych z samych stanów encji ani z importu produkcji PV. Pierwsze opisowe różnice mogą być widoczne po zakończonych godzinach; wiarygodna ocena wymaga większej próby i sprawdzonych pomiarów. Przy braku wzorca promieniowania, opadu lub zachmurzenia ich bezpośrednia trafność pozostanie nieoceniona.
