@@ -1,3 +1,7 @@
+# 0.10.4
+
+Przy jednakowej cenie do grosza i pełnym zakupie energii nowy wybór preferuje wcześniejszy „Start tania strefa”, jeśli również koszt gorszej pogody jest taki sam do grosza. Wspólna reguła w aplikacji, karcie i pierwszym wyborze Auto; zatwierdzone godziny i progi przeplanowania pozostają bez zmian. Nowy binary_sensor.pv_lab_zaplanowane_uruchomienie wskazuje uzbrojone polecenia oczekujące na wysłanie; atrybuty zawierają liczbę cykli, najbliższy start, tryb i urządzenia. Po wysłaniu wszystkich poleceń lub anulowaniu gaśnie. Brak świeżych danych jest oznaczany jako niedostępność. Nie zastępuje encji faktycznej pracy urządzeń. Aktualizacja zachowuje historię i konfigurację.
+
 # 0.10.3
 
 Naprawa aktualizacji niekompletnego obrazu aplikacji: nowy numer pozwala ponownie pobrać i zbudować spójny kod po częściowym 0.10.2. Zawiera wszystkie poprawki od 0.10.0. Budowanie obrazu i kontrola wydania sprawdzają teraz rzeczywiste eksporty modułów, bez uruchamiania serwera, połączeń HA i zapisów danych. Brak executionRecord lub innej wymaganej funkcji zatrzyma budowę przed uruchomieniem. Zachowano historię, konfigurację, profile, zasady Auto i zatwierdzone terminy.

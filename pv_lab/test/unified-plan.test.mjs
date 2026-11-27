@@ -35,3 +35,16 @@ test('one all-grid appliance exposes one earliest cheapest dashboard option and 
 test('card finds later daylight candidates before cutting down the list',()=>{const x=fixture();x.s.entries.forEach(e=>e.count=0);x.s.entries[1].count=1;x.optimizer.tariff.cheapWeekends=false;x.optimizer.tariff.holidays=false;x.optimizer.tariff.winterOffPeak=[[0,720]];x.optimizer.tariff.versions[0].energyNight.value=.01;x.optimizer.tariff.versions[0].energyDay.value=10;x.f.fullRows.forEach((r,i)=>r.wh=i>=8&&i<20?150:0);const r=run(x),card=r.dashboardAnalyses.cost;assert.equal(r.dashboardSelection.cost.mode,'solar');assert.equal(card.length,3);assert.ok(card.every(p=>p.devices.reduce((n,d)=>n+d.energyKWh,0)-p.schedule.additionalImportKWh>1e-6));assert.ok(r.analyses.cost.some(p=>p.schedule.additionalImportKWh>=p.devices.reduce((n,d)=>n+d.energyKWh,0)-1e-6));});
 
 test('Auto evaluates risk and preserves cheap-tariff candidates even when dashboard filters all-grid plans',()=>{const x=fixture();x.s.entries.forEach(e=>e.count=0);x.s.entries[1].count=1;x.optimizer.tariff.cheapWeekends=false;x.optimizer.tariff.holidays=false;x.optimizer.tariff.winterOffPeak=[[780,900]];x.optimizer.tariff.versions[0].energyNight.value=.2;x.optimizer.tariff.versions[0].energyDay.value=1.3;x.f.fullRows.forEach((r,i)=>r.wh=i<12?80:0);const manual=run(x),auto=planUnified(x.f,[],x.c,x.s,x.optimizer,emptyLoad(),null,new Map(),{},library,x.now,null,{auto:true});assert.equal(manual.autoPlans,undefined);assert.ok(auto.autoPlans.some(p=>p.comparisonLabel==='Start tania strefa'));assert.equal(auto.autoPlans[0].schedule.devices,1);assert.ok(auto.autoPlans[0].schedule.cost<.25);assert.ok(auto.autoPlans.some(p=>p.schedule.additionalImportKWh>=p.devices[0].energyKWh-1e-8));});
+
+test('full planner and initial Auto choose 13:00 cheap start for an all-grid weekday plan',()=>{
+ const x=fixture();x.s.entries.forEach(e=>e.count=0);x.s.entries[1].count=1;
+ x.optimizer.tariff.cheapWeekends=false;x.optimizer.tariff.holidays=false;x.optimizer.tariff.winterOffPeak=[[780,900]];
+ x.optimizer.tariff.versions[0].energyNight.value=.68;x.optimizer.tariff.versions[0].energyDay.value=1.3;
+ x.f.fullRows.forEach(r=>r.wh=0);
+ const result=planUnified(x.f,[],x.c,x.s,x.optimizer,emptyLoad(),null,new Map(),{},library,x.now,null,{auto:true});
+ const expected=Date.parse('2026-11-21T12:00:00Z');
+ for(const p of [result.analyses.cost[0],result.dashboardAnalyses.cost[0],result.autoPlans[0]]){
+  assert.equal(p.schedule.startsAt,expected);assert.equal(p.schedule.devices,p.schedule.requested);
+  assert.ok(Math.abs(p.schedule.additionalImportKWh-p.devices.reduce((n,d)=>n+d.energyKWh,0))<1e-8);
+ }
+});

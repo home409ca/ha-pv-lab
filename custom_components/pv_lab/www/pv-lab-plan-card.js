@@ -1,3 +1,4 @@
+import {preferredCheapGridPlan} from './tariff-preference.js';
 /* Native, dependency-free HA card. HA executes explicitly approved switch.turn_on commands; the card never calls arbitrary services. */
 const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function energyShare(plan){
@@ -36,6 +37,7 @@ export function visibleCardPlans(state,maxPlans=3,now=Date.now()){
  for(const ref of refs)if(!used.has(ref))add(ref.plan);
  if(selected&&!result.some(p=>p.id===selected)){const p=normal.find(p=>p.id===selected);if(p)add(p);}
  const cheapest=Math.min(...result.filter(p=>p.complete&&Number.isFinite(p.cost)).map(p=>p.cost)),eligible=p=>p.cost<=cheapest+.05+1e-8;result.sort((a,b)=>Number(b.complete)-Number(a.complete)||(Number.isFinite(a.cost)&&Number.isFinite(b.cost)?(eligible(a)!==eligible(b)?(eligible(a)?-1:1):(eligible(a)?(b.surplusKWh||0)-(a.surplusKWh||0)||(a.pessimisticCost??a.cost)-(b.pessimisticCost??b.cost):0)||a.cost-b.cost||a.start-b.start):0));
+ const preferred=preferredCheapGridPlan(result.map(plan=>({plan,complete:plan.complete,cost:plan.cost,stress:plan.pessimisticCost,energy:(plan.cycles||[]).reduce((n,c)=>n+c.energyKWh,0),imported:plan.importKWh,cheap:plan.kind==='cheap'||plan.label?.includes('Start tania strefa'),start:plan.start})));if(preferred&&preferred!==result[0]){result.splice(result.indexOf(preferred),1);result.unshift(preferred);}
  const approved=result.find(p=>p.id===selected);return approved?[approved,...result.filter(p=>p!==approved)]:result;
 }
 export const programDuration=minutes=>{const h=Math.floor(minutes/60),m=Math.round(minutes%60);return [h?h+' h':'',m?m+' min':''].filter(Boolean).join(' ')||'0 min';};

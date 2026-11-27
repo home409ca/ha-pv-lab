@@ -13,7 +13,7 @@ SPECS = (
 
 async def async_setup_entry(hass, entry, async_add_entities):
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([*(PVLabApplianceRunning(coordinator, entry, *spec) for spec in SPECS), PVLabPlanApproved(coordinator, entry)])
+    async_add_entities([*(PVLabApplianceRunning(coordinator, entry, *spec) for spec in SPECS), PVLabPlanApproved(coordinator, entry), PVLabScheduledStart(coordinator, entry)])
 
 
 class PVLabApplianceRunning(CoordinatorEntity, BinarySensorEntity, RestoreEntity):
@@ -89,3 +89,30 @@ class PVLabPlanApproved(CoordinatorEntity, BinarySensorEntity):
     @property
     def extra_state_attributes(self):
         return read_dashboard_plan(self.coordinator.data or {}, "dashboard_approved")[1]
+
+
+class PVLabScheduledStart(PVLabPlanApproved):
+    """An armed command still waiting to be sent, rather than physical running."""
+    _attr_icon = "mdi:calendar-clock"
+    _attr_name = "Zaplanowane uruchomienie"
+
+    def __init__(self, coordinator, entry):
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_scheduled_start_pending"
+
+    @property
+    def suggested_object_id(self):
+        return "pv_lab_zaplanowane_uruchomienie"
+
+    @property
+    def available(self):
+        value, _ = read_dashboard_plan(self.coordinator.data or {}, "dashboard_pending")
+        return self.coordinator.last_update_success and value is not None
+
+    @property
+    def is_on(self):
+        return read_dashboard_plan(self.coordinator.data or {}, "dashboard_pending")[0]
+
+    @property
+    def extra_state_attributes(self):
+        return read_dashboard_plan(self.coordinator.data or {}, "dashboard_pending")[1]

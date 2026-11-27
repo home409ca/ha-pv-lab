@@ -11,6 +11,24 @@ def read_dashboard_plan(payload, kind, index=None, now=None):
     read_at = plan.get("readAt")
     if type(read_at) not in (int, float) or not isfinite(read_at) or not -60000 <= now-read_at <= 180000:
         return None, {}
+    if kind == "dashboard_pending":
+        execution = plan.get("execution")
+        execution = execution if isinstance(execution, dict) else {}
+        cycles = execution.get("cycles")
+        cycles = cycles if isinstance(cycles, list) else []
+        armed = plan.get("approved") is True and not plan.get("cancelledAt") and execution.get("enabled") is True
+        pending = [c for c in cycles if armed and isinstance(c, dict)
+                   and c.get("status") in ("pending", "dispatching")
+                   and type(c.get("start")) in (int, float) and isfinite(c["start"])
+                   and type(c.get("end")) in (int, float) and isfinite(c["end"])
+                   and c["end"] > max(now, c["start"])]
+        pending.sort(key=lambda c: c["start"])
+        return bool(pending), {"plan_id": execution.get("planId"), "mode": execution.get("mode"),
+                               "auto": execution.get("auto", False), "pending_count": len(pending),
+                               "next_start": pending[0]["start"] if pending else None,
+                               "pending_cycles": [{"device_id": c.get("deviceId"), "start": c["start"],
+                                                   "end": c["end"], "switch_entity": c.get("switchEntity"),
+                                                   "status": c["status"]} for c in pending]}
     selected = plan.get("selected") or {}
     approved = plan.get("approved") is True and isinstance(selected.get("end"), (int, float)) and selected["end"] > now
     attrs = {"plan_id": plan.get("id"), "approved": approved, "approved_at": plan.get("approvedAt"), "cancel_reason": plan.get("cancelReason"), "goal": (plan.get("request") or {}).get("goal"), "cycles": selected.get("cycles", [])}

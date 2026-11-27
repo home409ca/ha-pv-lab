@@ -1,3 +1,4 @@
+import {allGrid} from '../public/tariff-preference.js';
 const MINUTE=60000;
 function shape(plan){
  const groups=new Map();
@@ -27,9 +28,9 @@ export function selectDashboardSchedules(pool,compare,evaluate,requested,limit=3
  if(!requested)return {plans:[],mode:'none',omittedGrid:0};
  const full=pool.filter(p=>p.length===requested);
  if(!full.length)return {plans:selectDiverseSchedules(pool,compare,evaluate,limit),mode:'incomplete',omittedGrid:0};
- const solar=full.filter(p=>{const energy=p.reduce((n,a)=>n+a.curve.kWh,0),imported=evaluate(p).additionalImportKWh;return Number.isFinite(energy)&&Number.isFinite(imported)&&energy-imported>1e-6;});
+ const solar=full.filter(p=>{const energy=p.reduce((n,a)=>n+a.curve.kWh,0),imported=evaluate(p).additionalImportKWh;return Number.isFinite(energy)&&Number.isFinite(imported)&&!allGrid(energy,imported)&&energy-imported>1e-6;});
  if(solar.length){const plans=[],features=new Map(solar.map(p=>[p,shape(p)]));for(const plan of [...solar].sort(compare)){if(plans.some(p=>distance(features.get(p.plan),features.get(plan))===0))continue;plans.push({plan,reason:'PV lub bilans — kolejność według kosztu i zapasu'});if(plans.length===limit)break;}return {plans,mode:'solar',omittedGrid:full.length-solar.length};}
  const earliest=p=>Math.min(...p.map(a=>a.start)),end=p=>Math.max(...p.map(a=>a.start+a.curve.duration));
- const grid=[...full].sort((a,b)=>Math.round(evaluate(a).cost*1e8)-Math.round(evaluate(b).cost*1e8)||earliest(a)-earliest(b)||end(a)-end(b));
+ const grid=[...full].sort((a,b)=>Math.round(evaluate(a).cost*100)-Math.round(evaluate(b).cost*100)||earliest(a)-earliest(b)||end(a)-end(b));
  return {plans:[{plan:grid[0],reason:'Najtańszy znaleziony, najwcześniejszy przy tej samej cenie'}],mode:'grid',omittedGrid:Math.max(0,grid.length-1)};
 }

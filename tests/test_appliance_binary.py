@@ -53,7 +53,7 @@ class ApplianceBinaryTests(unittest.IsolatedAsyncioTestCase):
     async def test_two_entities_icons_stable_ids_and_setup(self):
         entities = []
         await self.binary.async_setup_entry(types.SimpleNamespace(data={"pv_lab": {self.entry.entry_id: self.coordinator}}), self.entry, lambda values: entities.extend(values))
-        self.assertEqual(len(entities), 3)
+        self.assertEqual(len(entities), 4)
         self.assertEqual([e._attr_icon for e in entities[:2]], ["mdi:dishwasher", "mdi:washing-machine"])
         self.assertEqual(self.entity._attr_device_class, "running")
         self.assertEqual(self.entity.suggested_object_id, "pv_lab_pralka_pracuje")
@@ -102,3 +102,52 @@ class ApplianceBinaryTests(unittest.IsolatedAsyncioTestCase):
         await self.entity.async_added_to_hass()
         self.assertTrue(self.entity.is_on)
         self.assertFalse(self.entity.extra_state_attributes["data_fresh"])
+
+    async def test_pending_start_entity_tracks_remaining_commands_and_freshness(self):
+        now = self.now
+        plan = {"readAt": now, "approved": True, "execution": {"planId": "p1", "enabled": True,
+                "mode": "finish", "auto": True, "cycles": [
+                    {"deviceId": "pralka", "start": now+60000, "end": now+3600000, "status": "pending", "switchEntity": "switch.washer"},
+                    {"deviceId": "zmywarka", "start": now+120000, "end": now+7200000, "status": "pending"}]}}
+        self.coordinator.data = {"devicePlanning": plan}
+        entity = self.binary.PVLabScheduledStart(self.coordinator, self.entry)
+        self.assertEqual(entity.suggested_object_id, "pv_lab_zaplanowane_uruchomienie")
+        self.assertTrue(entity.available)
+        self.assertTrue(entity.is_on)
+        self.assertEqual(entity.extra_state_attributes["pending_count"], 2)
+        plan["execution"]["cycles"][0]["status"] = "sent"
+        self.assertTrue(entity.is_on)
+        self.assertEqual(entity.extra_state_attributes["next_start"], now+120000)
+        plan["execution"]["cycles"][1]["status"] = "dispatching"
+        self.assertTrue(entity.is_on)
+        plan["execution"]["cycles"][1]["status"] = "sent"
+        self.assertFalse(entity.is_on)
+        plan["readAt"] = now-181000
+        self.assertFalse(entity.available)
+        self.assertIsNone(entity.is_on)
+
+    async def test_cancel_disabled_failed_and_auto_preparation_are_not_pending(self):
+        cycle = {"start": self.now-1000, "end": self.now+60000, "status": "pending"}
+        plan = {"readAt": self.now, "approved": True, "execution": {"enabled": True, "cycles": [cycle]}}
+        read = lambda: self.contract.read_dashboard_plan({"devicePlanning": plan}, "dashboard_pending", now=self.now)[0]
+        self.assertTrue(read())  # At dispatch time it is still armed until receipt.
+        for status in ("sent", "failed", "missed", "uncertain", "cancelled"):
+            cycle["status"] = status
+            self.assertFalse(read())
+        cycle["status"] = "pending"
+        plan["cancelledAt"] = self.now
+        self.assertFalse(read())
+        del plan["cancelledAt"]
+        plan["execution"]["enabled"] = False
+        self.assertFalse(read())
+        plan["execution"]["enabled"] = True
+        plan["approved"] = False
+        self.assertFalse(read())
+        plan["execution"] = None
+        self.assertFalse(read())
+
+    async def test_invalid_and_expired_pending_times_never_arm_sensor(self):
+        for changes in ({"start": True}, {"end": float("nan")}, {"end": self.now}, {"end": self.now-1}, {"start": self.now+7200000}):
+            cycle = {"start": self.now+1000, "end": self.now+3600000, "status": "pending", **changes}
+            plan = {"readAt": self.now, "approved": True, "execution": {"enabled": True, "cycles": [cycle]}}
+            self.assertFalse(self.contract.read_dashboard_plan({"devicePlanning": plan}, "dashboard_pending", now=self.now)[0])

@@ -69,9 +69,9 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
     assert.equal((await post('/api/plan',{energyKWh:0},{Authorization:'Bearer '+pairingKey})).status,400);assert.equal((await post('/api/plan',{entities:{}},{Authorization:'Bearer '+pairingKey})).status,400);assert.equal((await post('/api/plan',{energyKWh:4},{Authorization:'Bearer wrong'})).status,401);
     assert.ok((await get('/api/view')).reports);assert.ok((await get('/api/view')).planner);assert.equal((await fetch(base+'/planning.js')).status,200);
     assert.equal((await fetch(base+'/appliances.js')).status,200);
-    const htmlResponse=await fetch(base+'/');assert.equal(htmlResponse.headers.get('cache-control'),'no-store');assert.ok((await htmlResponse.text()).includes('./ui/0.10.3/app.js'));
-    const uiResponse=await fetch(base+'/ui/0.10.3/app.js');assert.equal(uiResponse.status,200);assert.ok(uiResponse.headers.get('cache-control').includes('immutable'));
-    assert.equal((await fetch(base+'/ui/0.10.3/historical.js')).status,200);assert.equal((await fetch(base+'/ui/0.10.3/view-state.js')).status,200);assert.equal((await fetch(base+'/ui/0.4.2/app.js')).status,410);
+    const htmlResponse=await fetch(base+'/');assert.equal(htmlResponse.headers.get('cache-control'),'no-store');assert.ok((await htmlResponse.text()).includes('./ui/0.10.4/app.js'));
+    const uiResponse=await fetch(base+'/ui/0.10.4/app.js');assert.equal(uiResponse.status,200);assert.ok(uiResponse.headers.get('cache-control').includes('immutable'));
+    assert.equal((await fetch(base+'/ui/0.10.4/historical.js')).status,200);assert.equal((await fetch(base+'/ui/0.10.4/view-state.js')).status,200);assert.equal((await fetch(base+'/ui/0.4.2/app.js')).status,410);
     assert.ok((await get('/api/historical-profile?date=2026-06-10')).rows);
 
     assert.equal((await post('/api/profiles/analyze',{deviceId:'pralka',days:1})).status,200);
@@ -99,7 +99,7 @@ test('HTTP: rzeczywisty odczyt przez adaptery, ustawienia, import, brak ujawnien
     assert.deepEqual((await get('/api/export')).panelLayout,visual);
     const invalid=structuredClone(visual);invalid.panels[panelId].x=999;assert.equal((await post('/api/panel-layout',invalid)).status,400);
     assert.deepEqual((await get('/api/view')).panelLayout,visual);
-    const zipped=await fetch(base+'/api/export?gzip=1');assert.equal(zipped.headers.get('content-type'),'application/gzip');const zipBackup=JSON.parse(gunzipSync(Buffer.from(await zipped.arrayBuffer())).toString());assert.equal(zipBackup.appVersion,'0.10.3');assert.equal(zipBackup.samples.length,(await get('/api/export')).samples.length);assert.ok(!JSON.stringify(zipBackup).includes('TEST_PRIVATE_TOKEN'));
+    const zipped=await fetch(base+'/api/export?gzip=1');assert.equal(zipped.headers.get('content-type'),'application/gzip');const zipBackup=JSON.parse(gunzipSync(Buffer.from(await zipped.arrayBuffer())).toString());assert.equal(zipBackup.appVersion,'0.10.4');assert.equal(zipBackup.samples.length,(await get('/api/export')).samples.length);assert.ok(!JSON.stringify(zipBackup).includes('TEST_PRIVATE_TOKEN'));
     const packedFile=(await get('/api/files')).files.find(f=>f.compressed);assert.ok(packedFile);const packed=await fetch(base+'/api/file?name='+encodeURIComponent(packedFile.name)+'&download=1');assert.ok(packed.headers.get('content-disposition').includes('.gz'));const raw=gunzipSync(Buffer.from(await packed.arrayBuffer())).toString();const unpacked=await fetch(base+'/api/file?name='+encodeURIComponent(packedFile.name)+'&download=1&unpack=1');assert.equal(await unpacked.text(),raw);assert.ok((await get('/api/file?name='+encodeURIComponent(packedFile.name))).text.startsWith('{'));
     const backup=await get('/api/export');assert.equal(backup.energyArchive.hours[permanentStart].wh,1234);const exported=JSON.stringify(backup);assert.ok(!exported.includes('TEST_PRIVATE_TOKEN'));assert.ok(!exported.includes(pairingKey));assert.ok(!output.includes('TEST_PRIVATE_TOKEN'));
     assert.equal((await post('/api/history',{days:1})).status,200);await until(async()=>{const x=await get('/api/view');return x.job&&!x.job.running;});

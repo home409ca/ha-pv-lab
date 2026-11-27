@@ -1,8 +1,8 @@
 # PV Lab — pełna instrukcja użytkownika
 
-<!-- pv-lab-manual-version: 0.10.3 -->
+<!-- pv-lab-manual-version: 0.10.4 -->
 
-**Wersja aplikacji i instrukcji: 0.10.3.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
+**Wersja aplikacji i instrukcji: 0.10.4.** Instrukcja opisuje obecny kod, również warunki braku wyniku. Wartości domyślne można zmienić.
 
 ## 1. Cel i zasada działania
 
@@ -232,12 +232,15 @@ Encje przygotowane pod późniejsze automatyzacje:
 
 | Encja / proponowany identyfikator | Znaczenie |
 | --- | --- |
+| Zaplanowane uruchomienie — binary_sensor.pv_lab_zaplanowane_uruchomienie | On, gdy jawnie zatwierdzony i uzbrojony plan ma co najmniej jedno polecenie włączenia oczekujące na wysłanie. Po wysłaniu wszystkich poleceń, anulowaniu lub wyłączeniu wykonania: Off. Nie oznacza fizycznej pracy sprzętu. |
 | Plan urządzeń zatwierdzony — binary_sensor.pv_lab_plan_urzadzen_zatwierdzony | On tylko dla jawnie zatwierdzonego, niewygasłego planu. Anulowanie wycofuje zgodę. |
 | Zatwierdzony plan urządzeń — sensor.pv_lab_dashboard_plan_status | Status planu, plan_id, cel i lista cykli w atrybutach. |
 | Zatwierdzony cykl 1 początek — sensor.pv_lab_dashboard_cycle_1_start | Stały termin pierwszego cyklu; atrybuty wskazują sprzęt, koniec, energię i plan_id. |
 | Zatwierdzony cykl 2…8 początek | Osobny, stały termin każdego następnego cyklu, także drugiego prania. Pierwsze trzy encje są domyślnie włączone; pozostałe można włączyć w encjach integracji. |
 
 Nie przesuwamy automatycznie encji pierwszego cyklu na drugie pranie po upływie pierwszego startu — każdy cykl ma własną encję. Przy braku zatwierdzenia lub po anulowaniu terminy są niedostępne, nie są datą 1970 ani godziną 00:00. Po zakończeniu planu flaga gaśnie. Brak świeżych danych aplikacji nie jest zgodą na uruchomienie. Nazwy identyfikatorów mogą dostać sufiks HA przy kolizji; odnajdziesz je przy urządzeniu PV Lab.
+
+Encję „Zaplanowane uruchomienie” znajdziesz w HA: Ustawienia → Urządzenia i usługi → PV Lab → urządzenie PV Lab → Encje. Wymaga aktualizacji integracji HACS i aplikacji do 0.10.4 oraz restartu HA. Identyfikator może mieć przyrostek, jeśli nazwę zajmuje już inna encja. Atrybuty: pending_count — liczba pozostałych poleceń, next_start — najbliższy start jako czas Unix w milisekundach, mode — tryb, auto — czy plan Auto, pending_cycles — urządzenia, switche i czasy. Podczas wysyłania polecenia pozostaje On; statusy wysłane, błędne, pominięte i niepewne nie są oczekującymi poleceniami. Samo uzbrojenie Auto i jego 10 minut przygotowania bez konkretnego planu nie włącza encji. Przy danych starszych niż 3 minuty lub utracie połączenia encja staje się niedostępna zamiast potwierdzać nieaktualny stan. Dotychczasowa encja zatwierdzonego planu oraz encje „Pralka/Zmywarka pracuje” zachowują swoje znaczenie i identyfikatory. Nie dodawaj automatyzacji ponownie włączającej switche na podstawie tej encji: polecenia wykonuje istniejący mechanizm planu.
 
 Zmiana pól karty wymaga ponownego przeliczenia przed zatwierdzeniem; stary wynik nie dostaje nowych liczb cykli. Udane nowe przeliczenie zastępuje propozycje i cofa wcześniejsze zatwierdzenie. Zatwierdzony plan można anulować. Opóźniony wynik starszego przeliczenia nie nadpisuje późniejszego anulowania. Gdy zmieni się zajętość sprzętu i dojdzie do konfliktu przed jego przyszłym startem, aplikacja anuluje plan i podaje przyczynę. To dodatkowy bezpiecznik, nie kompletny mechanizm uruchamiania urządzeń.
 
@@ -259,6 +262,8 @@ Presety przesuwają się wraz z datą, a zakres własny pozostaje stały. Zakres
 **Wszystkie cykle zakończ do:** przykładowo wpisz 15:00 przy pralce. Przy dwóch praniach oba muszą być zakończone do tej godziny. Pusta godzina przy zmywarce oznacza wyłącznie wspólny koniec zakresu. Pusta data oznacza ostatni dzień wybranego zakresu. Dla „Dziś i jutro”, gdy prania mają być gotowe już dziś o 15:00, wpisz również dzisiejszą datę. Termin nie oznacza startu; cały cykl musi się zmieścić. Jawnie podana data nie przesuwa się automatycznie. Dawne dodatkowe ograniczenia dat i dozwolonych godzin przejętych urządzeń pozostają zachowane.
 
 ### Proponowane harmonogramy — jedna główna rekomendacja (0.8.14)
+
+**Remis przy pełnym zakupie energii:** gdy plan wymaga praktycznie 100% energii z sieci (brak widocznego pokrycia PV/bilansem), preferujemy wcześniejszy dopuszczalny wariant „Start tania strefa”, jeśli ma tę samą energię cykli, cenę i koszt gorszej pogody po zaokrągleniu do grosza. Przykład: 13:00 i 13:15 po 0,62 zł — wygrywa 13:00. Nie opóźniamy już wcześniejszego startu tylko dla tej etykiety. Warunek dotyczy nowych rekomendacji aplikacji, karty i początkowego Auto; nie przesuwa już zatwierdzonych godzin i nie omija progów 15 gr / 15% przy przeplanowaniu. Plany z rzeczywistym udziałem PV nadal są oceniane według zapasu i kosztu. Koszty obliczamy z pełną precyzją; grosz jest wyłącznie regułą rozstrzygnięcia takiego remisu.
 
 Główny cel to mały szacowany dodatkowy koszt wszystkich cykli po uwzględnieniu domu, prognozy PV, bilansowania i taryfy. Wśród pełnych znalezionych planów wyznaczamy najtańszy. Dopuszczamy maksymalnie 0,05 zł dopłaty za cały plan względem tej jednej kwoty. W tej grupie sortujemy najpierw według większego zapasu PV w okresach pracy, potem niższego kosztu przy mniej korzystnej pogodzie, niższego kosztu centralnego, mniej dokupionej energii i wcześniejszego końca. Pozostałe plany sortujemy według kosztu. Próg jest odniesiony zawsze do najtańszego pełnego planu; nie narasta przez porównywanie kolejnych par. Tolerancja liczbowa wynosi 10⁻⁸ zł. Większy zapas to wskaźnik odporności, a nie gwarancja ani prawdopodobieństwo. Nie ma uniwersalnego progu wystarczalności 1–2 kWh: zależy ona od całego cyklu i rozkładu energii. Nie uśredniamy kWh ze złotówkami. W tym wspólnym planerze waga ostrożności nie podwyższa niewidocznie wyniku rankingu ponad pokazaną kwotę. Parametr pozostaje zachowany dla starszego API optymalizatora; porównania kosztów historycznych nie są zmieniane.
 
@@ -1103,11 +1108,11 @@ Sprawdzono dostępne zapisane plany Auto, używając wyłącznie wersji prognoz 
 Odtworzenie nie jest dokładną kopią dawnych decyzji: brak pełnej historycznej migawki modelu ryzyka i wszystkich bieżących stanów urządzeń. W próbie użyto roboczego marginesu PV 25%, więc nie przypisujemy jej potwierdzonego wzrostu oszczędności na rachunku. Nowe dzienniki pozwolą dokładniej ocenić przyszłe decyzje. Nie poprawiamy starych prognoz ani zapisów po fakcie.
 
 
-## Naprawa niepełnego obrazu aplikacji — 0.10.3
+## Naprawa niepełnego obrazu aplikacji — 0.10.4
 
 Komunikat „execution-monitor.mjs does not provide an export named executionRecord” oznacza niezgodność plików uruchamianej aplikacji: nowszy serwer oczekuje funkcji, której starszy moduł jeszcze nie ma. Nie jest to błąd historii urządzeń ani konfiguracji użytkownika. Poprawne pliki na GitHub nie zmieniają automatycznie już zbudowanego obrazu. Nawet numer 0.10.2 w HA nie dowodzi kompletności kodu, jeżeli aplikację zbudowano przed uzupełnieniem plików. Restart uruchamia ten sam obraz, a aktualizacja samej integracji HACS nie wymienia /app/src aplikacji.
 
-Wersja 0.10.3 ma nowy numer aplikacji i integracji. Paczka jest zbiorczą różnicą od 0.10.0: zawiera także poprawki 0.10.1 i 0.10.2, które mogły zostać pominięte. Wgraj zawartość ZIP do katalogu głównego repozytorium z zachowaniem podkatalogów. Po udanej publikacji odśwież repozytorium w sklepie aplikacji/dodatków HA i zaktualizuj samą aplikację PV Lab do 0.10.3. Zaktualizuj integrację HACS do 0.10.3, uruchom ponownie HA i odśwież kartę. Nie trzeba odinstalowywać aplikacji, usuwać katalogu /data, ponawiać importu ani zmieniać YAML. Zachowane terminy i Auto pozostają zapisane.
+Wersja 0.10.4 ma nowy numer aplikacji i integracji. Paczka jest zbiorczą różnicą od 0.10.0: zawiera także poprawki 0.10.1 i 0.10.2, które mogły zostać pominięte. Wgraj zawartość ZIP do katalogu głównego repozytorium z zachowaniem podkatalogów. Po udanej publikacji odśwież repozytorium w sklepie aplikacji/dodatków HA i zaktualizuj samą aplikację PV Lab do 0.10.4. Zaktualizuj integrację HACS do 0.10.4, uruchom ponownie HA i odśwież kartę. Nie trzeba odinstalowywać aplikacji, usuwać katalogu /data, ponawiać importu ani zmieniać YAML. Zachowane terminy i Auto pozostają zapisane.
 
 Podczas budowania obrazu kontrolujemy połączenie całego grafu modułów ES w src i public. Kontrola sprawdza istnienie plików oraz rzeczywiste nazwy eksportów, w tym executionRecord, i obsługuje statyczny JSON. Nie wykonuje kodu serwera lub interfejsu, nie wywołuje HA i nie otwiera trwałego /data. Taka sama kontrola działa przed testami publikacji. Zastosowano wbudowany mechanizm modułów Node.js 22, bez dodatkowych pakietów. Negatywny test celowo usuwa eksport i potwierdza odrzucenie mieszanki plików; osobny efekt uboczny dodany w teście potwierdza, że aplikacja nie jest wykonywana podczas tej kontroli.
 
