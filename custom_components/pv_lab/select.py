@@ -2,6 +2,7 @@
 from homeassistant.components.select import SelectEntity
 from .const import DOMAIN
 from .plan_entity import PlanEntity
+from .snow_entity import SnowEntity
 
 MODES = {"hourly": "Godzinowe", "quarterly": "15-minutowe", "instant": "Bez bilansowania czasowego"}
 VARIANTS = {"typical": "Typowy", "mean": "Średni", "maximum": "Najbardziej energochłonny"}
@@ -13,6 +14,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         PlanMode(coordinator, entry, "mode", "Plan bilansowanie"),
         PlanProfile(coordinator, entry, "profileId", "Plan profil urządzenia"),
         PlanVariant(coordinator, entry, "profileVariant", "Plan wariant profilu"),
+        SnowWeather(coordinator, entry),
     ])
 
 
@@ -59,3 +61,26 @@ class PlanVariant(PlanEntity, SelectEntity):
 
     async def async_select_option(self, option):
         await self.coordinator.async_set_plan({"profileVariant": next(key for key, value in VARIANTS.items() if value == option)})
+
+
+class SnowWeather(SnowEntity, SelectEntity):
+    def __init__(self, coordinator, entry):
+        super().__init__(coordinator, entry, "pogoda_dla_zasloniecia_paneli", "Pogoda dla wykrywania zasłonięcia", "mdi:weather-snowy")
+
+    @property
+    def options(self):
+        selected = (self.snow or {}).get("weatherEntity")
+        entities = {s.entity_id for s in self.hass.states.async_all("weather")}
+        if selected:
+            entities.add(selected)
+        return ["Bez encji pogody", *sorted(entities)]
+
+    @property
+    def current_option(self):
+        return (self.snow or {}).get("weatherEntity") or "Bez encji pogody"
+
+    async def async_select_option(self, option):
+        if option not in self.options:
+            from homeassistant.exceptions import HomeAssistantError
+            raise HomeAssistantError("Wybierz lokalną encję pogody z listy")
+        await self.coordinator.async_set_snow({"weatherEntity": "" if option == "Bez encji pogody" else option})

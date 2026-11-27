@@ -1,3 +1,11 @@
+# 0.10.6
+
+Podejrzenie zasłonięcia paneli pozostaje między dniami i po restarcie, aż produkcja wiarygodnie wróci lub użytkownik potwierdzi odsłonięcie. Limit obejmuje również przyszłe dni dostępnej prognozy, więc Auto nie wraca co rano do pełnej produkcji przy nierozwiązanym podejrzeniu. Nowe encje HA: status podejrzenia, przełącznik korekty, wybór lokalnej encji weather oraz przycisk potwierdzenia odsłonięcia. Kontrole korzystają z istniejącego parowania i ograniczonego API; nie wywołują fizycznych switchy. Ręczne potwierdzenie rozpoczyna nowe okno obserwacji. Brak encji pogody nadal pozwala wykrywać podejrzenie zimą przy zgodnych prognozach dwóch dostawców. Dane, zatwierdzone plany i zasady Auto zachowane.
+
+# 0.10.5
+
+Automatyczne wykrywanie podejrzenia zaśnieżenia lub zasłonięcia paneli po około godzinie niemal zerowej produkcji mimo istotnej prognozy. Wymaga świeżych poprawnych pomiarów, normalnych napięć i statusu; pogoda jest opcjonalna, bez niej zimą wymagane są dwie prognozy. Limit obejmuje tylko pozostałą część dzisiejszego dnia i nie mnoży ponownie wcześniejszych redukcji. Potwierdzony powrót produkcji stopniowo zdejmuje ograniczenie. Widoczny komunikat, szczegóły i trwały wyłącznik w Prognozy i korekty; opcjonalna encja weather. Końcowy wynik trafia do Energii, planera i Auto przy zachowaniu zasad przeplanowania oraz stałych terminów. Podejrzane próbki nie uczą kalibracji, dni z aktywacją są wyłączane z uczenia historycznego potencjału bez kasowania produkcji. Stan i oznaczenia zachowane po restarcie i w eksporcie; dziennik Auto zawiera kontekst korekty.
+
 # 0.10.4
 
 Przy jednakowej cenie do grosza i pełnym zakupie energii nowy wybór preferuje wcześniejszy „Start tania strefa”, jeśli również koszt gorszej pogody jest taki sam do grosza. Wspólna reguła w aplikacji, karcie i pierwszym wyborze Auto; zatwierdzone godziny i progi przeplanowania pozostają bez zmian. Nowy binary_sensor.pv_lab_zaplanowane_uruchomienie wskazuje uzbrojone polecenia oczekujące na wysłanie; atrybuty zawierają liczbę cykli, najbliższy start, tryb i urządzenia. Po wysłaniu wszystkich poleceń lub anulowaniu gaśnie. Brak świeżych danych jest oznaczany jako niedostępność. Nie zastępuje encji faktycznej pracy urządzeń. Aktualizacja zachowuje historię i konfigurację.

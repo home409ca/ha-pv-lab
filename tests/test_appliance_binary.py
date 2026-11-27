@@ -53,7 +53,7 @@ class ApplianceBinaryTests(unittest.IsolatedAsyncioTestCase):
     async def test_two_entities_icons_stable_ids_and_setup(self):
         entities = []
         await self.binary.async_setup_entry(types.SimpleNamespace(data={"pv_lab": {self.entry.entry_id: self.coordinator}}), self.entry, lambda values: entities.extend(values))
-        self.assertEqual(len(entities), 4)
+        self.assertEqual(len(entities), 5)
         self.assertEqual([e._attr_icon for e in entities[:2]], ["mdi:dishwasher", "mdi:washing-machine"])
         self.assertEqual(self.entity._attr_device_class, "running")
         self.assertEqual(self.entity.suggested_object_id, "pv_lab_pralka_pracuje")

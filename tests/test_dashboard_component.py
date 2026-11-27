@@ -57,7 +57,7 @@ class DashboardComponentTests(unittest.IsolatedAsyncioTestCase):
         await asyncio.gather(self.module.async_setup_dashboard(self.hass), self.module.async_setup_dashboard(self.hass))
         self.hass.http.async_register_static_paths.assert_awaited_once()
         self.js.assert_called_once()
-        self.assertIn("pv-lab-plan-card.js?v=0.10.4", self.js.call_args.args[1])
+        self.assertIn("pv-lab-plan-card.js?v=0.10.6", self.js.call_args.args[1])
         self.assertTrue((ROOT / "www/pv-lab-plan-card.js").is_file())
 
     async def test_card_is_registered_before_offline_app_aborts_entry_setup(self):
@@ -105,7 +105,7 @@ class DashboardComponentTests(unittest.IsolatedAsyncioTestCase):
         setup = next(node for node in ast.parse((ROOT / '__init__.py').read_text(encoding='utf-8')).body if isinstance(node, ast.AsyncFunctionDef) and node.name == 'async_setup_entry')
         error = sys.modules["homeassistant.exceptions"].ConfigEntryNotReady
         coordinator = types.SimpleNamespace(async_config_entry_first_refresh=AsyncMock(side_effect=error()), async_set_updated_data=Mock())
-        platform = types.SimpleNamespace(**{key:key for key in ("SENSOR","BINARY_SENSOR","NUMBER","SELECT","DATETIME")})
+        platform = types.SimpleNamespace(**{key:key for key in ("SENSOR","BINARY_SENSOR","NUMBER","SELECT","DATETIME","SWITCH","BUTTON")})
         self.coordinator.entry.entry_id="entry"
         self.hass.config_entries=types.SimpleNamespace(async_forward_entry_setups=AsyncMock())
         executor = sys.modules["dashboard_component_test.executor"].PlanExecutor.return_value
@@ -121,7 +121,7 @@ class DashboardComponentTests(unittest.IsolatedAsyncioTestCase):
         setup = next(node for node in ast.parse((ROOT / '__init__.py').read_text(encoding='utf-8')).body if isinstance(node, ast.AsyncFunctionDef) and node.name == 'async_setup_entry')
         error = sys.modules["homeassistant.exceptions"].ConfigEntryNotReady
         coordinator = types.SimpleNamespace(async_config_entry_first_refresh=AsyncMock(side_effect=error()), async_set_updated_data=Mock())
-        platform = types.SimpleNamespace(**{key:key for key in ("SENSOR","BINARY_SENSOR","NUMBER","SELECT","DATETIME")})
+        platform = types.SimpleNamespace(**{key:key for key in ("SENSOR","BINARY_SENSOR","NUMBER","SELECT","DATETIME","SWITCH","BUTTON")})
         self.coordinator.entry.entry_id="entry"
         self.hass.config_entries=types.SimpleNamespace(async_forward_entry_setups=AsyncMock())
         executor = sys.modules["dashboard_component_test.executor"].PlanExecutor.return_value
@@ -136,7 +136,7 @@ class DashboardComponentTests(unittest.IsolatedAsyncioTestCase):
     async def test_platform_setup_failure_stops_timers_before_setup_retry(self):
         setup = next(node for node in ast.parse((ROOT / '__init__.py').read_text(encoding='utf-8')).body if isinstance(node, ast.AsyncFunctionDef) and node.name == 'async_setup_entry')
         coordinator=types.SimpleNamespace(async_config_entry_first_refresh=AsyncMock())
-        platform=types.SimpleNamespace(**{key:key for key in ("SENSOR","BINARY_SENSOR","NUMBER","SELECT","DATETIME")})
+        platform=types.SimpleNamespace(**{key:key for key in ("SENSOR","BINARY_SENSOR","NUMBER","SELECT","DATETIME","SWITCH","BUTTON")})
         self.coordinator.entry.entry_id="entry"
         self.hass.config_entries=types.SimpleNamespace(async_forward_entry_setups=AsyncMock(side_effect=RuntimeError("platform failed")))
         executor=sys.modules["dashboard_component_test.executor"].PlanExecutor.return_value

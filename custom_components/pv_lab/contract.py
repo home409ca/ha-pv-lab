@@ -197,3 +197,17 @@ def hourly_forecast(payload):
         bucket = periods.setdefault(key, {})
         bucket[dt.isoformat()] = row["wh"]
     return {key: sum(values.values()) for key, values in periods.items() if len(values) == 4}
+
+
+def read_snow(payload, now=None):
+    now = datetime.now(timezone.utc).timestamp()*1000 if now is None else now
+    s = payload.get("snowCorrection")
+    if not isinstance(s, dict) or type(s.get("enabled")) is not bool or type(s.get("active")) is not bool:
+        return None
+    at = s.get("readAt")
+    if type(at) not in (int, float) or not isfinite(at) or not -60000 <= now-at <= 180000:
+        return None
+    factor = s.get("factor")
+    if type(factor) not in (int, float) or not isfinite(factor) or not 0 <= factor <= 1:
+        return None
+    return s

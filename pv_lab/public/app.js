@@ -1,3 +1,4 @@
+import {snowBanner,bindSnow} from './snow-status.js';
 import {renderAI,bindAI,discardAI} from './ai.js';
 import {renderPanelMaps,bindPanelMaps,discardPanelEdits} from './panel-map.js';
 import {renderGridRisk,bindGridRisk} from './grid-risk.js';
@@ -102,7 +103,8 @@ function render(){if(!data)return;if(tab==='optimizer'){tab='planner';history.re
   $('#updated').textContent='Ostatni odczyt: '+(data.connection.lastPoll?date(data.connection.lastPoll):'oczekiwanie');
   if(['settings','planner','appliances','imports','optimizer','panels','ai'].includes(tab)&&dirty)return;
   if(renderedTab)detailsByTab.set(renderedTab,captureDetails(content));
-  content.innerHTML=({ai:()=>renderAI(data,helpers()),optimizer:()=>renderEnergyOptimizer(data,helpers()),imports:()=>renderExternal(data,helpers()),potential:()=>renderHistorical(data,helpers()),appliances:()=>renderAppliances(data,helpers()),reports:()=>renderReports(data,helpers()),planner:()=>renderUnified(data,helpers())+renderEnergyOptimizer(data,helpers(),true,unifiedSelection()),overview,forecast:forecastPage,panels:panelPage,voltage:voltagePage,sources:sourcesPage,settings:settingsPage,history:historyPage,storage:storagePage,integration:integrationPage}[tab])();
+  content.innerHTML=snowBanner(data,helpers())+({ai:()=>renderAI(data,helpers()),optimizer:()=>renderEnergyOptimizer(data,helpers()),imports:()=>renderExternal(data,helpers()),potential:()=>renderHistorical(data,helpers()),appliances:()=>renderAppliances(data,helpers()),reports:()=>renderReports(data,helpers()),planner:()=>renderUnified(data,helpers())+renderEnergyOptimizer(data,helpers(),true,unifiedSelection()),overview,forecast:forecastPage,panels:panelPage,voltage:voltagePage,sources:sourcesPage,settings:settingsPage,history:historyPage,storage:storagePage,integration:integrationPage}[tab])();
+  bindSnow(data,api,load,toast);
   if(tab==='ai')bindAI(data,helpers(),api,render,value=>dirty=value);
   if(tab==='panels')bindPanelMaps(data,helpers(),api,load,toast,render,value=>dirty=value);
   bindHistorical(data,helpers(),api,load,toast,render);

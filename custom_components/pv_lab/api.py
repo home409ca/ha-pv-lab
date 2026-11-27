@@ -46,3 +46,16 @@ async def device_schedule(session: ClientSession, url: str, token: str, request=
                 from homeassistant.exceptions import HomeAssistantError
                 raise HomeAssistantError(data.get("error", "Nie udało się przeliczyć planu"))
             return data
+
+
+async def update_snow(session: ClientSession, url: str, token: str, patch: dict):
+    """Restricted availability controls only; no switch service or arbitrary settings."""
+    async with asyncio.timeout(60):
+        async with session.post(url.rstrip("/") + "/api/snow-settings", headers={"Authorization": "Bearer " + token}, json=patch) as response:
+            if response.status in (401, 403):
+                raise AuthenticationError
+            data = await response.json()
+            if response.status >= 400:
+                from homeassistant.exceptions import HomeAssistantError
+                raise HomeAssistantError(data.get("error", "Nie udało się zmienić korekty zasłonięcia"))
+            return data

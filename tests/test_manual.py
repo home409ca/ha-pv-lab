@@ -11,7 +11,7 @@ SPEC.loader.exec_module(manual)
 
 class ManualTests(unittest.TestCase):
     def test_current_manual_covers_tabs_and_is_exactly_generated(self):
-        manual.validate_manual(ROOT, '0.10.4')
+        manual.validate_manual(ROOT, '0.10.6')
 
     def test_changed_algorithm_requires_manual_review_before_release(self):
         original = pathlib.Path.read_bytes
@@ -20,7 +20,7 @@ class ManualTests(unittest.TestCase):
             return data + b'\n// changed algorithm' if path == ROOT / 'pv_lab/src/optimizer.mjs' else data
         with patch.object(pathlib.Path, 'read_bytes', read):
             with self.assertRaisesRegex(ValueError, 'Application changed'):
-                manual.validate_manual(ROOT, '0.10.4')
+                manual.validate_manual(ROOT, '0.10.6')
 
     def test_wrong_manual_version_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'Manual version'):
@@ -28,7 +28,7 @@ class ManualTests(unittest.TestCase):
 
     def test_yaml_code_preserves_lines_indentation_and_escapes_html(self):
         source = "```yaml\ntype: custom:pv-lab-plan-card\ncolors:\n  auto: '<script>'\n```"
-        rendered = manual.render(source, '0.10.4')
+        rendered = manual.render(source, '0.10.6')
         self.assertIn("<pre><code>type: custom:pv-lab-plan-card\ncolors:\n  auto: &#x27;&lt;script&gt;&#x27;</code></pre>", rendered)
         with self.assertRaisesRegex(ValueError, 'Unclosed'):
-            manual.render('```yaml\nx: 1', '0.10.4')
+            manual.render('```yaml\nx: 1', '0.10.6')

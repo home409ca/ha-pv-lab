@@ -3,6 +3,7 @@ from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySen
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.restore_state import RestoreEntity
 from .const import DOMAIN, VERSION
+from .snow_entity import SnowEntity
 from .contract import read_appliance_running, read_dashboard_plan
 
 SPECS = (
@@ -13,7 +14,7 @@ SPECS = (
 
 async def async_setup_entry(hass, entry, async_add_entities):
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([*(PVLabApplianceRunning(coordinator, entry, *spec) for spec in SPECS), PVLabPlanApproved(coordinator, entry), PVLabScheduledStart(coordinator, entry)])
+    async_add_entities([*(PVLabApplianceRunning(coordinator, entry, *spec) for spec in SPECS), PVLabPlanApproved(coordinator, entry), PVLabScheduledStart(coordinator, entry), SnowSuspected(coordinator, entry)])
 
 
 class PVLabApplianceRunning(CoordinatorEntity, BinarySensorEntity, RestoreEntity):
@@ -116,3 +117,12 @@ class PVLabScheduledStart(PVLabPlanApproved):
     @property
     def extra_state_attributes(self):
         return read_dashboard_plan(self.coordinator.data or {}, "dashboard_pending")[1]
+
+
+class SnowSuspected(SnowEntity, BinarySensorEntity):
+    def __init__(self, coordinator, entry):
+        super().__init__(coordinator, entry, "podejrzenie_zasloniecia_paneli", "Podejrzenie zasłonięcia paneli", "mdi:solar-panel")
+
+    @property
+    def is_on(self):
+        return (self.snow or {}).get("active")

@@ -5,7 +5,7 @@ from homeassistant.const import Platform
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from .api import AuthenticationError, fetch_payload, update_plan
+from .api import AuthenticationError, fetch_payload, update_plan, update_snow
 from .const import DOMAIN, CONF_URL, CONF_TOKEN
 import logging
 
@@ -20,6 +20,10 @@ class PVLabCoordinator(DataUpdateCoordinator):
 
     async def async_set_plan(self, patch):
         await update_plan(async_get_clientsession(self.hass), self.entry.data[CONF_URL], self.entry.data[CONF_TOKEN], patch)
+        await self.async_request_refresh()
+
+    async def async_set_snow(self, patch):
+        await update_snow(async_get_clientsession(self.hass), self.entry.data[CONF_URL], self.entry.data[CONF_TOKEN], patch)
         await self.async_request_refresh()
 
     async def _async_update_data(self):
@@ -58,7 +62,7 @@ async def async_setup_entry(hass, entry):
         raise
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     try:
-        await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.DATETIME])
+        await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.DATETIME, Platform.SWITCH, Platform.BUTTON])
     except Exception:
         hass.data[DOMAIN].pop(entry.entry_id, None)
         await coordinator.executor.async_stop()
@@ -67,7 +71,7 @@ async def async_setup_entry(hass, entry):
 
 
 async def async_unload_entry(hass, entry):
-    unloaded = await hass.config_entries.async_unload_platforms(entry, [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.DATETIME])
+    unloaded = await hass.config_entries.async_unload_platforms(entry, [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.DATETIME, Platform.SWITCH, Platform.BUTTON])
     if unloaded:
         coordinator = hass.data[DOMAIN].pop(entry.entry_id, None)
         if coordinator and coordinator.executor:
